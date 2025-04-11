@@ -28,10 +28,10 @@
 struct request_queue *dattobd_bio_get_queue(struct bio *bio)
 {
 #ifdef HAVE_BIO_BI_BDEV
-        //#if LINUX_VERSION_CODE < KERNEL_VERSION(4,14,0)
-        return bdev_get_queue(bio->bi_bdev);
+	//#if LINUX_VERSION_CODE < KERNEL_VERSION(4,14,0)
+	return bdev_get_queue(bio->bi_bdev);
 #else
-        return bio->bi_disk->queue;
+	return bio->bi_disk->queue;
 #endif
 }
 
@@ -45,10 +45,10 @@ struct request_queue *dattobd_bio_get_queue(struct bio *bio)
 void dattobd_bio_set_dev(struct bio *bio, struct block_device *bdev)
 {
 #ifdef HAVE_BIO_BI_BDEV
-        //#if LINUX_VERSION_CODE < KERNEL_VERSION(4,14,0)
-        bio->bi_bdev = bdev;
+	//#if LINUX_VERSION_CODE < KERNEL_VERSION(4,14,0)
+	bio->bi_bdev = bdev;
 #else
-        bio_set_dev(bio, bdev);
+	bio_set_dev(bio, bdev);
 #endif
 }
 
@@ -60,10 +60,10 @@ void dattobd_bio_set_dev(struct bio *bio, struct block_device *bdev)
 void dattobd_bio_copy_dev(struct bio *dst, struct bio *src)
 {
 #ifdef HAVE_BIO_BI_BDEV
-        //#if LINUX_VERSION_CODE < KERNEL_VERSION(4,14,0)
-        dst->bi_bdev = src->bi_bdev;
+	//#if LINUX_VERSION_CODE < KERNEL_VERSION(4,14,0)
+	dst->bi_bdev = src->bi_bdev;
 #else
-        bio_copy_dev(dst, src);
+	bio_copy_dev(dst, src);
 #endif
 }
 
@@ -87,7 +87,7 @@ void dattobd_bio_copy_dev(struct bio *dst, struct bio *src)
 #ifndef HAVE_SUBMIT_BIO_1
 //#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,8,0)
 
-#ifndef HAVE_ENUM_REQ_OP 
+#ifndef HAVE_ENUM_REQ_OP
 /**
  * dattobd_set_bio_ops() - Sets the I/O operation and additional flags in the
  * @bio.
@@ -98,37 +98,37 @@ void dattobd_bio_copy_dev(struct bio *dst, struct bio *src)
  */
 void dattobd_set_bio_ops(struct bio *bio, req_op_t op, unsigned op_flags)
 {
-        bio->bi_rw = 0;
+	bio->bi_rw = 0;
 
-        switch (op) {
-        case REQ_OP_READ:
-                break;
-        case REQ_OP_WRITE:
-                bio->bi_rw |= REQ_WRITE;
-                break;
-        case REQ_OP_DISCARD:
-                bio->bi_rw |= REQ_DISCARD;
-                break;
-        case REQ_OP_SECURE_ERASE:
-                bio->bi_rw |= REQ_DISCARD | REQ_SECURE;
-                break;
-        case REQ_OP_WRITE_SAME:
-                bio->bi_rw |= REQ_WRITE_SAME;
-                break;
-        case REQ_OP_FLUSH:
-                bio->bi_rw |= REQ_FLUSH;
-                break;
-        }
+	switch (op) {
+	case REQ_OP_READ:
+		break;
+	case REQ_OP_WRITE:
+		bio->bi_rw |= REQ_WRITE;
+		break;
+	case REQ_OP_DISCARD:
+		bio->bi_rw |= REQ_DISCARD;
+		break;
+	case REQ_OP_SECURE_ERASE:
+		bio->bi_rw |= REQ_DISCARD | REQ_SECURE;
+		break;
+	case REQ_OP_WRITE_SAME:
+		bio->bi_rw |= REQ_WRITE_SAME;
+		break;
+	case REQ_OP_FLUSH:
+		bio->bi_rw |= REQ_FLUSH;
+		break;
+	}
 
-        bio->bi_rw |= op_flags;
+	bio->bi_rw |= op_flags;
 }
 #endif
 
 #if !defined(HAVE_BIO_BI_OPF) && defined(HAVE_ENUM_REQ_OP)
 void dattobd_set_bio_ops(struct bio *bio, req_op_t op, unsigned op_flags)
 {
-       bio->bi_rw = 0;
-       bio->bi_rw |= op ;
+	bio->bi_rw = 0;
+	bio->bi_rw |= op;
 }
 #endif
 /**
@@ -143,7 +143,7 @@ void dattobd_set_bio_ops(struct bio *bio, req_op_t op, unsigned op_flags)
  */
 int dattobd_bio_op_flagged(struct bio *bio, unsigned int flag)
 {
-        return bio->bi_rw & flag;
+	return bio->bi_rw & flag;
 }
 
 /**
@@ -155,7 +155,7 @@ int dattobd_bio_op_flagged(struct bio *bio, unsigned int flag)
  */
 void dattobd_bio_op_set_flag(struct bio *bio, unsigned int flag)
 {
-        bio->bi_rw |= flag;
+	bio->bi_rw |= flag;
 }
 
 /**
@@ -167,7 +167,7 @@ void dattobd_bio_op_set_flag(struct bio *bio, unsigned int flag)
  */
 void dattobd_bio_op_clear_flag(struct bio *bio, unsigned int flag)
 {
-        bio->bi_rw &= ~flag;
+	bio->bi_rw &= ~flag;
 }
 #else
 
@@ -178,7 +178,6 @@ typedef enum req_op req_op_t;
 typedef enum req_opf req_op_t;
 #endif
 
-
 /**
  * dattobd_set_bio_ops() - Sets the op and its flags.
  *
@@ -188,8 +187,8 @@ typedef enum req_opf req_op_t;
  */
 void dattobd_set_bio_ops(struct bio *bio, req_op_t op, unsigned op_flags)
 {
-        bio->bi_opf = 0;
-        bio->bi_opf = op | op_flags;
+	bio->bi_opf = 0;
+	bio->bi_opf = op | op_flags;
 }
 
 /**
@@ -204,7 +203,7 @@ void dattobd_set_bio_ops(struct bio *bio, req_op_t op, unsigned op_flags)
  */
 int dattobd_bio_op_flagged(struct bio *bio, unsigned int flag)
 {
-        return bio->bi_opf & flag;
+	return bio->bi_opf & flag;
 }
 
 /**
@@ -216,7 +215,7 @@ int dattobd_bio_op_flagged(struct bio *bio, unsigned int flag)
  */
 void dattobd_bio_op_set_flag(struct bio *bio, unsigned int flag)
 {
-        bio->bi_opf |= flag;
+	bio->bi_opf |= flag;
 }
 
 /**
@@ -228,7 +227,7 @@ void dattobd_bio_op_set_flag(struct bio *bio, unsigned int flag)
  */
 void dattobd_bio_op_clear_flag(struct bio *bio, unsigned int flag)
 {
-        bio->bi_opf &= ~flag;
+	bio->bi_opf &= ~flag;
 }
 
 #endif
@@ -236,8 +235,8 @@ void dattobd_bio_op_clear_flag(struct bio *bio, unsigned int flag)
 #if !defined HAVE_SUBMIT_BIO_WAIT && !defined HAVE_SUBMIT_BIO_1
 //#if LINUX_VERSION_CODE < KERNEL_VERSION(3,10,0)
 struct submit_bio_ret {
-        struct completion event;
-        int error;
+	struct completion event;
+	int error;
 };
 
 /**
@@ -250,9 +249,9 @@ struct submit_bio_ret {
  */
 static void __submit_bio_wait_endio(struct bio *bio, int error)
 {
-        struct submit_bio_ret *ret = bio->bi_private;
-        ret->error = error;
-        complete(&ret->event);
+	struct submit_bio_ret *ret = bio->bi_private;
+	ret->error = error;
+	complete(&ret->event);
 }
 
 #ifdef HAVE_BIO_ENDIO_INT
@@ -271,11 +270,11 @@ static void __submit_bio_wait_endio(struct bio *bio, int error)
  */
 static int submit_bio_wait_endio(struct bio *bio, unsigned int bytes, int error)
 {
-        if (bio->bi_size)
-                return 1;
+	if (bio->bi_size)
+		return 1;
 
-        __submit_bio_wait_endio(bio, error);
-        return 0;
+	__submit_bio_wait_endio(bio, error);
+	return 0;
 }
 
 #else
@@ -289,7 +288,7 @@ static int submit_bio_wait_endio(struct bio *bio, unsigned int bytes, int error)
  */
 static void submit_bio_wait_endio(struct bio *bio, int error)
 {
-        __submit_bio_wait_endio(bio, error);
+	__submit_bio_wait_endio(bio, error);
 }
 
 #endif
@@ -306,18 +305,18 @@ static void submit_bio_wait_endio(struct bio *bio, int error)
  */
 int submit_bio_wait(int rw, struct bio *bio)
 {
-        struct submit_bio_ret ret;
+	struct submit_bio_ret ret;
 
-        // kernel implementation has the line below, but all our calls will have
-        // this already and it changes across kernel versions rw |= REQ_SYNC;
+	// kernel implementation has the line below, but all our calls will have
+	// this already and it changes across kernel versions rw |= REQ_SYNC;
 
-        init_completion(&ret.event);
-        bio->bi_private = &ret;
-        bio->bi_end_io = submit_bio_wait_endio;
-        submit_bio(rw, bio);
-        wait_for_completion(&ret.event);
+	init_completion(&ret.event);
+	bio->bi_private = &ret;
+	bio->bi_end_io = submit_bio_wait_endio;
+	submit_bio(rw, bio);
+	wait_for_completion(&ret.event);
 
-        return ret.error;
+	return ret.error;
 }
 
 #endif
@@ -332,7 +331,7 @@ int submit_bio_wait(int rw, struct bio *bio)
  */
 void dattobd_bio_endio(struct bio *bio, int err)
 {
-        bio_endio(bio, bio->bi_size, err);
+	bio_endio(bio, bio->bi_size, err);
 }
 
 #elif !defined HAVE_BIO_ENDIO_1
@@ -345,7 +344,7 @@ void dattobd_bio_endio(struct bio *bio, int err)
  */
 void dattobd_bio_endio(struct bio *bio, int err)
 {
-        bio_endio(bio, err);
+	bio_endio(bio, err);
 }
 
 #elif defined HAVE_BLK_STATUS_T
@@ -358,8 +357,8 @@ void dattobd_bio_endio(struct bio *bio, int err)
  */
 void dattobd_bio_endio(struct bio *bio, int err)
 {
-        bio->bi_status = errno_to_blk_status(err);
-        bio_endio(bio);
+	bio->bi_status = errno_to_blk_status(err);
+	bio_endio(bio);
 }
 
 #else
@@ -372,8 +371,8 @@ void dattobd_bio_endio(struct bio *bio, int err)
  */
 void dattobd_bio_endio(struct bio *bio, int err)
 {
-        bio->bi_error = err;
-        bio_endio(bio);
+	bio->bi_error = err;
+	bio_endio(bio);
 }
 
 #endif
@@ -392,74 +391,72 @@ void dattobd_bio_endio(struct bio *bio, int err)
  */
 static void __on_bio_read_complete(struct bio *bio, int err)
 {
-        int ret;
-        struct tracing_params *tp = bio->bi_private;
-        struct snap_device *dev = tp->dev;
-        struct bio_sector_map *map = NULL;
+	int ret;
+	struct tracing_params *tp = bio->bi_private;
+	struct snap_device *dev = tp->dev;
+	struct bio_sector_map *map = NULL;
 #ifndef HAVE_BVEC_ITER
-        unsigned short i = 0;
+	unsigned short i = 0;
 #endif
 
-        // check for read errors
-        if (err) {
-                ret = err;
-                LOG_ERROR(ret,
-                          "error reading from base device for copy on write");
-                goto error;
-        }
+	// check for read errors
+	if (err) {
+		ret = err;
+		LOG_ERROR(ret, "error reading from base device for copy on write");
+		goto error;
+	}
 
-        // change the bio into a write bio
-        dattobd_set_bio_ops(bio, REQ_OP_WRITE, 0);
-        bio->bi_end_io = NULL;
+	// change the bio into a write bio
+	dattobd_set_bio_ops(bio, REQ_OP_WRITE, 0);
+	bio->bi_end_io = NULL;
 
-        // reset the bio iterator to its original state
-        for (map = tp->bio_sects.head; map != NULL && map->bio != NULL;
-             map = map->next) {
-                if (bio == map->bio) {
-                        bio_sector(bio) = map->sect - dev->sd_sect_off;
-                        bio_size(bio) = map->size;
-                        bio_idx(bio) = 0;
-                        break;
-                }
-        }
+	// reset the bio iterator to its original state
+	for (map = tp->bio_sects.head; map != NULL && map->bio != NULL; map = map->next) {
+		if (bio == map->bio) {
+			bio_sector(bio) = map->sect - dev->sd_sect_off;
+			bio_size(bio) = map->size;
+			bio_idx(bio) = 0;
+			break;
+		}
+	}
 
-        /*
+	/*
          * Reset the position in each bvec. Unnecessary with bvec iterators.
          * Will cause multipage bvec capable kernels to lock up.
          */
 #ifndef HAVE_BVEC_ITER
-        //#if LINUX_VERSION_CODE < KERNEL_VERSION(3,14,0)
-        for (i = 0; i < bio->bi_vcnt; i++) {
-                bio->bi_io_vec[i].bv_len = PAGE_SIZE;
-                bio->bi_io_vec[i].bv_offset = 0;
-        }
+	//#if LINUX_VERSION_CODE < KERNEL_VERSION(3,14,0)
+	for (i = 0; i < bio->bi_vcnt; i++) {
+		bio->bi_io_vec[i].bv_len = PAGE_SIZE;
+		bio->bi_io_vec[i].bv_offset = 0;
+	}
 #endif
 
-        /*
+	/*
          * drop our reference to the tp (will queue the orig_bio if nobody else
          * is using it) at this point we set bi_private to the snap_device and
          * change the destructor to use that instead. This only matters on older
          * kernels
          */
-        bio->bi_private = dev;
+	bio->bi_private = dev;
 #ifndef HAVE_BIO_BI_POOL
-        bio->bi_destructor = bio_destructor_snap_dev;
+	bio->bi_destructor = bio_destructor_snap_dev;
 #endif
 
-        // queue cow bio for processing by kernel thread
-        bio_queue_add(&dev->sd_cow_bios, bio);
-        atomic64_inc(&dev->sd_received_cnt);
-        smp_wmb();
+	// queue cow bio for processing by kernel thread
+	bio_queue_add(&dev->sd_cow_bios, bio);
+	atomic64_inc(&dev->sd_received_cnt);
+	smp_wmb();
 
-        tp_put(tp);
+	tp_put(tp);
 
-        return;
+	return;
 
 error:
-        LOG_ERROR(ret, "error during bio read complete callback");
-        tracer_set_fail_state(dev, ret);
-        tp_put(tp);
-        bio_free_clone(bio);
+	LOG_ERROR(ret, "error during bio read complete callback");
+	tracer_set_fail_state(dev, ret);
+	tp_put(tp);
+	bio_free_clone(bio);
 }
 
 #ifdef HAVE_BIO_ENDIO_INT
@@ -479,10 +476,10 @@ error:
  */
 static int on_bio_read_complete(struct bio *bio, unsigned int bytes, int err)
 {
-        if (bio->bi_size)
-                return 1;
-        __on_bio_read_complete(bio, err);
-        return 0;
+	if (bio->bi_size)
+		return 1;
+	__on_bio_read_complete(bio, err);
+	return 0;
 }
 
 #elif !defined HAVE_BIO_ENDIO_1
@@ -501,9 +498,9 @@ static int on_bio_read_complete(struct bio *bio, unsigned int bytes, int err)
  */
 static void on_bio_read_complete(struct bio *bio, int err)
 {
-        if (!test_bit(BIO_UPTODATE, &bio->bi_flags))
-                err = -EIO;
-        __on_bio_read_complete(bio, err);
+	if (!test_bit(BIO_UPTODATE, &bio->bi_flags))
+		err = -EIO;
+	__on_bio_read_complete(bio, err);
 }
 
 #elif defined HAVE_BLK_STATUS_T
@@ -521,7 +518,7 @@ static void on_bio_read_complete(struct bio *bio, int err)
  */
 static void on_bio_read_complete(struct bio *bio)
 {
-        __on_bio_read_complete(bio, blk_status_to_errno(bio->bi_status));
+	__on_bio_read_complete(bio, blk_status_to_errno(bio->bi_status));
 }
 
 #else
@@ -539,7 +536,7 @@ static void on_bio_read_complete(struct bio *bio)
  */
 static void on_bio_read_complete(struct bio *bio)
 {
-        __on_bio_read_complete(bio, bio->bi_error);
+	__on_bio_read_complete(bio, bio->bi_error);
 }
 #endif
 
@@ -554,22 +551,22 @@ static void on_bio_read_complete(struct bio *bio)
  */
 struct inode *page_get_inode(struct page *pg)
 {
-        if (!pg)
-                return NULL;
-
-                // page_mapping() was not exported until 4.8, use
-                // compound_head() instead
-#ifdef HAVE_COMPOUND_HEAD
-        //#if LINUX_VERSION_CODE >= KERNEL_VERSION(2.6.22)
-        pg = compound_head(pg);
-#endif
-        if (PageAnon(pg))
-                return NULL;
-        if (!pg->mapping)
-                return NULL;
-        if (!virt_addr_valid(pg->mapping))
+	if (!pg)
 		return NULL;
-        return pg->mapping->host;
+
+		// page_mapping() was not exported until 4.8, use
+		// compound_head() instead
+#ifdef HAVE_COMPOUND_HEAD
+	//#if LINUX_VERSION_CODE >= KERNEL_VERSION(2.6.22)
+	pg = compound_head(pg);
+#endif
+	if (PageAnon(pg))
+		return NULL;
+	if (!pg->mapping)
+		return NULL;
+	if (!virt_addr_valid(pg->mapping))
+		return NULL;
+	return pg->mapping->host;
 }
 
 /**
@@ -585,23 +582,24 @@ struct inode *page_get_inode(struct page *pg)
  */
 int bio_needs_cow(struct bio *bio, struct inode *inode)
 {
-        bio_iter_t iter;
-        bio_iter_bvec_t bvec;
+	bio_iter_t iter;
+	bio_iter_bvec_t bvec;
 
-#if defined HAVE_ENUM_REQ_OPF || (defined HAVE_ENUM_REQ_OP && defined HAVE_ENUM_REQ_OPF_WRITE_ZEROES)
-        //#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0)
-        if (bio_op(bio) == REQ_OP_WRITE_ZEROES)
-                return 1;
+#if defined HAVE_ENUM_REQ_OPF ||                                                                   \
+		(defined HAVE_ENUM_REQ_OP && defined HAVE_ENUM_REQ_OPF_WRITE_ZEROES)
+	//#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0)
+	if (bio_op(bio) == REQ_OP_WRITE_ZEROES)
+		return 1;
 #endif
 
-        // check the inode of each page return true if it does not match our cow
-        // file
-        bio_for_each_segment (bvec, bio, iter) {
-                if (page_get_inode(bio_iter_page(bio, iter)) != inode)
-                        return 1;
-        }
+	// check the inode of each page return true if it does not match our cow
+	// file
+	bio_for_each_segment (bvec, bio, iter) {
+		if (page_get_inode(bio_iter_page(bio, iter)) != inode)
+			return 1;
+	}
 
-        return 0;
+	return 0;
 }
 
 #ifndef HAVE_BIO_BI_POOL
@@ -612,8 +610,8 @@ int bio_needs_cow(struct bio *bio, struct inode *inode)
  */
 static void bio_destructor_tp(struct bio *bio)
 {
-        struct tracing_params *tp = bio->bi_private;
-        bio_free(bio, dev_bioset(tp->dev));
+	struct tracing_params *tp = bio->bi_private;
+	bio_free(bio, dev_bioset(tp->dev));
 }
 
 /**
@@ -625,11 +623,10 @@ static void bio_destructor_tp(struct bio *bio)
  */
 static void bio_destructor_snap_dev(struct bio *bio)
 {
-        struct snap_device *dev = bio->bi_private;
-        bio_free(bio, dev_bioset(dev));
+	struct snap_device *dev = bio->bi_private;
+	bio_free(bio, dev_bioset(dev));
 }
 #endif
-
 
 #ifndef HAVE_BIO_FREE_PAGES
 /**
@@ -641,13 +638,13 @@ static void bio_destructor_snap_dev(struct bio *bio)
  */
 static void bio_free_pages(struct bio *bio)
 {
-        struct bio_vec *bvec;
+	struct bio_vec *bvec;
 #ifdef HAVE_BVEC_ITER_ALL
 	struct bvec_iter_all iter_all;
-	bio_for_each_segment_all(bvec, bio, iter_all) {
+	bio_for_each_segment_all (bvec, bio, iter_all) {
 #else
 	int i = 0;
-	bio_for_each_segment_all(bvec, bio, i) {
+	bio_for_each_segment_all (bvec, bio, i) {
 #endif
 		struct page *bv_page = bvec->bv_page;
 		if (bv_page) {
@@ -667,8 +664,8 @@ static void bio_free_pages(struct bio *bio)
  */
 void bio_free_clone(struct bio *bio)
 {
-        bio_free_pages(bio);
-        bio_put(bio);
+	bio_free_pages(bio);
+	bio_put(bio);
 }
 
 /**
@@ -693,95 +690,91 @@ void bio_free_clone(struct bio *bio)
  * * 0 - success
  * * !0 - failure
  */
-int bio_make_read_clone(struct bio_set *bs, struct tracing_params *tp,
-                        struct bio *orig_bio, sector_t sect, unsigned int pages,
-                        struct bio **bio_out, unsigned int *bytes_added)
+int bio_make_read_clone(struct bio_set *bs, struct tracing_params *tp, struct bio *orig_bio,
+						sector_t sect, unsigned int pages, struct bio **bio_out,
+						unsigned int *bytes_added)
 {
-        int ret;
-        struct bio *new_bio;
-        struct page *pg;
-        unsigned int i;
-        unsigned int bytes;
-        unsigned int total = 0;
+	int ret;
+	struct bio *new_bio;
+	struct page *pg;
+	unsigned int i;
+	unsigned int bytes;
+	unsigned int total = 0;
 #ifdef BIO_MAX_PAGES
-        unsigned int actual_pages =
-                (pages > BIO_MAX_PAGES) ? BIO_MAX_PAGES : pages;
+	unsigned int actual_pages = (pages > BIO_MAX_PAGES) ? BIO_MAX_PAGES : pages;
 #else
-        unsigned int actual_pages =
-                (pages > BIO_MAX_VECS) ? BIO_MAX_VECS : pages;
+	unsigned int actual_pages = (pages > BIO_MAX_VECS) ? BIO_MAX_VECS : pages;
 #endif
 
-        // allocate bio clone, instruct the allocator to not make I/O requests
-        // while trying to allocate memory to prevent any possible lock
-        // contention.
+	// allocate bio clone, instruct the allocator to not make I/O requests
+	// while trying to allocate memory to prevent any possible lock
+	// contention.
 #ifdef HAVE_BIO_ALLOC_BIOSET_5
-        new_bio = bio_alloc_bioset(orig_bio->bi_bdev, actual_pages, REQ_OP_READ, GFP_NOIO, bs);
+	new_bio = bio_alloc_bioset(orig_bio->bi_bdev, actual_pages, REQ_OP_READ, GFP_NOIO, bs);
 #else
-        new_bio = bio_alloc_bioset(GFP_NOIO, actual_pages, bs);
+	new_bio = bio_alloc_bioset(GFP_NOIO, actual_pages, bs);
 #endif
-        if (!new_bio) {
-                ret = -ENOMEM;
-                LOG_ERROR(ret,
-                          "error allocating bio clone - bs = %p, pages = %u",
-                          bs, pages);
-                goto error;
-        }
+	if (!new_bio) {
+		ret = -ENOMEM;
+		LOG_ERROR(ret, "error allocating bio clone - bs = %p, pages = %u", bs, pages);
+		goto error;
+	}
 
 #ifndef HAVE_BIO_BI_POOL
-        new_bio->bi_destructor = bio_destructor_tp;
+	new_bio->bi_destructor = bio_destructor_tp;
 #endif
 
-        // populate read bio
-        new_bio->bi_private = tp;
-        new_bio->bi_end_io = on_bio_read_complete;
-        dattobd_bio_copy_dev(new_bio, orig_bio);
-        dattobd_set_bio_ops(new_bio, REQ_OP_READ, 0);
-        bio_sector(new_bio) = sect;
-        bio_idx(new_bio) = 0;
+	// populate read bio
+	new_bio->bi_private = tp;
+	new_bio->bi_end_io = on_bio_read_complete;
+	dattobd_bio_copy_dev(new_bio, orig_bio);
+	dattobd_set_bio_ops(new_bio, REQ_OP_READ, 0);
+	bio_sector(new_bio) = sect;
+	bio_idx(new_bio) = 0;
 #ifdef HAVE_BIO_BLKG
-        if (orig_bio->bi_blkg) {
-                blkg_get(orig_bio->bi_blkg);
-                new_bio->bi_blkg = orig_bio->bi_blkg;
-        }
+	if (orig_bio->bi_blkg) {
+		blkg_get(orig_bio->bi_blkg);
+		new_bio->bi_blkg = orig_bio->bi_blkg;
+	}
 #endif
 #ifdef HAVE_BIO_REMAPPED
-        bio_set_flag(new_bio, BIO_REMAPPED);
+	bio_set_flag(new_bio, BIO_REMAPPED);
 #endif
 
-        // fill the bio with pages
-        for (i = 0; i < actual_pages; i++) {
-                // allocate a page and add it to our bio
-                pg = alloc_page(GFP_NOIO);
-                if (!pg) {
-                        ret = -ENOMEM;
-                        LOG_ERROR(ret, "error allocating read bio page %u", i);
-                        goto error;
-                }
+	// fill the bio with pages
+	for (i = 0; i < actual_pages; i++) {
+		// allocate a page and add it to our bio
+		pg = alloc_page(GFP_NOIO);
+		if (!pg) {
+			ret = -ENOMEM;
+			LOG_ERROR(ret, "error allocating read bio page %u", i);
+			goto error;
+		}
 
-                // add the page to the bio
-                bytes = bio_add_page(new_bio, pg, PAGE_SIZE, 0);
-                if (bytes != PAGE_SIZE) {
-                        __free_page(pg);
-                        break;
-                }
+		// add the page to the bio
+		bytes = bio_add_page(new_bio, pg, PAGE_SIZE, 0);
+		if (bytes != PAGE_SIZE) {
+			__free_page(pg);
+			break;
+		}
 
-                total += bytes;
-        }
+		total += bytes;
+	}
 
-        *bytes_added = total;
-        *bio_out = new_bio;
-        
-        // increase ref when everything is fine
-        tp_get(tp);
-        return 0;
+	*bytes_added = total;
+	*bio_out = new_bio;
+
+	// increase ref when everything is fine
+	tp_get(tp);
+	return 0;
 
 error:
-        if (ret)
-                LOG_ERROR(ret, "error creating read clone of write bio");
-        if (new_bio)
-                bio_free_clone(new_bio);
+	if (ret)
+		LOG_ERROR(ret, "error creating read clone of write bio");
+	if (new_bio)
+		bio_free_clone(new_bio);
 
-        *bytes_added = 0;
-        *bio_out = NULL;
-        return ret;
+	*bytes_added = 0;
+	*bio_out = NULL;
+	return ret;
 }

@@ -28,6 +28,10 @@
 // length of `% call __fentry__` on x86_64 - uses a 1 byte op and 4 byte
 // relative address
 #define FENTRY_CALL_INSTR_BYTES 5
+#elif defined(CONFIG_ARM) || defined(CONFIG_ARM64)
+// length of `bl __fentry__` on ARM - uses a 4 byte op and 4 byte
+// relative address
+#define FENTRY_CALL_INSTR_BYTES 4
 #else
 #pragma error "Unsupported architecture"
 #endif

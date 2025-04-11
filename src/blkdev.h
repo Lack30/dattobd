@@ -17,19 +17,19 @@ struct block_device;
 #define bdev_whole(bdev) ((bdev)->bd_contains)
 #endif
 
-struct bdev_wrapper{
-    struct block_device* bdev;
+struct bdev_wrapper {
+	struct block_device *bdev;
 
-    union {
+	union {
 #ifdef HAVE_BDEV_HANDLE
-        struct bdev_handle* handle;
+		struct bdev_handle *handle;
 #endif
 // Kernel 6.9+ manages block_device with struct file and file_bdev has to be used to find block_device from file.
-// For us, file_bdev function is marker to check if we have to use 
+// For us, file_bdev function is marker to check if we have to use
 #ifdef USE_BDEV_AS_FILE
-        struct file* file;
+		struct file *file;
 #endif
-    } _internal;
+	} _internal;
 };
 
 #ifndef HAVE_HD_STRUCT
@@ -42,17 +42,15 @@ struct bdev_wrapper{
 #define dattobd_bdev_size(bdev) part_nr_sects_read((bdev)->bd_part)
 #endif
 
+struct bdev_wrapper *dattobd_blkdev_by_path(const char *path, fmode_t mode, void *holder);
 
-struct bdev_wrapper *dattobd_blkdev_by_path(const char *path, fmode_t mode,
-                                        void *holder);
-
-struct super_block *dattobd_get_super(struct block_device * bd);
+struct super_block *dattobd_get_super(struct block_device *bd);
 
 void dattobd_drop_super(struct super_block *sb);
 
 void dattobd_blkdev_put(struct bdev_wrapper *bd);
 
-int dattobd_get_start_sect_by_gendisk_for_bio(struct gendisk* gd, u8 partno, sector_t* result);
+int dattobd_get_start_sect_by_gendisk_for_bio(struct gendisk *gd, u8 partno, sector_t *result);
 
-int dattobd_get_kstatfs(struct block_device* bd, struct kstatfs* statfs);
+int dattobd_get_kstatfs(struct block_device *bd, struct kstatfs *statfs);
 #endif /* BLKDEV_H_ */

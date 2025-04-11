@@ -13,7 +13,7 @@
  */
 inline void sset_list_init(struct sset_list *sl)
 {
-        sl->head = sl->tail = NULL;
+	sl->head = sl->tail = NULL;
 }
 
 /**
@@ -28,7 +28,7 @@ inline void sset_list_init(struct sset_list *sl)
  */
 inline int sset_list_empty(const struct sset_list *sl)
 {
-        return sl->head == NULL;
+	return sl->head == NULL;
 }
 
 /**
@@ -39,12 +39,12 @@ inline int sset_list_empty(const struct sset_list *sl)
  */
 void sset_list_add(struct sset_list *sl, struct sector_set *sset)
 {
-        sset->next = NULL;
-        if (sl->tail)
-                sl->tail->next = sset;
-        else
-                sl->head = sset;
-        sl->tail = sset;
+	sset->next = NULL;
+	if (sl->tail)
+		sl->tail->next = sset;
+	else
+		sl->head = sset;
+	sl->tail = sset;
 }
 
 /**
@@ -58,14 +58,14 @@ void sset_list_add(struct sset_list *sl, struct sector_set *sset)
  */
 struct sector_set *sset_list_pop(struct sset_list *sl)
 {
-        struct sector_set *sset = sl->head;
+	struct sector_set *sset = sl->head;
 
-        if (sset) {
-                sl->head = sl->head->next;
-                if (!sl->head)
-                        sl->tail = NULL;
-                sset->next = NULL;
-        }
+	if (sset) {
+		sl->head = sl->head->next;
+		if (!sl->head)
+			sl->tail = NULL;
+		sset->next = NULL;
+	}
 
-        return sset;
+	return sset;
 }

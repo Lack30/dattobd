@@ -11,9 +11,9 @@
 #include "sset_list.h"
 
 struct sset_queue {
-        struct sset_list ssets;
-        spinlock_t lock;
-        wait_queue_head_t event;
+	struct sset_list ssets;
+	spinlock_t lock;
+	wait_queue_head_t event;
 };
 
 void sset_queue_init(struct sset_queue *sq);

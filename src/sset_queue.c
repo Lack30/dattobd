@@ -13,9 +13,9 @@
  */
 void sset_queue_init(struct sset_queue *sq)
 {
-        sset_list_init(&sq->ssets);
-        spin_lock_init(&sq->lock);
-        init_waitqueue_head(&sq->event);
+	sset_list_init(&sq->ssets);
+	spin_lock_init(&sq->lock);
+	init_waitqueue_head(&sq->event);
 }
 
 /**
@@ -30,7 +30,7 @@ void sset_queue_init(struct sset_queue *sq)
  */
 int sset_queue_empty(const struct sset_queue *sq)
 {
-        return sset_list_empty(&sq->ssets);
+	return sset_list_empty(&sq->ssets);
 }
 
 /**
@@ -41,12 +41,12 @@ int sset_queue_empty(const struct sset_queue *sq)
  */
 void sset_queue_add(struct sset_queue *sq, struct sector_set *sset)
 {
-        unsigned long flags;
+	unsigned long flags;
 
-        spin_lock_irqsave(&sq->lock, flags);
-        sset_list_add(&sq->ssets, sset);
-        spin_unlock_irqrestore(&sq->lock, flags);
-        wake_up(&sq->event);
+	spin_lock_irqsave(&sq->lock, flags);
+	sset_list_add(&sq->ssets, sset);
+	spin_unlock_irqrestore(&sq->lock, flags);
+	wake_up(&sq->event);
 }
 
 /**
@@ -58,12 +58,12 @@ void sset_queue_add(struct sset_queue *sq, struct sector_set *sset)
  */
 struct sector_set *sset_queue_dequeue(struct sset_queue *sq)
 {
-        unsigned long flags;
-        struct sector_set *sset;
+	unsigned long flags;
+	struct sector_set *sset;
 
-        spin_lock_irqsave(&sq->lock, flags);
-        sset = sset_list_pop(&sq->ssets);
-        spin_unlock_irqrestore(&sq->lock, flags);
+	spin_lock_irqsave(&sq->lock, flags);
+	sset = sset_list_pop(&sq->ssets);
+	spin_unlock_irqrestore(&sq->lock, flags);
 
-        return sset;
+	return sset;
 }

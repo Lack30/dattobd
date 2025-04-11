@@ -14,24 +14,20 @@
 #include "blkdev.h"
 
 // macro for iterating over snap_devices (requires a null check on dev)
-#define tracer_for_each(dev, i)                                                \
-        for (i = ACCESS_ONCE(lowest_minor),                                    \
-            dev = ACCESS_ONCE(snap_devices[i]);                                \
-             i <= ACCESS_ONCE(highest_minor);                                  \
-             i++, dev = ACCESS_ONCE(snap_devices[i]))
-#define tracer_for_each_full(dev, i)                                           \
-        for (i = 0, dev = ACCESS_ONCE(snap_devices[i]);                        \
-             i < dattobd_max_snap_devices;                                     \
-             i++, dev = ACCESS_ONCE(snap_devices[i]))
+#define tracer_for_each(dev, i)                                                                    \
+	for (i = ACCESS_ONCE(lowest_minor), dev = ACCESS_ONCE(snap_devices[i]);                        \
+		 i <= ACCESS_ONCE(highest_minor); i++, dev = ACCESS_ONCE(snap_devices[i]))
+#define tracer_for_each_full(dev, i)                                                               \
+	for (i = 0, dev = ACCESS_ONCE(snap_devices[i]); i < dattobd_max_snap_devices;                  \
+		 i++, dev = ACCESS_ONCE(snap_devices[i]))
 
 // returns true if tracing struct's base device queue matches that of bio
-#define tracer_queue_matches_bio(dev, bio)                                     \
-        (bdev_get_queue((dev)->sd_base_dev->bdev) == dattobd_bio_get_queue(bio))
+#define tracer_queue_matches_bio(dev, bio)                                                         \
+	(bdev_get_queue((dev)->sd_base_dev->bdev) == dattobd_bio_get_queue(bio))
 
 // returns true if tracing struct's sector range matches the sector of the bio
-#define tracer_sector_matches_bio(dev, bio)                                    \
-        (bio_sector(bio) >= (dev)->sd_sect_off &&                              \
-         bio_sector(bio) < (dev)->sd_sect_off + (dev)->sd_size)
+#define tracer_sector_matches_bio(dev, bio)                                                        \
+	(bio_sector(bio) >= (dev)->sd_sect_off && bio_sector(bio) < (dev)->sd_sect_off + (dev)->sd_size)
 
 /**
  * tracer_is_bio_for_dev() - Check if bio is intended for given snap_device.

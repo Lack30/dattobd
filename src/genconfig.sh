@@ -23,6 +23,7 @@ if [ ! -z "$1" ]; then
 fi
 
 SYSTEM_MAP_FILE="/lib/modules/${KERNEL_VERSION}/System.map"
+# SYSTEM_MAP_FILE=/proc/kallsyms
 
 if [ ! -f "$SYSTEM_MAP_FILE" ]; then
 	# Use fallback location

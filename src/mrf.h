@@ -14,23 +14,20 @@
 
 #define MRF_RETURN_TYPE int
 #define MRF_RETURN(ret) return ret
-int dattobd_call_mrf(make_request_fn *fn, struct request_queue *q,
-                     struct bio *bio);
+int dattobd_call_mrf(make_request_fn *fn, struct request_queue *q, struct bio *bio);
 
 #elif defined HAVE_MAKE_REQUEST_FN_VOID
 
 #define MRF_RETURN_TYPE void
 #define MRF_RETURN(ret) return
-int dattobd_call_mrf(make_request_fn *fn, struct request_queue *q,
-                     struct bio *bio);
+int dattobd_call_mrf(make_request_fn *fn, struct request_queue *q, struct bio *bio);
 
 #elif defined HAVE_NONVOID_SUBMIT_BIO_1
 
 #define MRF_RETURN_TYPE blk_qc_t
 #define MRF_RETURN(ret) return BLK_QC_T_NONE
 #ifndef USE_BDOPS_SUBMIT_BIO
-int dattobd_call_mrf(make_request_fn *fn, struct request_queue *q,
-                     struct bio *bio);
+int dattobd_call_mrf(make_request_fn *fn, struct request_queue *q, struct bio *bio);
 #endif // USE_BDOPS_SUBMIT_BIO
 
 #else
@@ -52,13 +49,12 @@ MRF_RETURN_TYPE dattobd_null_mrf(struct request_queue *q, struct bio *bio);
 #ifdef USE_BDOPS_SUBMIT_BIO
 MRF_RETURN_TYPE dattobd_snap_null_mrf(struct bio *bio);
 MRF_RETURN_TYPE dattobd_null_mrf(struct bio *bio);
-make_request_fn* dattobd_get_gd_mrf(struct gendisk *gd);
-struct block_device_operations* dattobd_get_bd_ops(struct block_device *bdev);
+make_request_fn *dattobd_get_gd_mrf(struct gendisk *gd);
+struct block_device_operations *dattobd_get_bd_ops(struct block_device *bdev);
 int dattobd_call_mrf_real(struct snap_device *dev, struct bio *bio);
 int dattobd_call_mrf(make_request_fn *fn, struct request_queue *q, struct bio *bio);
 #else
-make_request_fn* dattobd_get_gd_mrf(struct gendisk *gd);
-
+make_request_fn *dattobd_get_gd_mrf(struct gendisk *gd);
 
 /**
  * dattobd_call_mrf_real() - Submits i/o to the real/original device.
@@ -77,6 +73,6 @@ make_request_fn* dattobd_get_gd_mrf(struct gendisk *gd);
 int dattobd_call_mrf_real(struct snap_device *dev, struct bio *bio);
 #endif
 
-make_request_fn* dattobd_get_bd_mrf(struct block_device *bdev);
+make_request_fn *dattobd_get_bd_mrf(struct block_device *bdev);
 
 #endif /* MRF_H_ */

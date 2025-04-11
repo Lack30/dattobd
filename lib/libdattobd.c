@@ -10,12 +10,15 @@
 #include <sys/ioctl.h>
 #include "libdattobd.h"
 
-int dattobd_setup_snapshot(unsigned int minor, char *bdev, char *cow, unsigned long fallocated_space, unsigned long cache_size){
+int dattobd_setup_snapshot(unsigned int minor, char *bdev, char *cow,
+						   unsigned long fallocated_space, unsigned long cache_size)
+{
 	int fd, ret;
 	struct setup_params sp;
 
 	fd = open("/dev/datto-ctl", O_RDONLY);
-	if(fd < 0) return -1;
+	if (fd < 0)
+		return -1;
 
 	sp.minor = minor;
 	sp.bdev = bdev;
@@ -29,12 +32,14 @@ int dattobd_setup_snapshot(unsigned int minor, char *bdev, char *cow, unsigned l
 	return ret;
 }
 
-int dattobd_reload_snapshot(unsigned int minor, char *bdev, char *cow, unsigned long cache_size){
+int dattobd_reload_snapshot(unsigned int minor, char *bdev, char *cow, unsigned long cache_size)
+{
 	int fd, ret;
 	struct reload_params rp;
 
 	fd = open("/dev/datto-ctl", O_RDONLY);
-	if(fd < 0) return -1;
+	if (fd < 0)
+		return -1;
 
 	rp.minor = minor;
 	rp.bdev = bdev;
@@ -47,12 +52,14 @@ int dattobd_reload_snapshot(unsigned int minor, char *bdev, char *cow, unsigned 
 	return ret;
 }
 
-int dattobd_reload_incremental(unsigned int minor, char *bdev, char *cow, unsigned long cache_size){
+int dattobd_reload_incremental(unsigned int minor, char *bdev, char *cow, unsigned long cache_size)
+{
 	int fd, ret;
 	struct reload_params rp;
 
 	fd = open("/dev/datto-ctl", O_RDONLY);
-	if(fd < 0) return -1;
+	if (fd < 0)
+		return -1;
 
 	rp.minor = minor;
 	rp.bdev = bdev;
@@ -65,11 +72,13 @@ int dattobd_reload_incremental(unsigned int minor, char *bdev, char *cow, unsign
 	return ret;
 }
 
-int dattobd_destroy(unsigned int minor){
+int dattobd_destroy(unsigned int minor)
+{
 	int fd, ret;
 
 	fd = open("/dev/datto-ctl", O_RDONLY);
-	if(fd < 0) return -1;
+	if (fd < 0)
+		return -1;
 
 	ret = ioctl(fd, IOCTL_DESTROY, &minor);
 
@@ -77,11 +86,13 @@ int dattobd_destroy(unsigned int minor){
 	return ret;
 }
 
-int dattobd_transition_incremental(unsigned int minor){
+int dattobd_transition_incremental(unsigned int minor)
+{
 	int fd, ret;
 
 	fd = open("/dev/datto-ctl", O_RDONLY);
-	if(fd < 0) return -1;
+	if (fd < 0)
+		return -1;
 
 	ret = ioctl(fd, IOCTL_TRANSITION_INC, &minor);
 
@@ -89,7 +100,8 @@ int dattobd_transition_incremental(unsigned int minor){
 	return ret;
 }
 
-int dattobd_transition_snapshot(unsigned int minor, char *cow, unsigned long fallocated_space){
+int dattobd_transition_snapshot(unsigned int minor, char *cow, unsigned long fallocated_space)
+{
 	int fd, ret;
 	struct transition_snap_params tp;
 
@@ -98,7 +110,8 @@ int dattobd_transition_snapshot(unsigned int minor, char *cow, unsigned long fal
 	tp.fallocated_space = fallocated_space;
 
 	fd = open("/dev/datto-ctl", O_RDONLY);
-	if(fd < 0) return -1;
+	if (fd < 0)
+		return -1;
 
 	ret = ioctl(fd, IOCTL_TRANSITION_SNAP, &tp);
 
@@ -106,12 +119,14 @@ int dattobd_transition_snapshot(unsigned int minor, char *cow, unsigned long fal
 	return ret;
 }
 
-int dattobd_reconfigure(unsigned int minor, unsigned long cache_size){
+int dattobd_reconfigure(unsigned int minor, unsigned long cache_size)
+{
 	int fd, ret;
 	struct reconfigure_params rp;
 
 	fd = open("/dev/datto-ctl", O_RDONLY);
-	if(fd < 0) return -1;
+	if (fd < 0)
+		return -1;
 
 	rp.minor = minor;
 	rp.cache_size = cache_size;
@@ -122,16 +137,18 @@ int dattobd_reconfigure(unsigned int minor, unsigned long cache_size){
 	return ret;
 }
 
-int dattobd_info(unsigned int minor, struct dattobd_info *info){
+int dattobd_info(unsigned int minor, struct dattobd_info *info)
+{
 	int fd, ret;
 
-	if(!info){
+	if (!info) {
 		errno = EINVAL;
 		return -1;
 	}
 
 	fd = open("/dev/datto-ctl", O_RDONLY);
-	if(fd < 0) return -1;
+	if (fd < 0)
+		return -1;
 
 	info->minor = minor;
 
@@ -141,29 +158,31 @@ int dattobd_info(unsigned int minor, struct dattobd_info *info){
 	return ret;
 }
 
-int dattobd_get_free_minor(void){
+int dattobd_get_free_minor(void)
+{
 	int fd, ret, minor;
 
 	fd = open("/dev/datto-ctl", O_RDONLY);
-	if(fd < 0) return -1;
+	if (fd < 0)
+		return -1;
 
 	ret = ioctl(fd, IOCTL_GET_FREE, &minor);
 
 	close(fd);
 
-	if(!ret) return minor;
+	if (!ret)
+		return minor;
 	return ret;
 }
 
-int dattobd_expand_cow_file(unsigned int minor, uint64_t size){
+int dattobd_expand_cow_file(unsigned int minor, uint64_t size)
+{
 	int fd, ret;
-	struct expand_cow_file_params params = {
-		.size = size,
-		.minor = minor
-	};
+	struct expand_cow_file_params params = { .size = size, .minor = minor };
 
 	fd = open("/dev/datto-ctl", O_RDONLY);
-	if(fd < 0) return -1;
+	if (fd < 0)
+		return -1;
 
 	ret = ioctl(fd, IOCTL_EXPAND_COW_FILE, &params);
 
@@ -171,16 +190,16 @@ int dattobd_expand_cow_file(unsigned int minor, uint64_t size){
 	return ret;
 }
 
-int dattobd_reconfigure_auto_expand(unsigned int minor, uint64_t step_size, uint64_t reserved_space){
+int dattobd_reconfigure_auto_expand(unsigned int minor, uint64_t step_size, uint64_t reserved_space)
+{
 	int fd, ret;
-	struct reconfigure_auto_expand_params params = {
-		.step_size = step_size,
-		.reserved_space = reserved_space,
-		.minor = minor
-	};
+	struct reconfigure_auto_expand_params params = { .step_size = step_size,
+													 .reserved_space = reserved_space,
+													 .minor = minor };
 
 	fd = open("/dev/datto-ctl", O_RDONLY);
-	if(fd < 0) return -1;
+	if (fd < 0)
+		return -1;
 
 	ret = ioctl(fd, IOCTL_RECONFIGURE_AUTO_EXPAND, &params);
 

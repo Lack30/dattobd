@@ -21,7 +21,7 @@
  */
 int bio_list_empty(const struct bio_list *bl)
 {
-        return bl->head == NULL;
+	return bl->head == NULL;
 }
 
 /**
@@ -30,7 +30,7 @@ int bio_list_empty(const struct bio_list *bl)
  */
 void bio_list_init(struct bio_list *bl)
 {
-        bl->head = bl->tail = NULL;
+	bl->head = bl->tail = NULL;
 }
 
 /**
@@ -42,14 +42,14 @@ void bio_list_init(struct bio_list *bl)
  */
 void bio_list_add(struct bio_list *bl, struct bio *bio)
 {
-        bio->bi_next = NULL;
+	bio->bi_next = NULL;
 
-        if (bl->tail)
-                bl->tail->bi_next = bio;
-        else
-                bl->head = bio;
+	if (bl->tail)
+		bl->tail->bi_next = bio;
+	else
+		bl->head = bio;
 
-        bl->tail = bio;
+	bl->tail = bio;
 }
 
 /**
@@ -63,17 +63,17 @@ void bio_list_add(struct bio_list *bl, struct bio *bio)
  */
 struct bio *bio_list_pop(struct bio_list *bl)
 {
-        struct bio *bio = bl->head;
+	struct bio *bio = bl->head;
 
-        if (bio) {
-                bl->head = bl->head->bi_next;
-                if (!bl->head)
-                        bl->tail = NULL;
+	if (bio) {
+		bl->head = bl->head->bi_next;
+		if (!bl->head)
+			bl->tail = NULL;
 
-                bio->bi_next = NULL;
-        }
+		bio->bi_next = NULL;
+	}
 
-        return bio;
+	return bio;
 }
 
 #endif

@@ -13,16 +13,15 @@
 struct bio;
 
 struct bio_list {
-        struct bio *head;
-        struct bio *tail;
+	struct bio *head;
+	struct bio *tail;
 };
 
-#define BIO_EMPTY_LIST                                                         \
-        {                                                                      \
-                NULL, NULL                                                     \
-        }
-#define bio_list_for_each(bio, bl)                                             \
-        for ((bio) = (bl)->head; (bio); (bio) = (bio)->bi_next)
+#define BIO_EMPTY_LIST                                                                             \
+	{                                                                                              \
+		NULL, NULL                                                                                 \
+	}
+#define bio_list_for_each(bio, bl) for ((bio) = (bl)->head; (bio); (bio) = (bio)->bi_next)
 
 int bio_list_empty(const struct bio_list *bl);
 void bio_list_init(struct bio_list *bl);

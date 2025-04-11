@@ -17,6 +17,7 @@ Module.symvers
 dmesg.log
 __pycache__/
 .cache/
+build
 
 # Project directories
 pkgbuild/

@@ -19,7 +19,7 @@ struct snap_device;
  * submit_bio_fn() - Prototype for the submit_bio function, which will be our
  * hook to intercept IO on kernels >= 5.9 
  */
-typedef MRF_RETURN_TYPE (submit_bio_fn) (struct bio *bio);
+typedef MRF_RETURN_TYPE(submit_bio_fn)(struct bio *bio);
 
 /**
  * dattobd_submit_bio_real() - Submit's given bio to the real device 
@@ -32,10 +32,7 @@ typedef MRF_RETURN_TYPE (submit_bio_fn) (struct bio *bio);
  * * 0 - success
  * * !0 - error
  */
-int dattobd_submit_bio_real(
-    struct snap_device* dev,
-    struct bio *bio
-);
+int dattobd_submit_bio_real(struct snap_device *dev, struct bio *bio);
 
 #endif // USE_BDOPS_SUBMIT_BIO
 #endif // SUBMIT_BIO_H_

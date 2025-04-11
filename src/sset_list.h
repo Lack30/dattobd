@@ -10,14 +10,14 @@
 #include <linux/types.h>
 
 struct sector_set {
-        struct sector_set *next;
-        sector_t sect;
-        unsigned int len;
+	struct sector_set *next;
+	sector_t sect;
+	unsigned int len;
 };
 
 struct sset_list {
-        struct sector_set *head;
-        struct sector_set *tail;
+	struct sector_set *head;
+	struct sector_set *tail;
 };
 
 void sset_list_init(struct sset_list *sl);
