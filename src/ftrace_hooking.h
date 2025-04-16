@@ -4,6 +4,7 @@
 #ifndef FTRACE_HOOKING_H_INCLUDE
 #define FTRACE_HOOKING_H_INCLUDE
 
+#include "linux/ftrace.h"
 #include <linux/mount.h>
 #include <linux/version.h>
 #include "tracer.h"
@@ -57,6 +58,14 @@ static asmlinkage long (*orig_oldumount)(char __user *);
 int register_ftrace_hooks(void);
 int unregister_ftrace_hooks(void);
 
-void set_ftrace_reg_address(struct pt_regs *regs, unsigned long address);
+void set_ftrace_instruction_pointer(struct ftrace_regs *fregs, unsigned long address);
+
+#ifdef CONFIG_HAVE_DYNAMIC_FTRACE_WITH_REGS
+#define FTRACE_OPS_PARAMS FTRACE_OPS_FL_SAVE_REGS | FTRACE_OPS_FL_RECURSION | FTRACE_OPS_FL_IPMODIFY
+#elif CONFIG_HAVE_DYNAMIC_FTRACE_WITH_ARGS
+#define FTRACE_OPS_PARAMS FTRACE_OPS_FL_RECURSION | FTRACE_OPS_FL_IPMODIFY
+#else
+#define FTRACE_OPS_PARAMS FTRACE_OPS_FL_RECURSION | FTRACE_OPS_FL_IPMODIFY
+#endif
 
 #endif //FTRACE_HOOKING_H_INCLUDE

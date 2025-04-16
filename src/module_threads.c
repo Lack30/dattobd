@@ -122,9 +122,8 @@ int snap_cow_thread(void *data)
 			// if we're in the fail state just send back an IO error
 			// and free the bio
 			if (is_failed) {
-				dattobd_bio_endio(bio,
-								  -EIO); // end the bio with an
-						// IO error
+				// end the bio with an IO error
+				dattobd_bio_endio(bio, -EIO);
 				continue;
 			}
 
@@ -143,8 +142,7 @@ int snap_cow_thread(void *data)
 
 			ret = snap_handle_write_bio(dev, bio);
 			if (ret) {
-				LOG_ERROR(ret, "error handling write bio in "
-							   "kernel thread");
+				LOG_ERROR(ret, "error handling write bio in kernel thread");
 				tracer_set_fail_state(dev, ret);
 			}
 
@@ -187,8 +185,8 @@ int snap_mrf_thread(void *data)
 		// submit the original bio to the block IO layer
 		dattobd_bio_op_set_flag(bio, DATTOBD_PASSTHROUGH);
 
-		// blk_qc_t (*)(struct request_queue *, struct bio *)’                 // {aka ‘unsigned int (*)(struct request_queue *, struct bio *)’} but argument is of type ‘struct snap_device *’
-
+		// blk_qc_t (*)(struct request_queue *, struct bio *)’                 
+		// {aka ‘unsigned int (*)(struct request_queue *, struct bio *)’} but argument is of type ‘struct snap_device *’
 		SUBMIT_BIO_REAL(dev, bio);
 #ifdef HAVE_MAKE_REQUEST_FN_INT
 		if (ret)

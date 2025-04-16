@@ -192,13 +192,14 @@ int handle_bdev_mount_event(const char *dir_name, int follow_flags, unsigned int
 	if (!(follow_flags & UMOUNT_NOFOLLOW))
 		lookup_flags |= LOOKUP_FOLLOW;
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 5, 0)
+#ifdef HAVE_KERN_PATH
 	ret = kern_path(dir_name, lookup_flags, &path);
 #else
 	ret = user_path_at(AT_FDCWD, dir_name, lookup_flags, &path);
-#endif //LINUX_VERSION_CODE
+#endif 
+	LOG_DEBUG("dir_name: %s, lookup_flags: %d", dir_name, lookup_flags);
 	if (ret) {
-		LOG_DEBUG("error finding path");
+		LOG_DEBUG("error finding path: %s", dir_name);
 		goto out_nopath;
 	}
 

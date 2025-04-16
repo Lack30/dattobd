@@ -42,7 +42,7 @@ static int snap_read_bio_get_mode(const struct snap_device *dev, struct bio *bio
 	bio_iter_t iter;
 	bio_iter_bvec_t bvec;
 	unsigned int bytes;
-	uint64_t block_mapping, curr_byte, curr_end_byte = bio_sector(bio) * SECTOR_SIZE;
+	uint64_t block_mapping, curr_byte, curr_end_byte = bio_sector(bio) * DATTO_SECTOR_SIZE;
 
 	bio_for_each_segment (bvec, bio, iter) {
 		// reset the number of bytes we have traversed for this bio_vec
@@ -158,8 +158,8 @@ int snap_handle_read_bio(const struct snap_device *dev, struct bio *bio)
 			// map the page into kernel space
 			data = kmap(bvec->bv_page);
 
-			cur_block = (cur_sect * SECTOR_SIZE) / COW_BLOCK_SIZE;
-			block_off = (cur_sect * SECTOR_SIZE) % COW_BLOCK_SIZE;
+			cur_block = (cur_sect * DATTO_SECTOR_SIZE) / COW_BLOCK_SIZE;
+			block_off = (cur_sect * DATTO_SECTOR_SIZE) % COW_BLOCK_SIZE;
 			bvec_off = bvec->bv_offset;
 
 			while (bvec_off < bvec->bv_offset + bvec->bv_len) {
@@ -183,9 +183,9 @@ int snap_handle_read_bio(const struct snap_device *dev, struct bio *bio)
 					}
 				}
 
-				cur_sect += bytes_to_copy / SECTOR_SIZE;
-				cur_block = (cur_sect * SECTOR_SIZE) / COW_BLOCK_SIZE;
-				block_off = (cur_sect * SECTOR_SIZE) % COW_BLOCK_SIZE;
+				cur_sect += bytes_to_copy / DATTO_SECTOR_SIZE;
+				cur_block = (cur_sect * DATTO_SECTOR_SIZE) / COW_BLOCK_SIZE;
+				block_off = (cur_sect * DATTO_SECTOR_SIZE) % COW_BLOCK_SIZE;
 				bvec_off += bytes_to_copy;
 			}
 
@@ -291,7 +291,7 @@ int inc_handle_sset(const struct snap_device *dev, struct sector_set *sset)
 {
 	int ret;
 	sector_t start_block = SECTOR_TO_BLOCK(sset->sect);
-	sector_t end_block = NUM_SEGMENTS(sset->sect + sset->len, COW_BLOCK_LOG_SIZE - SECTOR_SHIFT);
+	sector_t end_block = NUM_SEGMENTS(sset->sect + sset->len, COW_BLOCK_LOG_SIZE - DATTO_SECTOR_SHIFT);
 
 	for (; start_block < end_block; start_block++) {
 		ret = cow_write_filler_mapping(dev->sd_cow, start_block);

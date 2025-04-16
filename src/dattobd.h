@@ -59,6 +59,9 @@ struct reconfigure_auto_expand_params {
 	unsigned int minor; // minor to configure
 };
 
+#define DATTO_SECTOR_SHIFT 9
+#define DATTO_PAGE_SIZE 4096
+#define DATTO_SECTOR_SIZE 512
 #define COW_UUID_SIZE 16
 #define COW_BLOCK_LOG_SIZE 12
 #define COW_BLOCK_SIZE (1 << COW_BLOCK_LOG_SIZE)

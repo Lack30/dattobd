@@ -427,7 +427,7 @@ static void __on_bio_read_complete(struct bio *bio, int err)
 #ifndef HAVE_BVEC_ITER
 	//#if LINUX_VERSION_CODE < KERNEL_VERSION(3,14,0)
 	for (i = 0; i < bio->bi_vcnt; i++) {
-		bio->bi_io_vec[i].bv_len = PAGE_SIZE;
+		bio->bi_io_vec[i].bv_len = DATTO_PAGE_SIZE;
 		bio->bi_io_vec[i].bv_offset = 0;
 	}
 #endif
@@ -592,8 +592,7 @@ int bio_needs_cow(struct bio *bio, struct inode *inode)
 		return 1;
 #endif
 
-	// check the inode of each page return true if it does not match our cow
-	// file
+	// check the inode of each page return true if it does not match our cow file
 	bio_for_each_segment (bvec, bio, iter) {
 		if (page_get_inode(bio_iter_page(bio, iter)) != inode)
 			return 1;
@@ -752,8 +751,8 @@ int bio_make_read_clone(struct bio_set *bs, struct tracing_params *tp, struct bi
 		}
 
 		// add the page to the bio
-		bytes = bio_add_page(new_bio, pg, PAGE_SIZE, 0);
-		if (bytes != PAGE_SIZE) {
+		bytes = bio_add_page(new_bio, pg, DATTO_PAGE_SIZE, 0);
+		if (bytes != DATTO_PAGE_SIZE) {
 			__free_page(pg);
 			break;
 		}

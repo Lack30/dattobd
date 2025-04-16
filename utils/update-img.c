@@ -113,8 +113,7 @@ static int verify_files(FILE *cow, unsigned minor)
 	// 检查序列号是否正确
 	if (ch.seqid != info->seqid - 1) {
 		ret = EINVAL;
-		fprintf(stderr,
-				"snapshot provided does not immediately follow the snapshot that created the cow file\n");
+		fprintf(stderr, "snapshot provided does not immediately follow the snapshot that created the cow file\n");
 		goto error;
 	}
 
@@ -222,7 +221,8 @@ int main(int argc, char **argv)
 		if (bytes != blocks_to_read * sizeof(uint64_t)) {
 			ret = errno;
 			errno = 0;
-			fprintf(stderr, "error reading mappings into memory\n");
+			fprintf(stderr, "error reading mappings into memory: bytes %ld, expect %ld(block=%ld, fact=%ld)\n", bytes,
+					blocks_to_read * sizeof(uint64_t), blocks_to_read, sizeof(uint64_t));
 			goto error;
 		}
 

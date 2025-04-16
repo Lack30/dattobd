@@ -33,8 +33,7 @@ inline void __close_and_destroy_dattobd_mutable_file(struct dattobd_mutable_file
 	dattobd_mutable_file_unwrap(dfilp);
 }
 
-inline int __open_dattobd_mutable_file(const char *path, int flags,
-									   struct dattobd_mutable_file **dfilp)
+inline int __open_dattobd_mutable_file(const char *path, int flags, struct dattobd_mutable_file **dfilp)
 {
 	struct file *filp = NULL;
 	int ret;
@@ -126,8 +125,8 @@ static int __cow_load_section(struct cow_manager *cm, unsigned long sect_idx)
 		// int mapping_offset = (COW_BLOCK_SIZE / sizeof(cm->sects[sect_idx].mappings[0])) * i;
 		// int cow_file_offset = COW_BLOCK_SIZE * i;
 
-		ret = file_read(cm->dfilp, cm->dev, cm->sects[sect_idx].mappings,
-						cm->sect_size * sect_idx * 8 + COW_HEADER_SIZE, cm->sect_size * 8);
+		ret = file_read(cm->dfilp, cm->dev, cm->sects[sect_idx].mappings, cm->sect_size * sect_idx * 8 + COW_HEADER_SIZE,
+						cm->sect_size * 8);
 		if (ret)
 			goto error;
 	}
@@ -159,8 +158,8 @@ static int __cow_write_section(struct cow_manager *cm, unsigned long sect_idx)
 		// int mapping_offset = (COW_BLOCK_SIZE / sizeof(cm->sects[sect_idx].mappings[0])) * i;
 		// int cow_file_offset = COW_BLOCK_SIZE * i;
 
-		ret = file_write(cm->dfilp, cm->dev, cm->sects[sect_idx].mappings,
-						 cm->sect_size * sect_idx * 8 + COW_HEADER_SIZE, cm->sect_size * 8);
+		ret = file_write(cm->dfilp, cm->dev, cm->sects[sect_idx].mappings, cm->sect_size * sect_idx * 8 + COW_HEADER_SIZE,
+						 cm->sect_size * 8);
 		if (ret) {
 			LOG_ERROR(ret, "error writing cow manager section to file");
 			return ret;
@@ -188,8 +187,7 @@ static int __cow_sync_and_free_sections(struct cow_manager *cm, unsigned long th
 	int ret;
 	unsigned long i;
 
-	for (i = 0; i < cm->total_sects && (!thresh || cm->allocated_sects > cm->allowed_sects / 2);
-		 i++) {
+	for (i = 0; i < cm->total_sects && (!thresh || cm->allocated_sects > cm->allowed_sects / 2); i++) {
 		if (cm->sects[i].mappings && (!thresh || cm->sects[i].usage <= thresh)) {
 			ret = __cow_write_section(cm, i);
 			if (ret) {
@@ -346,16 +344,13 @@ static int __cow_open_header(struct cow_manager *cm, int index_only, int reset_v
 		goto error;
 	}
 
-	if (((ch.flags & (1 << COW_INDEX_ONLY)) && !index_only) ||
-		(!(ch.flags & (1 << COW_INDEX_ONLY)) && index_only)) {
+	if (((ch.flags & (1 << COW_INDEX_ONLY)) && !index_only) || (!(ch.flags & (1 << COW_INDEX_ONLY)) && index_only)) {
 		ret = -EINVAL;
-		LOG_ERROR(-EINVAL, "cow file not left in %s state: %lu",
-				  ((index_only) ? "index only" : "data tracking"), (unsigned long)ch.flags);
+		LOG_ERROR(-EINVAL, "cow file not left in %s state: %lu", ((index_only) ? "index only" : "data tracking"), (unsigned long)ch.flags);
 		goto error;
 	}
 
-	LOG_DEBUG("cow header opened with file pos = %llu, seqid = %llu", ((unsigned long long)ch.fpos),
-			  (unsigned long long)ch.seqid);
+	LOG_DEBUG("cow header opened with file pos = %llu, seqid = %llu", ((unsigned long long)ch.fpos), (unsigned long long)ch.seqid);
 
 	if (reset_vmalloc)
 		cm->flags = ch.flags & ~(1 << COW_VMALLOC_UPPER);
@@ -555,8 +550,7 @@ error:
  * Return:
  * The remaining sections that would fit within memory set aside for the cache.
  */
-static unsigned long __cow_calculate_allowed_sects(unsigned long cache_size,
-												   unsigned long total_sects)
+static unsigned long __cow_calculate_allowed_sects(unsigned long cache_size, unsigned long total_sects)
 {
 	if (cache_size <= (total_sects * sizeof(struct cow_section)))
 		return 0;
@@ -581,8 +575,8 @@ static unsigned long __cow_calculate_allowed_sects(unsigned long cache_size,
  * * 0 - success
  * * !0 - errno indicating the error
  */
-int cow_reload(const char *path, uint64_t elements, unsigned long sect_size,
-			   unsigned long cache_size, int index_only, struct cow_manager **cm_out)
+int cow_reload(const char *path, uint64_t elements, unsigned long sect_size, unsigned long cache_size, int index_only,
+			   struct cow_manager **cm_out)
 {
 	int ret;
 	unsigned long i;
@@ -673,9 +667,8 @@ error:
  * * 0 - success
  * * !0 - errno indicating the error
  */
-int cow_init(struct snap_device *dev, const char *path, uint64_t elements, unsigned long sect_size,
-			 unsigned long cache_size, uint64_t file_max, const uint8_t *uuid, uint64_t seqid,
-			 struct cow_manager **cm_out)
+int cow_init(struct snap_device *dev, const char *path, uint64_t elements, unsigned long sect_size, unsigned long cache_size,
+			 uint64_t file_max, const uint8_t *uuid, uint64_t seqid, struct cow_manager **cm_out)
 {
 	int ret;
 	struct cow_manager *cm;
@@ -701,21 +694,16 @@ int cow_init(struct snap_device *dev, const char *path, uint64_t elements, unsig
 	cm->sect_size = sect_size; //how many elements(sectors) can section hold (in datastore); = 4096
 	cm->seqid = seqid;
 	// get_order(x) = ceil[log2(x / PAGE_SIZE)]
-	cm->log_sect_pages = get_order(
-			sect_size *
-			8); //PAGE_SIZE = 4096 bytes; log2[pages in section in index]; = log2(4096*8/4096) = 3
+	// PAGE_SIZE = 4096 bytes; log2[pages in section in index]; = log2(4096*8/4096) = 3
 	// this implies that section uses 2^15 B in index => sector consists of 8 B of metadata in index
 	// means how many pages do we need to store metadata of one section in index
-	cm->total_sects = NUM_SEGMENTS(
-			elements,
-			cm->log_sect_pages + PAGE_SHIFT -
-					3); //total sections to store all of the sectors; = ceil(elements / 4096)
-	cm->allowed_sects = __cow_calculate_allowed_sects(
-			cache_size, cm->total_sects); //num of sections that can fit in cache apart from index
-	cm->data_offset = COW_HEADER_SIZE +
-					  (cm->total_sects *
-					   (sect_size *
-						8)); // data offset in bytes, equals 4096 + [total_sects*4096*8](index size)
+	cm->log_sect_pages = get_order(sect_size * 8);
+	//total sections to store all of the sectors; = ceil(elements / 4096)
+	cm->total_sects = NUM_SEGMENTS(elements, cm->log_sect_pages + PAGE_SHIFT - 3);
+	//num of sections that can fit in cache apart from index
+	cm->allowed_sects = __cow_calculate_allowed_sects(cache_size, cm->total_sects); 
+	// data offset in bytes, equals 4096 + [total_sects*4096*8](index size)
+	cm->data_offset = COW_HEADER_SIZE + (cm->total_sects * (sect_size * 8));
 	cm->curr_pos = cm->data_offset / COW_BLOCK_SIZE;
 	cm->dev = dev;
 	cm->auto_expand = NULL;
@@ -939,14 +927,11 @@ retry:
 			}
 
 			if (!kstatfs_ret) {
-				expand_allowance = cow_auto_expand_manager_get_allowance(
-						cm->auto_expand, kstatfs.f_bavail, (uint64_t)kstatfs.f_bsize);
+				expand_allowance = cow_auto_expand_manager_get_allowance(cm->auto_expand, kstatfs.f_bavail, (uint64_t)kstatfs.f_bsize);
 			} else {
-				LOG_WARN(
-						"failed to get kstatfs with error code %d, expansion allowance is given only if reserved space is 0.",
-						kstatfs_ret);
-				expand_allowance =
-						cow_auto_expand_manager_get_allowance_free_unknown(cm->auto_expand);
+				LOG_WARN("failed to get kstatfs with error code %d, expansion allowance is given only if reserved space is 0.",
+						 kstatfs_ret);
+				expand_allowance = cow_auto_expand_manager_get_allowance_free_unknown(cm->auto_expand);
 			}
 
 			if (expand_allowance) {
@@ -964,8 +949,7 @@ retry:
 		if (!abs_path) {
 			LOG_ERROR(ret, "cow file max size exceeded (%llu/%llu)", curr_size, cm->file_size);
 		} else {
-			LOG_ERROR(ret, "cow file '%s' max size exceeded (%llu/%llu)", abs_path, curr_size,
-					  cm->file_size);
+			LOG_ERROR(ret, "cow file '%s' max size exceeded (%llu/%llu)", abs_path, curr_size, cm->file_size);
 			kfree(abs_path);
 		}
 
@@ -1043,8 +1027,7 @@ error:
  * * 0 - success
  * * !0 - errno indicating the error
  */
-int cow_read_data(struct cow_manager *cm, void *buf, uint64_t block_pos, unsigned long block_off,
-				  unsigned long len)
+int cow_read_data(struct cow_manager *cm, void *buf, uint64_t block_pos, unsigned long block_off, unsigned long len)
 {
 	int ret;
 
@@ -1074,16 +1057,14 @@ int cow_get_file_extents(struct snap_device *dev, struct file *filp)
 	struct page *pg;
 	__user uint8_t *cow_ext_buf;
 
-	unsigned long cow_ext_buf_size = ALIGN(dattobd_cow_ext_buf_size, PAGE_SIZE);
+	unsigned long cow_ext_buf_size = ALIGN(dattobd_cow_ext_buf_size, DATTO_PAGE_SIZE);
 
 	int (*fiemap)(struct inode *, struct fiemap_extent_info *, u64 start, u64 len);
 
 	int (*insert_vm_struct)(struct mm_struct * mm, struct vm_area_struct * vma) =
-			(INSERT_VM_STRUCT_ADDR != 0) ?
-					(int (*)(struct mm_struct * mm, struct vm_area_struct * vma))(
-							INSERT_VM_STRUCT_ADDR +
-							(long long)(((void *)kfree) - (void *)KFREE_ADDR)) :
-					NULL;
+			(INSERT_VM_STRUCT_ADDR != 0) ? (int (*)(struct mm_struct * mm, struct vm_area_struct * vma))(
+												   INSERT_VM_STRUCT_ADDR + (long long)(((void *)kfree) - (void *)KFREE_ADDR)) :
+										   NULL;
 
 	if (!insert_vm_struct) {
 		LOG_ERROR(-ENOTSUPP, "insert_vm_struct() was not found");
@@ -1151,8 +1132,7 @@ int cow_get_file_extents(struct snap_device *dev, struct file *filp)
 
 	if (fiemap) {
 		int64_t fiemap_max = ~0ULL & ~(1ULL << 63);
-		int max_num_extents =
-				cow_ext_buf_size; // used for do_div() as it overwrites the first argument
+		int max_num_extents = cow_ext_buf_size; // used for do_div() as it overwrites the first argument
 
 		fiemap_info.fi_flags = FIEMAP_FLAG_SYNC;
 		fiemap_info.fi_extents_mapped = 0;
@@ -1162,26 +1142,23 @@ int cow_get_file_extents(struct snap_device *dev, struct file *filp)
 
 		ret = fiemap(filp->f_inode, &fiemap_info, 0, fiemap_max);
 
-		LOG_DEBUG("fiemap for cow file (ret %d), extents %u (max %u)", ret,
-				  fiemap_info.fi_extents_mapped, fiemap_info.fi_extents_max);
+		LOG_DEBUG("fiemap for cow file (ret %d), extents %u (max %u)", ret, fiemap_info.fi_extents_mapped, fiemap_info.fi_extents_max);
 
 		if (!ret && fiemap_info.fi_extents_mapped > 0) {
 			if (dev->sd_cow_extents)
 				kfree(dev->sd_cow_extents);
-			fiemap_mapped_extents_size =
-					fiemap_info.fi_extents_mapped * sizeof(struct fiemap_extent);
+			fiemap_mapped_extents_size = fiemap_info.fi_extents_mapped * sizeof(struct fiemap_extent);
 			dev->sd_cow_extents = kmalloc(fiemap_mapped_extents_size, GFP_KERNEL);
 			if (dev->sd_cow_extents) {
 				//TODO: closely watch
 				ret = copy_from_user(dev->sd_cow_extents, cow_ext_buf, fiemap_mapped_extents_size);
 				if (!ret) {
 					dev->sd_cow_ext_cnt = fiemap_info.fi_extents_mapped;
-					WARN(dev->sd_cow_ext_cnt == max_num_extents,
-						 "max num of extents read, increase cow_ext_buf_size");
+					WARN(dev->sd_cow_ext_cnt == max_num_extents, "max num of extents read, increase cow_ext_buf_size");
 					extent = dev->sd_cow_extents;
 					for (i_ext = 0; i_ext < fiemap_info.fi_extents_mapped; ++i_ext, ++extent) {
-						LOG_DEBUG("   cow file extent: log 0x%llx, phy 0x%llx, len %llu",
-								  extent->fe_logical, extent->fe_physical, extent->fe_length);
+						LOG_DEBUG("   cow file extent: log 0x%llx, phy 0x%llx, len %llu", extent->fe_logical, extent->fe_physical,
+								  extent->fe_length);
 					}
 				}
 			}
@@ -1210,8 +1187,7 @@ int __cow_expand_datastore(struct cow_manager *cm, uint64_t append_size_bytes)
 	ret = file_allocate(cm->dfilp, cm->dev, cm->file_size, append_size_bytes, &actual);
 
 	if (actual != append_size_bytes) {
-		LOG_WARN("cow file was not expanded to requested size (req: %llu, act: %llu)",
-				 append_size_bytes, actual);
+		LOG_WARN("cow file was not expanded to requested size (req: %llu, act: %llu)", append_size_bytes, actual);
 	}
 
 	cm->file_size = cm->file_size + actual;
@@ -1226,8 +1202,7 @@ int __cow_expand_datastore(struct cow_manager *cm, uint64_t append_size_bytes)
 
 struct cow_auto_expand_manager *cow_auto_expand_manager_init(void)
 {
-	struct cow_auto_expand_manager *aem =
-			kzalloc(sizeof(struct cow_auto_expand_manager), GFP_KERNEL);
+	struct cow_auto_expand_manager *aem = kzalloc(sizeof(struct cow_auto_expand_manager), GFP_KERNEL);
 	if (!aem) {
 		LOG_ERROR(-ENOMEM, "error allocating cow auto expand manager");
 		return ERR_PTR(-ENOMEM);
@@ -1238,8 +1213,7 @@ struct cow_auto_expand_manager *cow_auto_expand_manager_init(void)
 	return aem;
 }
 
-int cow_auto_expand_manager_reconfigure(struct cow_auto_expand_manager *aem, uint64_t step_size_mib,
-										uint64_t reserved_space_mib)
+int cow_auto_expand_manager_reconfigure(struct cow_auto_expand_manager *aem, uint64_t step_size_mib, uint64_t reserved_space_mib)
 {
 	mutex_lock(&aem->lock);
 	aem->step_size_mib = step_size_mib;
@@ -1259,8 +1233,7 @@ int cow_auto_expand_manager_reconfigure(struct cow_auto_expand_manager *aem, uin
 * 0 - no steps remaining
 * !0 - size to expand the cow file by
 */
-uint64_t cow_auto_expand_manager_get_allowance(struct cow_auto_expand_manager *aem,
-											   uint64_t available_blocks, uint64_t block_size_bytes)
+uint64_t cow_auto_expand_manager_get_allowance(struct cow_auto_expand_manager *aem, uint64_t available_blocks, uint64_t block_size_bytes)
 {
 #define ceil(a, b) (((a) + (b)-1) / (b))
 #define mib_to_bytes(a) ((a)*1024 * 1024)
@@ -1269,15 +1242,12 @@ uint64_t cow_auto_expand_manager_get_allowance(struct cow_auto_expand_manager *a
 
 	ret = 0;
 	mutex_lock(&aem->lock);
-	if (aem->step_size_mib && ceil(mib_to_bytes(aem->step_size_mib + aem->reserved_space_mib),
-								   block_size_bytes) <= available_blocks) {
+	if (aem->step_size_mib && ceil(mib_to_bytes(aem->step_size_mib + aem->reserved_space_mib), block_size_bytes) <= available_blocks) {
 		ret = mib_to_bytes(aem->step_size_mib);
 	} else {
 		if (aem->step_size_mib) {
-			LOG_WARN(
-					"rejected auto-expand: %llu MiB step size, %llu MiB reserved space, %llu blocks available, %llu B block size",
-					aem->step_size_mib, aem->reserved_space_mib, available_blocks,
-					block_size_bytes);
+			LOG_WARN("rejected auto-expand: %llu MiB step size, %llu MiB reserved space, %llu blocks available, %llu B block size",
+					 aem->step_size_mib, aem->reserved_space_mib, available_blocks, block_size_bytes);
 		}
 	}
 	mutex_unlock(&aem->lock);

@@ -31,7 +31,15 @@
         "bio_helper.h": "c",
         "includes.h": "c",
         "bio_request_callback.h": "c",
-        "functional": "c"
+        "functional": "c",
+        "kernel_hooking.h": "c",
+        "bdev_state_handler.h": "c",
+        "kretprobe_hooking.h": "c",
+        "version.h": "c",
+        "logging.h": "c",
+        "blkdev.h": "c",
+        "config.h": "c",
+        "tracing_params.h": "c"
     },
     // 开启粘贴保存自动格式化
     "editor.formatOnPaste": true,

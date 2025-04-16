@@ -132,7 +132,7 @@ static inline BIO_REQUEST_CALLBACK_FN *dattobd_get_bd_fn(struct block_device *bd
 #define ROUND_DOWN(x, chunk) (((x) / (chunk)) * (chunk))
 
 // macros for defining sector and block sizes
-#define SECTORS_PER_PAGE (PAGE_SIZE / SECTOR_SIZE)
+#define SECTORS_PER_PAGE (DATTO_PAGE_SIZE / DATTO_SECTOR_SIZE)
 #define BLOCK_TO_SECTOR(block) ((block)*SECTORS_PER_BLOCK)
 
 void dattobd_free_request_tracking_ptr(struct snap_device *dev)
@@ -183,10 +183,14 @@ static int snap_trace_bio(struct snap_device *dev, struct bio *bio)
 	// be 4096 byte aligned
 	start_sect =
 			ROUND_DOWN(bio_sector(bio) - dev->sd_sect_off, SECTORS_PER_BLOCK) + dev->sd_sect_off;
-	end_sect = ROUND_UP(bio_sector(bio) + (bio_size(bio) / SECTOR_SIZE) - dev->sd_sect_off,
+	end_sect = ROUND_UP(bio_sector(bio) + (bio_size(bio) / DATTO_SECTOR_SIZE) - dev->sd_sect_off,
 						SECTORS_PER_BLOCK) +
 			   dev->sd_sect_off;
 	pages = (end_sect - start_sect) / SECTORS_PER_PAGE;
+	if (pages < 1) {
+		LOG_DEBUG("tracing bio at page %d (SECTORS_PER_PAGE=%d)", pages, SECTORS_PER_PAGE);
+		pages = 1;
+	}
 
 	// allocate tracing_params struct to hold all pointers we will need
 	// across contexts
@@ -228,9 +232,9 @@ static int snap_trace_bio(struct snap_device *dev, struct bio *bio)
 
 		// if our bio didn't cover the entire clone we must keep creating bios
 		// until we have
-		if (bytes / PAGE_SIZE < pages) {
-			start_sect += bytes / SECTOR_SIZE;
-			pages -= bytes / PAGE_SIZE;
+		if (bytes / DATTO_PAGE_SIZE < pages) {
+			start_sect += bytes / DATTO_SECTOR_SIZE;
+			pages -= bytes / DATTO_PAGE_SIZE;
 			continue;
 		}
 
@@ -314,7 +318,7 @@ static int inc_trace_bio(struct snap_device *dev, struct bio *bio)
 #ifdef HAVE_ENUM_REQ_OPF
 	//#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0)
 	if (bio_op(bio) == REQ_OP_WRITE_ZEROES) {
-		ret = inc_make_sset(dev, bio_sector(bio), bio_size(bio) / SECTOR_SIZE);
+		ret = inc_make_sset(dev, bio_sector(bio), bio_size(bio) / DATTO_SECTOR_SIZE);
 		goto out;
 	}
 #endif
@@ -610,7 +614,7 @@ static int __tracer_setup_cow(struct snap_device *dev, struct block_device *bdev
 			// calculate how much space should be allocated to the
 			// cow file
 			if (!fallocated_space) {
-				max_file_size = size * SECTOR_SIZE * dattobd_cow_fallocate_percentage_default;
+				max_file_size = size * DATTO_SECTOR_SIZE * dattobd_cow_fallocate_percentage_default;
 				do_div(max_file_size, 100);
 				dev->sd_falloc_size = max_file_size;
 				do_div(dev->sd_falloc_size, (1024 * 1024));

@@ -10,16 +10,9 @@
 
 #include "includes.h"
 #include "tracing_params.h"
+#include "dattobd.h"
 
-//#if LINUX_VERSION_CODE < KERNEL_VERSION(4,17,0)
-#ifndef SECTOR_SHIFT
-#define SECTOR_SHIFT 9
-#endif
-#ifndef SECTOR_SIZE
-#define SECTOR_SIZE (1 << SECTOR_SHIFT)
-#endif
-
-#define SECTORS_PER_BLOCK (COW_BLOCK_SIZE / SECTOR_SIZE)
+#define SECTORS_PER_BLOCK (COW_BLOCK_SIZE / DATTO_SECTOR_SIZE)
 #define SECTOR_TO_BLOCK(sect) ((sect) / SECTORS_PER_BLOCK)
 
 #if !defined HAVE_MAKE_REQUEST_FN_IN_QUEUE && defined HAVE_BDOPS_SUBMIT_BIO
@@ -38,7 +31,7 @@ typedef void(make_request_fn)(struct bio *bio);
 
 // macros for working with bios
 #define BIO_SET_SIZE 256
-#define bio_last_sector(bio) (bio_sector(bio) + (bio_size(bio) / SECTOR_SIZE))
+#define bio_last_sector(bio) (bio_sector(bio) + (bio_size(bio) / DATTO_SECTOR_SIZE))
 
 // the kernel changed the usage of bio_for_each_segment in 3.14. Do not use any
 // fields directly or you will lose compatibility.
@@ -108,7 +101,7 @@ void dattobd_bio_copy_dev(struct bio *dst, struct bio *src);
 #define REQ_DISCARD 0
 #endif
 
-#ifndef HAVE_ENUM_REQ_OPF
+#if !defined(HAVE_ENUM_REQ_OPF) && !defined(HAVE_ENUM_REQ_OP)
 typedef enum req_op {
 	REQ_OP_READ,
 	REQ_OP_WRITE,

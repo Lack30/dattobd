@@ -17,7 +17,7 @@
  * @out_ptr: The string in a kernel allocated buffer.  The caller owns the
  *           buffer.
  *
- * Will copy no more than a PAGE_SIZE from user space.
+ * Will copy no more than a DATTO_PAGE_SIZE from user space.
  *
  * Return:
  * * 0 - success
@@ -33,7 +33,7 @@ int copy_string_from_user(const char __user *data, char **out_ptr)
 		return 0;
 	}
 
-	str = strndup_user(data, PAGE_SIZE);
+	str = strndup_user(data, DATTO_PAGE_SIZE);
 	if (IS_ERR(str)) {
 		ret = PTR_ERR(str);
 		goto error;
