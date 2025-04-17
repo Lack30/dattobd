@@ -39,7 +39,8 @@
         "logging.h": "c",
         "blkdev.h": "c",
         "config.h": "c",
-        "tracing_params.h": "c"
+        "tracing_params.h": "c",
+        "dattobd.h": "c"
     },
     // 开启粘贴保存自动格式化
     "editor.formatOnPaste": true,

@@ -42,7 +42,7 @@ static int snap_read_bio_get_mode(const struct snap_device *dev, struct bio *bio
 	bio_iter_t iter;
 	bio_iter_bvec_t bvec;
 	unsigned int bytes;
-	uint64_t block_mapping, curr_byte, curr_end_byte = bio_sector(bio) * DATTO_SECTOR_SIZE;
+	uint64_t block_mapping, curr_byte, curr_end_byte = bio_sector(bio) * SECTOR_SIZE;
 
 	bio_for_each_segment (bvec, bio, iter) {
 		// reset the number of bytes we have traversed for this bio_vec
@@ -52,8 +52,7 @@ static int snap_read_bio_get_mode(const struct snap_device *dev, struct bio *bio
 		while (bytes < bio_iter_len(bio, iter)) {
 			// find the start and stop byte for our next write
 			curr_byte = curr_end_byte;
-			curr_end_byte += min(COW_BLOCK_SIZE - (curr_byte % COW_BLOCK_SIZE),
-								 ((uint64_t)bio_iter_len(bio, iter) - bytes));
+			curr_end_byte += min(COW_BLOCK_SIZE - (curr_byte % COW_BLOCK_SIZE), ((uint64_t)bio_iter_len(bio, iter) - bytes));
 
 			// check if the mapping exists
 			ret = cow_read_mapping(dev->sd_cow, curr_byte / COW_BLOCK_SIZE, &block_mapping);
@@ -64,8 +63,7 @@ static int snap_read_bio_get_mode(const struct snap_device *dev, struct bio *bio
 				start_mode = READ_MODE_COW_FILE;
 			else if (!start_mode && !block_mapping)
 				start_mode = READ_MODE_BASE_DEVICE;
-			else if ((start_mode == READ_MODE_COW_FILE && !block_mapping) ||
-					 (start_mode == READ_MODE_BASE_DEVICE && block_mapping)) {
+			else if ((start_mode == READ_MODE_COW_FILE && !block_mapping) || (start_mode == READ_MODE_BASE_DEVICE && block_mapping)) {
 				*mode = READ_MODE_MIXED;
 				return 0;
 			}
@@ -158,13 +156,12 @@ int snap_handle_read_bio(const struct snap_device *dev, struct bio *bio)
 			// map the page into kernel space
 			data = kmap(bvec->bv_page);
 
-			cur_block = (cur_sect * DATTO_SECTOR_SIZE) / COW_BLOCK_SIZE;
-			block_off = (cur_sect * DATTO_SECTOR_SIZE) % COW_BLOCK_SIZE;
+			cur_block = (cur_sect * SECTOR_SIZE) / COW_BLOCK_SIZE;
+			block_off = (cur_sect * SECTOR_SIZE) % COW_BLOCK_SIZE;
 			bvec_off = bvec->bv_offset;
 
 			while (bvec_off < bvec->bv_offset + bvec->bv_len) {
-				bytes_to_copy =
-						min(bvec->bv_offset + bvec->bv_len - bvec_off, COW_BLOCK_SIZE - block_off);
+				bytes_to_copy = min(bvec->bv_offset + bvec->bv_len - bvec_off, COW_BLOCK_SIZE - block_off);
 				// check if the mapping exists
 				ret = cow_read_mapping(dev->sd_cow, cur_block, &block_mapping);
 				if (ret) {
@@ -175,17 +172,16 @@ int snap_handle_read_bio(const struct snap_device *dev, struct bio *bio)
 				// if the mapping exists, read it into the page,
 				// overwriting the live data
 				if (block_mapping) {
-					ret = cow_read_data(dev->sd_cow, data + bvec_off, block_mapping, block_off,
-										bytes_to_copy);
+					ret = cow_read_data(dev->sd_cow, data + bvec_off, block_mapping, block_off, bytes_to_copy);
 					if (ret) {
 						kunmap(bvec->bv_page);
 						goto out;
 					}
 				}
 
-				cur_sect += bytes_to_copy / DATTO_SECTOR_SIZE;
-				cur_block = (cur_sect * DATTO_SECTOR_SIZE) / COW_BLOCK_SIZE;
-				block_off = (cur_sect * DATTO_SECTOR_SIZE) % COW_BLOCK_SIZE;
+				cur_sect += bytes_to_copy / SECTOR_SIZE;
+				cur_block = (cur_sect * SECTOR_SIZE) / COW_BLOCK_SIZE;
+				block_off = (cur_sect * SECTOR_SIZE) % COW_BLOCK_SIZE;
 				bvec_off += bytes_to_copy;
 			}
 
@@ -258,8 +254,8 @@ int snap_handle_write_bio(const struct snap_device *dev, struct bio *bio)
 			// pass the block to the cow manager to be handled
 			ret = cow_write_current(dev->sd_cow, start_block, data);
 			if (ret) {
-				LOG_ERROR(ret, "memory demands %llu, memory saved before crash %llu",
-						  number_of_blocks * COW_BLOCK_SIZE, saved_blocks * COW_BLOCK_SIZE);
+				LOG_ERROR(ret, "memory demands %llu, memory saved before crash %llu", number_of_blocks * COW_BLOCK_SIZE,
+						  saved_blocks * COW_BLOCK_SIZE);
 				kunmap(bvec->bv_page);
 				goto error;
 			}
@@ -291,7 +287,7 @@ int inc_handle_sset(const struct snap_device *dev, struct sector_set *sset)
 {
 	int ret;
 	sector_t start_block = SECTOR_TO_BLOCK(sset->sect);
-	sector_t end_block = NUM_SEGMENTS(sset->sect + sset->len, COW_BLOCK_LOG_SIZE - DATTO_SECTOR_SHIFT);
+	sector_t end_block = NUM_SEGMENTS(sset->sect + sset->len, COW_BLOCK_LOG_SIZE - SECTOR_SHIFT);
 
 	for (; start_block < end_block; start_block++) {
 		ret = cow_write_filler_mapping(dev->sd_cow, start_block);

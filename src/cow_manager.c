@@ -701,7 +701,7 @@ int cow_init(struct snap_device *dev, const char *path, uint64_t elements, unsig
 	//total sections to store all of the sectors; = ceil(elements / 4096)
 	cm->total_sects = NUM_SEGMENTS(elements, cm->log_sect_pages + PAGE_SHIFT - 3);
 	//num of sections that can fit in cache apart from index
-	cm->allowed_sects = __cow_calculate_allowed_sects(cache_size, cm->total_sects); 
+	cm->allowed_sects = __cow_calculate_allowed_sects(cache_size, cm->total_sects);
 	// data offset in bytes, equals 4096 + [total_sects*4096*8](index size)
 	cm->data_offset = COW_HEADER_SIZE + (cm->total_sects * (sect_size * 8));
 	cm->curr_pos = cm->data_offset / COW_BLOCK_SIZE;
@@ -1057,7 +1057,7 @@ int cow_get_file_extents(struct snap_device *dev, struct file *filp)
 	struct page *pg;
 	__user uint8_t *cow_ext_buf;
 
-	unsigned long cow_ext_buf_size = ALIGN(dattobd_cow_ext_buf_size, DATTO_PAGE_SIZE);
+	unsigned long cow_ext_buf_size = ALIGN(dattobd_cow_ext_buf_size, PAGE_SIZE);
 
 	int (*fiemap)(struct inode *, struct fiemap_extent_info *, u64 start, u64 len);
 

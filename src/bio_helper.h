@@ -10,9 +10,16 @@
 
 #include "includes.h"
 #include "tracing_params.h"
-#include "dattobd.h"
 
-#define SECTORS_PER_BLOCK (COW_BLOCK_SIZE / DATTO_SECTOR_SIZE)
+//#if LINUX_VERSION_CODE < KERNEL_VERSION(4,17,0)
+#ifndef SECTOR_SHIFT
+#define SECTOR_SHIFT 9
+#endif
+#ifndef SECTOR_SIZE
+#define SECTOR_SIZE (1 << SECTOR_SHIFT)
+#endif
+
+#define SECTORS_PER_BLOCK (COW_BLOCK_SIZE / SECTOR_SIZE)
 #define SECTOR_TO_BLOCK(sect) ((sect) / SECTORS_PER_BLOCK)
 
 #if !defined HAVE_MAKE_REQUEST_FN_IN_QUEUE && defined HAVE_BDOPS_SUBMIT_BIO
@@ -31,7 +38,7 @@ typedef void(make_request_fn)(struct bio *bio);
 
 // macros for working with bios
 #define BIO_SET_SIZE 256
-#define bio_last_sector(bio) (bio_sector(bio) + (bio_size(bio) / DATTO_SECTOR_SIZE))
+#define bio_last_sector(bio) (bio_sector(bio) + (bio_size(bio) / SECTOR_SIZE))
 
 // the kernel changed the usage of bio_for_each_segment in 3.14. Do not use any
 // fields directly or you will lose compatibility.
@@ -154,9 +161,8 @@ int bio_needs_cow(struct bio *bio, struct inode *inode);
 
 void bio_free_clone(struct bio *bio);
 
-int bio_make_read_clone(struct bio_set *bs, struct tracing_params *tp, struct bio *orig_bio,
-						sector_t sect, unsigned int pages, struct bio **bio_out,
-						unsigned int *bytes_added);
+int bio_make_read_clone(struct bio_set *bs, struct tracing_params *tp, struct bio *orig_bio, sector_t sect, unsigned int pages,
+						struct bio **bio_out, unsigned int *bytes_added);
 
 #ifdef HAVE_BIO_ENDIO_INT
 void dattobd_bio_endio(struct bio *bio, int err);
@@ -175,8 +181,7 @@ void dattobd_bio_endio(struct bio *bio, int err);
 #endif
 
 #if !defined HAVE_BIO_FOR_EACH_SEGMENT_ALL_1 && !defined HAVE_BIO_FOR_EACH_SEGMENT_ALL_2
-#define bio_for_each_segment_all(bvl, bio, i)                                                      \
-	for (i = 0, bvl = (bio)->bi_io_vec; i < (bio)->bi_vcnt; i++, bvl++)
+#define bio_for_each_segment_all(bvl, bio, i) for (i = 0, bvl = (bio)->bi_io_vec; i < (bio)->bi_vcnt; i++, bvl++)
 #endif
 
 #ifdef USE_BDOPS_SUBMIT_BIO

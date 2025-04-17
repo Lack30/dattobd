@@ -427,7 +427,7 @@ static void __on_bio_read_complete(struct bio *bio, int err)
 #ifndef HAVE_BVEC_ITER
 	//#if LINUX_VERSION_CODE < KERNEL_VERSION(3,14,0)
 	for (i = 0; i < bio->bi_vcnt; i++) {
-		bio->bi_io_vec[i].bv_len = DATTO_PAGE_SIZE;
+		bio->bi_io_vec[i].bv_len = PAGE_SIZE;
 		bio->bi_io_vec[i].bv_offset = 0;
 	}
 #endif
@@ -585,8 +585,7 @@ int bio_needs_cow(struct bio *bio, struct inode *inode)
 	bio_iter_t iter;
 	bio_iter_bvec_t bvec;
 
-#if defined HAVE_ENUM_REQ_OPF ||                                                                   \
-		(defined HAVE_ENUM_REQ_OP && defined HAVE_ENUM_REQ_OPF_WRITE_ZEROES)
+#if defined HAVE_ENUM_REQ_OPF || (defined HAVE_ENUM_REQ_OP && defined HAVE_ENUM_REQ_OPF_WRITE_ZEROES)
 	//#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0)
 	if (bio_op(bio) == REQ_OP_WRITE_ZEROES)
 		return 1;
@@ -689,9 +688,8 @@ void bio_free_clone(struct bio *bio)
  * * 0 - success
  * * !0 - failure
  */
-int bio_make_read_clone(struct bio_set *bs, struct tracing_params *tp, struct bio *orig_bio,
-						sector_t sect, unsigned int pages, struct bio **bio_out,
-						unsigned int *bytes_added)
+int bio_make_read_clone(struct bio_set *bs, struct tracing_params *tp, struct bio *orig_bio, sector_t sect, unsigned int pages,
+						struct bio **bio_out, unsigned int *bytes_added)
 {
 	int ret;
 	struct bio *new_bio;
@@ -751,8 +749,8 @@ int bio_make_read_clone(struct bio_set *bs, struct tracing_params *tp, struct bi
 		}
 
 		// add the page to the bio
-		bytes = bio_add_page(new_bio, pg, DATTO_PAGE_SIZE, 0);
-		if (bytes != DATTO_PAGE_SIZE) {
+		bytes = bio_add_page(new_bio, pg, PAGE_SIZE, 0);
+		if (bytes != PAGE_SIZE) {
 			__free_page(pg);
 			break;
 		}
