@@ -26,12 +26,10 @@
 #define verify_minor_in_use_not_busy(minor, snap_devices) __verify_minor(minor, 1, snap_devices)
 #define verify_minor_in_use(minor, snap_devices) __verify_minor(minor, 2, snap_devices)
 
-#define ioctl_setup_snap(minor, bdev_path, cow_path, fallocated_space, cache_size)                 \
+#define ioctl_setup_snap(minor, bdev_path, cow_path, fallocated_space, cache_size)                                                         \
 	__ioctl_setup(minor, bdev_path, cow_path, fallocated_space, cache_size, 1, 0)
-#define ioctl_reload_snap(minor, bdev_path, cow_path, cache_size)                                  \
-	__ioctl_setup(minor, bdev_path, cow_path, 0, cache_size, 1, 1)
-#define ioctl_reload_inc(minor, bdev_path, cow_path, cache_size)                                   \
-	__ioctl_setup(minor, bdev_path, cow_path, 0, cache_size, 0, 1)
+#define ioctl_reload_snap(minor, bdev_path, cow_path, cache_size) __ioctl_setup(minor, bdev_path, cow_path, 0, cache_size, 1, 1)
+#define ioctl_reload_inc(minor, bdev_path, cow_path, cache_size) __ioctl_setup(minor, bdev_path, cow_path, 0, cache_size, 0, 1)
 
 struct mutex ioctl_mutex;
 
@@ -136,16 +134,15 @@ static int __verify_bdev_writable(const char *bdev_path, int *out)
  * * 0 - successfully set up.
  * * !0 - errno indicating the error.
  */
-static int __ioctl_setup(unsigned int minor, const char *bdev_path, const char *cow_path,
-						 unsigned long fallocated_space, unsigned long cache_size, int is_snap,
-						 int is_reload)
+static int __ioctl_setup(unsigned int minor, const char *bdev_path, const char *cow_path, unsigned long fallocated_space,
+						 unsigned long cache_size, int is_snap, int is_reload)
 {
 	int ret, is_mounted;
 	struct snap_device *dev = NULL;
 	snap_device_array_mut snap_devices = get_snap_device_array_mut();
 
-	LOG_DEBUG("received %s %s ioctl - %u : %s : %s", (is_reload) ? "reload" : "setup",
-			  (is_snap) ? "snap" : "inc", minor, bdev_path, cow_path);
+	LOG_DEBUG("received %s %s ioctl - %u : %s : %s", (is_reload) ? "reload" : "setup", (is_snap) ? "snap" : "inc", minor, bdev_path,
+			  cow_path);
 
 	// verify that the minor number is valid
 	ret = verify_minor_available(minor, snap_devices);
@@ -160,15 +157,15 @@ static int __ioctl_setup(unsigned int minor, const char *bdev_path, const char *
 		goto error;
 	}
 	// check that reload / setup command matches current mount state
-	if (is_mounted && is_reload) {
-		ret = -EINVAL;
-		LOG_ERROR(ret, "illegal to perform reload while mounted");
-		goto error;
-	} else if (!is_mounted && !is_reload) {
-		ret = -EINVAL;
-		LOG_ERROR(ret, "illegal to perform setup while unmounted");
-		goto error;
-	}
+	// if (is_mounted && is_reload) {
+	// 	ret = -EINVAL;
+	// 	LOG_ERROR(ret, "illegal to perform reload while mounted");
+	// 	goto error;
+	// } else if (!is_mounted && !is_reload) {
+	// 	ret = -EINVAL;
+	// 	LOG_ERROR(ret, "illegal to perform setup while unmounted");
+	// 	goto error;
+	// }
 
 	// allocate the tracing struct
 	ret = tracer_alloc(&dev);
@@ -178,21 +175,18 @@ static int __ioctl_setup(unsigned int minor, const char *bdev_path, const char *
 	}
 	// route to the appropriate setup function
 	if (is_snap) {
-		if (is_mounted)
-			ret = tracer_setup_active_snap(dev, minor, bdev_path, cow_path, fallocated_space,
-										   cache_size, snap_devices);
-		else
-			ret = tracer_setup_unverified_snap(dev, minor, bdev_path, cow_path, cache_size,
-											   snap_devices);
+		// if (is_mounted)
+			ret = tracer_setup_active_snap(dev, minor, bdev_path, cow_path, fallocated_space, cache_size, snap_devices);
+		// else
+			// ret = tracer_setup_unverified_snap(dev, minor, bdev_path, cow_path, cache_size, snap_devices);
 	} else {
-		if (!is_mounted)
-			ret = tracer_setup_unverified_inc(dev, minor, bdev_path, cow_path, cache_size,
-											  snap_devices);
-		else {
-			ret = -EINVAL;
-			LOG_ERROR(ret, "illegal to setup as active incremental");
-			goto error;
-		}
+		// if (!is_mounted)
+			ret = tracer_setup_unverified_inc(dev, minor, bdev_path, cow_path, cache_size, snap_devices);
+		// else {
+			// ret = -EINVAL;
+			// LOG_ERROR(ret, "illegal to setup as active incremental");
+			// goto error;
+		// }
 	}
 
 	if (ret)
@@ -311,8 +305,7 @@ error:
  * * 0 - successful.
  * * !0 - errno indicating the error.
  */
-static int ioctl_transition_snap(unsigned int minor, const char *cow_path,
-								 unsigned long fallocated_space)
+static int ioctl_transition_snap(unsigned int minor, const char *cow_path, unsigned long fallocated_space)
 {
 	int ret;
 	struct snap_device *dev;
@@ -429,8 +422,7 @@ static int ioctl_expand_cow_file(uint64_t size, unsigned int minor)
 	}
 
 	// check that tracer is in active snapshot state
-	if (!test_bit(SNAPSHOT, &dev->sd_state) || !test_bit(ACTIVE, &dev->sd_state) ||
-		test_bit(UNVERIFIED, &dev->sd_state)) {
+	if (!test_bit(SNAPSHOT, &dev->sd_state) || !test_bit(ACTIVE, &dev->sd_state) || test_bit(UNVERIFIED, &dev->sd_state)) {
 		ret = -EINVAL;
 		LOG_ERROR(ret, "device specified is not in active snapshot mode");
 		goto error;
@@ -459,15 +451,13 @@ error:
  * * 0 - successful.
  * * !0 - errno indicating the error.
  */
-static int ioctl_reconfigure_auto_expand(uint64_t step_size, uint64_t reserved_space,
-										 unsigned int minor)
+static int ioctl_reconfigure_auto_expand(uint64_t step_size, uint64_t reserved_space, unsigned int minor)
 {
 	int ret;
 	struct snap_device *dev;
 	snap_device_array snap_devices = get_snap_device_array();
 
-	LOG_DEBUG("received reconfigure auto expand ioctl - %u : %llu, %llu", minor, step_size,
-			  reserved_space);
+	LOG_DEBUG("received reconfigure auto expand ioctl - %u : %llu, %llu", minor, step_size, reserved_space);
 
 	// verify that the minor number is valid
 	ret = verify_minor_in_use(minor, snap_devices);
@@ -484,8 +474,7 @@ static int ioctl_reconfigure_auto_expand(uint64_t step_size, uint64_t reserved_s
 	}
 
 	// check that tracer is in active snapshot state
-	if (!test_bit(SNAPSHOT, &dev->sd_state) || !test_bit(ACTIVE, &dev->sd_state) ||
-		test_bit(UNVERIFIED, &dev->sd_state)) {
+	if (!test_bit(SNAPSHOT, &dev->sd_state) || !test_bit(ACTIVE, &dev->sd_state) || test_bit(UNVERIFIED, &dev->sd_state)) {
 		ret = -EINVAL;
 		LOG_ERROR(ret, "device specified is not in active snapshot mode");
 		goto error;
@@ -606,8 +595,7 @@ long ctrl_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 	switch (cmd) {
 	case IOCTL_SETUP_SNAP:
 		// get params from user space
-		ret = get_setup_params((struct setup_params __user *)arg, &minor, &bdev_path, &cow_path,
-							   &fallocated_space, &cache_size);
+		ret = get_setup_params((struct setup_params __user *)arg, &minor, &bdev_path, &cow_path, &fallocated_space, &cache_size);
 		if (ret)
 			break;
 
@@ -618,8 +606,7 @@ long ctrl_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 		break;
 	case IOCTL_RELOAD_SNAP:
 		// get params from user space
-		ret = get_reload_params((struct reload_params __user *)arg, &minor, &bdev_path, &cow_path,
-								&cache_size);
+		ret = get_reload_params((struct reload_params __user *)arg, &minor, &bdev_path, &cow_path, &cache_size);
 		if (ret)
 			break;
 
@@ -630,8 +617,7 @@ long ctrl_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 		break;
 	case IOCTL_RELOAD_INC:
 		// get params from user space
-		ret = get_reload_params((struct reload_params __user *)arg, &minor, &bdev_path, &cow_path,
-								&cache_size);
+		ret = get_reload_params((struct reload_params __user *)arg, &minor, &bdev_path, &cow_path, &cache_size);
 		if (ret)
 			break;
 
@@ -668,8 +654,7 @@ long ctrl_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 		break;
 	case IOCTL_TRANSITION_SNAP:
 		// get params from user space
-		ret = get_transition_snap_params((struct transition_snap_params __user *)arg, &minor,
-										 &cow_path, &fallocated_space);
+		ret = get_transition_snap_params((struct transition_snap_params __user *)arg, &minor, &cow_path, &fallocated_space);
 		if (ret)
 			break;
 
@@ -737,8 +722,7 @@ long ctrl_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 	case IOCTL_EXPAND_COW_FILE:
 		// get params from user space
 		expand_params = kmalloc(sizeof(struct expand_cow_file_params), GFP_KERNEL);
-		ret = copy_from_user(expand_params, (struct expand_cow_file_params __user *)arg,
-							 sizeof(struct expand_cow_file_params));
+		ret = copy_from_user(expand_params, (struct expand_cow_file_params __user *)arg, sizeof(struct expand_cow_file_params));
 		if (ret) {
 			ret = -EFAULT;
 			LOG_ERROR(ret, "error copying expand_cow_file_params from user space");
@@ -753,10 +737,8 @@ long ctrl_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 		break;
 	case IOCTL_RECONFIGURE_AUTO_EXPAND:
 		// get params from user space
-		reconfigure_auto_expand_params =
-				kmalloc(sizeof(struct reconfigure_auto_expand_params), GFP_KERNEL);
-		ret = copy_from_user(reconfigure_auto_expand_params,
-							 (struct reconfigure_auto_expand_params __user *)arg,
+		reconfigure_auto_expand_params = kmalloc(sizeof(struct reconfigure_auto_expand_params), GFP_KERNEL);
+		ret = copy_from_user(reconfigure_auto_expand_params, (struct reconfigure_auto_expand_params __user *)arg,
 							 sizeof(struct reconfigure_auto_expand_params));
 		if (ret) {
 			ret = -EFAULT;
@@ -764,8 +746,7 @@ long ctrl_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 			break;
 		}
 
-		ret = ioctl_reconfigure_auto_expand(reconfigure_auto_expand_params->step_size,
-											reconfigure_auto_expand_params->reserved_space,
+		ret = ioctl_reconfigure_auto_expand(reconfigure_auto_expand_params->step_size, reconfigure_auto_expand_params->reserved_space,
 											reconfigure_auto_expand_params->minor);
 		if (ret) {
 			break;

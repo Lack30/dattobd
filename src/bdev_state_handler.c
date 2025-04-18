@@ -1,3 +1,9 @@
+// SPDX-License-Identifier: GPL-2.0-only
+
+/*
+ * Copyright (C) 2023 Datto Inc.
+ */
+
 #include "bdev_state_handler.h"
 #include <linux/version.h>
 #include "snap_device.h"

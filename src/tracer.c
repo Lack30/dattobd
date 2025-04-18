@@ -178,8 +178,13 @@ static int snap_trace_bio(struct snap_device *dev, struct bio *bio)
 	end_sect = ROUND_UP(bio_sector(bio) + (bio_size(bio) / SECTOR_SIZE) - dev->sd_sect_off, SECTORS_PER_BLOCK) + dev->sd_sect_off;
 	pages = (end_sect - start_sect) / SECTORS_PER_PAGE;
 	if (pages < 1) {
-		LOG_DEBUG("tracing bio at page %d (SECTORS_PER_PAGE=%d)", pages, SECTORS_PER_PAGE);
-		pages = 1;
+		LOG_DEBUG("error tracing bio at page %d, submit bio directly", pages);
+#ifdef HAVE_NONVOID_SUBMIT_BIO_1
+		return SUBMIT_BIO_REAL(dev, bio);
+#else
+		SUBMIT_BIO_REAL(dev, bio);
+		return 0;
+#endif
 	}
 
 	// allocate tracing_params struct to hold all pointers we will need
@@ -630,15 +635,15 @@ static int __tracer_setup_cow(struct snap_device *dev, struct block_device *bdev
 	}
 
 	// verify that file is on block device
-	if (!file_is_on_bdev(dev->sd_cow->dfilp, bdev)) {
-		ret = -EINVAL;
-#ifdef HAVE_BDEVNAME
-		LOG_ERROR(ret, "'%s' is not on '%s'", cow_path, bdev_name);
-#else
-		LOG_ERROR(ret, "'%s' is not on '%pg'", cow_path, bdev);
-#endif
-		goto error;
-	}
+	// 	if (!file_is_on_bdev(dev->sd_cow->dfilp, bdev)) {
+	// 		ret = -EINVAL;
+	// #ifdef HAVE_BDEVNAME
+	// 		LOG_ERROR(ret, "'%s' is not on '%s'", cow_path, bdev_name);
+	// #else
+	// 		LOG_ERROR(ret, "'%s' is not on '%pg'", cow_path, bdev);
+	// #endif
+	// 		goto error;
+	// 	}
 
 	// find the cow file's inode number
 	LOG_DEBUG("finding cow file inode");
@@ -1244,9 +1249,7 @@ static int __tracer_transition_tracing(struct snap_device *dev, struct block_dev
 #endif
 	} else {
 #ifdef HAVE_BDEVNAME
-		LOG_WARN("warning: no super found for device '%s', "
-				 "unable to freeze it",
-				 bdev_name);
+		LOG_WARN("warning: no super found for device '%s', unable to freeze it", bdev_name);
 #endif
 	}
 	smp_wmb();
@@ -1373,7 +1376,7 @@ static MRF_RETURN_TYPE tracing_fn(struct request_queue *q, struct bio *bio)
 		}
 	}
 	if (orig_fn) {
-		LOG_DEBUG("found original mrf");
+		// LOG_DEBUG("found original mrf");
 		orig_fn(bio);
 	} else if (dattobd_bio_bi_disk(bio)->fops->submit_bio) {
 		if (dattobd_bio_bi_disk(bio)->fops->submit_bio == tracing_fn) {
