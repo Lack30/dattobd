@@ -63,8 +63,8 @@ error:
  * * 0 - success
  * * !0 - errno indicating the error.
  */
-int get_setup_params(const struct setup_params __user *in, unsigned int *minor, char **bdev_name, char **cow_path,
-					 unsigned long *fallocated_space, unsigned long *cache_size)
+int get_setup_params(const struct setup_params __user *in, unsigned int *minor, char **bdev_name,
+					 char **cow_path, unsigned long *fallocated_space, unsigned long *cache_size)
 {
 	int ret;
 	struct setup_params params;
@@ -130,8 +130,8 @@ error:
  * * 0 - success
  * * !0 - errno indicating the error.
  */
-int get_reload_params(const struct reload_params __user *in, unsigned int *minor, char **bdev_name, char **cow_path,
-					  unsigned long *cache_size)
+int get_reload_params(const struct reload_params __user *in, unsigned int *minor, char **bdev_name,
+					  char **cow_path, unsigned long *cache_size)
 {
 	int ret;
 	struct reload_params params;
@@ -195,8 +195,8 @@ error:
  * * 0 - success.
  * * !0 - errno indicating the error.
  */
-int get_transition_snap_params(const struct transition_snap_params __user *in, unsigned int *minor, char **cow_path,
-							   unsigned long *fallocated_space)
+int get_transition_snap_params(const struct transition_snap_params __user *in, unsigned int *minor,
+							   char **cow_path, unsigned long *fallocated_space)
 {
 	int ret;
 	struct transition_snap_params params;
@@ -246,7 +246,8 @@ error:
  * * 0 - success.
  * * !0 - errno indicating the error.
  */
-int get_reconfigure_params(const struct reconfigure_params __user *in, unsigned int *minor, unsigned long *cache_size)
+int get_reconfigure_params(const struct reconfigure_params __user *in, unsigned int *minor,
+						   unsigned long *cache_size)
 {
 	int ret;
 	struct reconfigure_params params;

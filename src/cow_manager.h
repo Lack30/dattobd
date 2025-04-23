@@ -66,7 +66,7 @@ struct cow_manager {
 	unsigned long total_sects; // total sections the cm log represents
 	unsigned long allowed_sects; // the maximum number of sections that may be allocated at once
 	struct cow_section *sects; // pointer to the array of sections of mappings
-	struct snap_device *dev; //pointer to snapshot device
+	struct snap_device *dev; // pointer to snapshot device
 
 	struct cow_auto_expand_manager *auto_expand; // auto expand settings
 };
@@ -83,11 +83,12 @@ int cow_sync_and_close(struct cow_manager *cm);
 
 int cow_reopen(struct cow_manager *cm, const char *pathname);
 
-int cow_reload(const char *path, uint64_t elements, unsigned long sect_size, unsigned long cache_size, int index_only,
-			   struct cow_manager **cm_out);
+int cow_reload(const char *path, uint64_t elements, unsigned long sect_size,
+			   unsigned long cache_size, int index_only, struct cow_manager **cm_out);
 
-int cow_init(struct snap_device *dev, const char *path, uint64_t elements, unsigned long sect_size, unsigned long cache_size,
-			 uint64_t file_max, const uint8_t *uuid, uint64_t seqid, struct cow_manager **cm_out);
+int cow_init(struct snap_device *dev, const char *path, uint64_t elements, unsigned long sect_size,
+			 unsigned long cache_size, uint64_t file_max, const uint8_t *uuid, uint64_t seqid,
+			 struct cow_manager **cm_out);
 
 int cow_truncate_to_index(struct cow_manager *cm);
 
@@ -97,7 +98,8 @@ int cow_read_mapping(struct cow_manager *cm, uint64_t pos, uint64_t *out);
 
 int cow_write_current(struct cow_manager *cm, uint64_t block, void *buf);
 
-int cow_read_data(struct cow_manager *cm, void *buf, uint64_t block_pos, unsigned long block_off, unsigned long len);
+int cow_read_data(struct cow_manager *cm, void *buf, uint64_t block_pos, unsigned long block_off,
+				  unsigned long len);
 
 int __cow_write_mapping(struct cow_manager *cm, uint64_t pos, uint64_t val);
 
@@ -107,9 +109,12 @@ int __cow_expand_datastore(struct cow_manager *cm, uint64_t append_size_bytes);
 
 struct cow_auto_expand_manager *cow_auto_expand_manager_init(void);
 
-int cow_auto_expand_manager_reconfigure(struct cow_auto_expand_manager *aem, uint64_t step_size_mib, uint64_t reserved_space_mib);
+int cow_auto_expand_manager_reconfigure(struct cow_auto_expand_manager *aem, uint64_t step_size_mib,
+										uint64_t reserved_space_mib);
 
-uint64_t cow_auto_expand_manager_get_allowance(struct cow_auto_expand_manager *aem, uint64_t available_blocks, uint64_t block_size_bytes);
+uint64_t cow_auto_expand_manager_get_allowance(struct cow_auto_expand_manager *aem,
+											   uint64_t available_blocks,
+											   uint64_t block_size_bytes);
 
 uint64_t cow_auto_expand_manager_get_allowance_free_unknown(struct cow_auto_expand_manager *aem);
 

@@ -7,8 +7,10 @@
 #include "kretprobe_hooking.h"
 #include "kernel-config.h"
 
-#define handle_bdev_mount_nowrite(dir_name, follow_flags, idx_out) handle_bdev_mount_event(dir_name, follow_flags, idx_out, 0)
-#define handle_bdev_mounted_writable(dir_name, idx_out) handle_bdev_mount_event(dir_name, 0, idx_out, 1)
+#define handle_bdev_mount_nowrite(dir_name, follow_flags, idx_out)                                 \
+	handle_bdev_mount_event(dir_name, follow_flags, idx_out, 0)
+#define handle_bdev_mounted_writable(dir_name, idx_out)                                            \
+	handle_bdev_mount_event(dir_name, 0, idx_out, 1)
 
 static struct probe_pool *probe_pool = NULL;
 
@@ -142,12 +144,14 @@ static int entry_mount_handler(struct kretprobe_instance *ri, struct pt_regs *re
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 9, 0)
 	strncpy(params->dev_name, (const char *)pt_regs_params(regs, 0), PATH_MAX);
-	strncpy(params->dir_name, get_absolute_path(((struct path *)pt_regs_params(regs, 1))->dentry), PATH_MAX);
+	strncpy(params->dir_name, get_absolute_path(((struct path *)pt_regs_params(regs, 1))->dentry),
+			PATH_MAX);
 	strncpy(params->fs_type, (const char *)pt_regs_params(regs, 2), 64);
 	real_flags = pt_regs_params(regs, 3);
 #elif LINUX_VERSION_CODE >= KERNEL_VERSION(5, 5, 0)
 	strncpy(params->dev_name, (const char *)pt_regs_params(regs, 0), PATH_MAX);
-	sys_ret = copy_from_user(params->dir_name, (const char __user *)pt_regs_params(regs, 1), PATH_MAX);
+	sys_ret = copy_from_user(params->dir_name, (const char __user *)pt_regs_params(regs, 1),
+							 PATH_MAX);
 	if (sys_ret)
 		goto error;
 	strncpy(params->fs_type, (const char *)pt_regs_params(regs, 2), 64);
@@ -179,7 +183,8 @@ static int entry_mount_handler(struct kretprobe_instance *ri, struct pt_regs *re
 	}
 	params->flags = real_flags;
 
-	LOG_DEBUG("mount %s to %s, type=%s flags=%lx", params->dev_name, params->dir_name, params->fs_type, real_flags);
+	LOG_DEBUG("mount %s to %s, type=%s flags=%lx", params->dev_name, params->dir_name,
+			  params->fs_type, real_flags);
 	probe_pool_insert(probe_pool, ptr, (void *)params);
 
 	return 0;
@@ -236,7 +241,8 @@ static int entry_umount_handler(struct kretprobe_instance *ri, struct pt_regs *r
 		return 0;
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 9, 0)
-	strncpy(params->dir_name, get_absolute_path(((struct path *)pt_regs_params(regs, 0))->dentry), PATH_MAX);
+	strncpy(params->dir_name, get_absolute_path(((struct path *)pt_regs_params(regs, 0))->dentry),
+			PATH_MAX);
 	real_flags = pt_regs_params(regs, 1);
 
 	// get rid of the magic value if its present

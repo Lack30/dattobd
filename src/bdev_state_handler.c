@@ -202,7 +202,7 @@ int handle_bdev_mount_event(const char *dir_name, int follow_flags, unsigned int
 	ret = kern_path(dir_name, lookup_flags, &path);
 #else
 	ret = user_path_at(AT_FDCWD, dir_name, lookup_flags, &path);
-#endif 
+#endif
 	LOG_DEBUG("dir_name: %s, lookup_flags: %d", dir_name, lookup_flags);
 	if (ret) {
 		LOG_DEBUG("error finding path: %s", dir_name);

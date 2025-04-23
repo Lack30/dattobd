@@ -161,8 +161,9 @@ int bio_needs_cow(struct bio *bio, struct inode *inode);
 
 void bio_free_clone(struct bio *bio);
 
-int bio_make_read_clone(struct bio_set *bs, struct tracing_params *tp, struct bio *orig_bio, sector_t sect, unsigned int pages,
-						struct bio **bio_out, unsigned int *bytes_added);
+int bio_make_read_clone(struct bio_set *bs, struct tracing_params *tp, struct bio *orig_bio,
+						sector_t sect, unsigned int pages, struct bio **bio_out,
+						unsigned int *bytes_added);
 
 #ifdef HAVE_BIO_ENDIO_INT
 void dattobd_bio_endio(struct bio *bio, int err);
@@ -181,7 +182,8 @@ void dattobd_bio_endio(struct bio *bio, int err);
 #endif
 
 #if !defined HAVE_BIO_FOR_EACH_SEGMENT_ALL_1 && !defined HAVE_BIO_FOR_EACH_SEGMENT_ALL_2
-#define bio_for_each_segment_all(bvl, bio, i) for (i = 0, bvl = (bio)->bi_io_vec; i < (bio)->bi_vcnt; i++, bvl++)
+#define bio_for_each_segment_all(bvl, bio, i)                                                      \
+	for (i = 0, bvl = (bio)->bi_io_vec; i < (bio)->bi_vcnt; i++, bvl++)
 #endif
 
 #ifdef USE_BDOPS_SUBMIT_BIO

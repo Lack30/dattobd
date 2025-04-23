@@ -46,7 +46,8 @@ static int kern_path(const char *name, unsigned int flags, struct path *path)
  *
  * Return: The number of bytes read or a negative errno.
  */
-static ssize_t dattobd_kernel_read(struct dattobd_mutable_file *dfilp, struct snap_device *dev, void *buf, size_t count, loff_t *pos)
+static ssize_t dattobd_kernel_read(struct dattobd_mutable_file *dfilp, struct snap_device *dev,
+								   void *buf, size_t count, loff_t *pos)
 {
 	ssize_t ret;
 
@@ -88,7 +89,8 @@ static ssize_t dattobd_kernel_read(struct dattobd_mutable_file *dfilp, struct sn
  *
  * Return: The number of bytes written or a negative errno.
  */
-static ssize_t dattobd_kernel_write(struct dattobd_mutable_file *dfilp, struct snap_device *dev, const void *buf, size_t count, loff_t *pos)
+static ssize_t dattobd_kernel_write(struct dattobd_mutable_file *dfilp, struct snap_device *dev,
+									const void *buf, size_t count, loff_t *pos)
 {
 	ssize_t ret;
 
@@ -133,8 +135,8 @@ static ssize_t dattobd_kernel_write(struct dattobd_mutable_file *dfilp, struct s
  * * 0 - success
  * * !0 - errno indicating the error
  */
-int file_io(struct dattobd_mutable_file *dfilp, struct snap_device *dev, int is_write, void *buf, sector_t offset, unsigned long len,
-			unsigned long *done)
+int file_io(struct dattobd_mutable_file *dfilp, struct snap_device *dev, int is_write, void *buf,
+			sector_t offset, unsigned long len, unsigned long *done)
 {
 	ssize_t ret;
 	loff_t off = (loff_t)offset;
@@ -148,7 +150,8 @@ int file_io(struct dattobd_mutable_file *dfilp, struct snap_device *dev, int is_
 		ret = dattobd_kernel_read(dfilp, dev, buf, len, &off);
 
 	if (unlikely(ret < 0)) {
-		LOG_ERROR((int)ret, "error performing file '%s': %llu, %lu", (is_write) ? "write" : "read", (unsigned long long)offset, len);
+		LOG_ERROR((int)ret, "error performing file '%s': %llu, %lu", (is_write) ? "write" : "read",
+				  (unsigned long long)offset, len);
 		return ret;
 	}
 
@@ -156,8 +159,8 @@ int file_io(struct dattobd_mutable_file *dfilp, struct snap_device *dev, int is_
 		*done = ret;
 
 	if (unlikely(ret != len)) {
-		LOG_ERROR(-EIO, "invalid file '%s' size: %llu, %lu, %lu", (is_write) ? "write" : "read", (unsigned long long)offset, len,
-				  (unsigned long)ret);
+		LOG_ERROR(-EIO, "invalid file '%s' size: %llu, %lu, %lu", (is_write) ? "write" : "read",
+				  (unsigned long long)offset, len, (unsigned long)ret);
 		ret = -EIO;
 	} else {
 		ret = 0;
@@ -541,7 +544,8 @@ int pathname_concat(const char *pathname1, const char *pathname2, char **path_ou
  * * 0 - success
  * * !0 - errno indicating the error.
  */
-int user_mount_pathname_concat(const char __user *user_mount_path, const char *rel_path, char **path_out)
+int user_mount_pathname_concat(const char __user *user_mount_path, const char *rel_path,
+							   char **path_out)
 {
 	int ret;
 	char *mount_path;
@@ -612,7 +616,8 @@ static int dattobd_should_remove_suid(struct dentry *dentry)
  * * 0 - success
  * * !0 - errno indicating the error.
  */
-static int dattobd_do_truncate(struct dentry *dentry, loff_t length, unsigned int time_attrs, struct file *filp)
+static int dattobd_do_truncate(struct dentry *dentry, loff_t length, unsigned int time_attrs,
+							   struct file *filp)
 {
 	int ret;
 	struct iattr newattrs;
@@ -767,7 +772,8 @@ static int try_real_fallocate(struct dattobd_mutable_file *dfilp, uint64_t offse
  * * 0 - success
  * * !0 - errno indicating the error.
  */
-int file_allocate(struct dattobd_mutable_file *dfilp, struct snap_device *dev, uint64_t offset, uint64_t length, uint64_t *done)
+int file_allocate(struct dattobd_mutable_file *dfilp, struct snap_device *dev, uint64_t offset,
+				  uint64_t length, uint64_t *done)
 {
 	int ret = 0;
 	char *page_buf = NULL;
@@ -998,11 +1004,16 @@ void dattobd_inode_unlock(struct inode *inode)
 #endif
 
 static struct kmem_cache **vm_area_cache =
-		(VM_AREA_CACHEP_ADDR != 0) ? (struct kmem_cache **)(VM_AREA_CACHEP_ADDR + (long long)(((void *)kfree) - (void *)KFREE_ADDR)) : NULL;
+		(VM_AREA_CACHEP_ADDR != 0) ?
+				(struct kmem_cache **)(VM_AREA_CACHEP_ADDR +
+									   (long long)(((void *)kfree) - (void *)KFREE_ADDR)) :
+				NULL;
 
 static struct kmem_cache **vma_lock_cache =
-		(VMA_LOCK_CACHEP_ADDR != 0) ? (struct kmem_cache **)(VMA_LOCK_CACHEP_ADDR + (long long)(((void *)kfree) - (void *)KFREE_ADDR)) :
-									  NULL;
+		(VMA_LOCK_CACHEP_ADDR != 0) ?
+				(struct kmem_cache **)(VMA_LOCK_CACHEP_ADDR +
+									   (long long)(((void *)kfree) - (void *)KFREE_ADDR)) :
+				NULL;
 
 struct vm_area_struct *dattobd_vm_area_allocate(struct mm_struct *mm)
 {
@@ -1143,7 +1154,8 @@ write_bio:
 		offset += SECTOR_SIZE;
 		sectors_processed++;
 		iterations_done++;
-	} while (sectors_processed < len && sector_by_offset(dev, offset) == start_sect + iterations_done);
+	} while (sectors_processed < len &&
+			 sector_by_offset(dev, offset) == start_sect + iterations_done);
 
 	kunmap(pg);
 
@@ -1245,7 +1257,8 @@ read_bio:
 		offset += SECTOR_SIZE;
 		sectors_processed++;
 		iterations_done++;
-	} while (sectors_processed < len && sector_by_offset(dev, offset) == start_sect + iterations_done);
+	} while (sectors_processed < len &&
+			 sector_by_offset(dev, offset) == start_sect + iterations_done);
 
 	bytes_to_read = iterations_done * SECTOR_SIZE;
 	bytes = bio_add_page(new_bio, pg, bytes_to_read, 0);

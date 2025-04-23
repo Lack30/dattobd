@@ -83,7 +83,8 @@ struct bio *bio_queue_dequeue(struct bio_queue *bq)
 static int bio_overlap(const struct bio *bio1, const struct bio *bio2)
 {
 	return max(bio_sector(bio1), bio_sector(bio2)) <=
-		   min(bio_sector(bio1) + (bio_size(bio1) / SECTOR_SIZE), bio_sector(bio2) + (bio_size(bio2) / SECTOR_SIZE));
+		   min(bio_sector(bio1) + (bio_size(bio1) / SECTOR_SIZE),
+			   bio_sector(bio2) + (bio_size(bio2) / SECTOR_SIZE));
 }
 
 /**

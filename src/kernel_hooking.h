@@ -13,6 +13,6 @@
 #else
 #define REGISTER_HOOKS register_kretprobe_hooks
 #define UNREGISTER_HOOKS unregister_kretprobe_hooks
-#endif 
+#endif
 
 #endif

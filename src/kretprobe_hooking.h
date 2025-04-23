@@ -57,9 +57,10 @@ void probe_pool_clear(struct probe_pool *p);
 int probe_pool_insert(struct probe_pool *p, unsigned long key, void *data);
 void *probe_pool_erase(struct probe_pool *p, unsigned long key);
 
-#define KRETPROBE(_name, _entry_handler, _ret_handler)                                                                                     \
-	{                                                                                                                                      \
-		.kp.symbol_name = (_name), .handler = (_ret_handler), .entry_handler = (_entry_handler), .maxactive = 8                            \
+#define KRETPROBE(_name, _entry_handler, _ret_handler)                                             \
+	{                                                                                              \
+		.kp.symbol_name = (_name), .handler = (_ret_handler), .entry_handler = (_entry_handler),   \
+		.maxactive = 8                                                                             \
 	}
 
 static inline unsigned long pt_regs_params(struct pt_regs *regs, int idx)

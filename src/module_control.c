@@ -49,8 +49,10 @@ MODULE_PARM_DESC(may_hook_syscalls, "if true, allows the kernel module to find a
 module_param_named(cow_max_memory_default, dattobd_cow_max_memory_default, ulong, 0);
 MODULE_PARM_DESC(cow_max_memory_default, "default maximum cache size (in bytes)");
 
-module_param_named(cow_fallocate_percentage_default, dattobd_cow_fallocate_percentage_default, uint, 0);
-MODULE_PARM_DESC(cow_fallocate_percentage_default, "default space allocated to the cow file (as integer percentage)");
+module_param_named(cow_fallocate_percentage_default, dattobd_cow_fallocate_percentage_default, uint,
+				   0);
+MODULE_PARM_DESC(cow_fallocate_percentage_default,
+				 "default space allocated to the cow file (as integer percentage)");
 
 module_param_named(max_snap_devices, dattobd_max_snap_devices, uint, S_IRUGO);
 MODULE_PARM_DESC(max_snap_devices, "maximum number of tracers available");
@@ -87,7 +89,8 @@ static struct miscdevice snap_control_device = {
  * Return:
  * The proc dir entry.
  */
-static struct proc_dir_entry *proc_create(const char *name, mode_t mode, struct proc_dir_entry *parent,
+static struct proc_dir_entry *proc_create(const char *name, mode_t mode,
+										  struct proc_dir_entry *parent,
 										  const struct file_operations *proc_fops)
 {
 	struct proc_dir_entry *ent;
@@ -163,8 +166,11 @@ static void calc_max_snap_devices_and_init_minor_range(void)
 {
 	// init minor range
 	if (dattobd_max_snap_devices == 0 || dattobd_max_snap_devices > DATTOBD_MAX_SNAP_DEVICES) {
-		const unsigned int nr_devices = dattobd_max_snap_devices == 0 ? DATTOBD_DEFAULT_SNAP_DEVICES : DATTOBD_MAX_SNAP_DEVICES;
-		LOG_WARN("invalid number of snapshot devices (%u), setting to %u", dattobd_max_snap_devices, nr_devices);
+		const unsigned int nr_devices = dattobd_max_snap_devices == 0 ?
+												DATTOBD_DEFAULT_SNAP_DEVICES :
+												DATTOBD_MAX_SNAP_DEVICES;
+		LOG_WARN("invalid number of snapshot devices (%u), setting to %u", dattobd_max_snap_devices,
+				 nr_devices);
 		dattobd_max_snap_devices = nr_devices;
 	}
 

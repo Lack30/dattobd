@@ -44,7 +44,7 @@ MRF_RETURN_TYPE dattobd_null_mrf(struct request_queue *q, struct bio *bio)
 
 #ifdef USE_BDOPS_SUBMIT_BIO
 
-MRF_RETURN_TYPE (*dattobd_blk_mq_submit_bio)
+MRF_RETURN_TYPE(*dattobd_blk_mq_submit_bio)
 (struct bio *) = (BLK_MQ_SUBMIT_BIO_ADDR != 0) ?
 						 (MRF_RETURN_TYPE(*)(struct bio *))(BLK_MQ_SUBMIT_BIO_ADDR +
 															(long long)(((void *)kfree) -

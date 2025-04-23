@@ -52,7 +52,8 @@ static int snap_read_bio_get_mode(const struct snap_device *dev, struct bio *bio
 		while (bytes < bio_iter_len(bio, iter)) {
 			// find the start and stop byte for our next write
 			curr_byte = curr_end_byte;
-			curr_end_byte += min(COW_BLOCK_SIZE - (curr_byte % COW_BLOCK_SIZE), ((uint64_t)bio_iter_len(bio, iter) - bytes));
+			curr_end_byte += min(COW_BLOCK_SIZE - (curr_byte % COW_BLOCK_SIZE),
+								 ((uint64_t)bio_iter_len(bio, iter) - bytes));
 
 			// check if the mapping exists
 			ret = cow_read_mapping(dev->sd_cow, curr_byte / COW_BLOCK_SIZE, &block_mapping);
@@ -63,7 +64,8 @@ static int snap_read_bio_get_mode(const struct snap_device *dev, struct bio *bio
 				start_mode = READ_MODE_COW_FILE;
 			else if (!start_mode && !block_mapping)
 				start_mode = READ_MODE_BASE_DEVICE;
-			else if ((start_mode == READ_MODE_COW_FILE && !block_mapping) || (start_mode == READ_MODE_BASE_DEVICE && block_mapping)) {
+			else if ((start_mode == READ_MODE_COW_FILE && !block_mapping) ||
+					 (start_mode == READ_MODE_BASE_DEVICE && block_mapping)) {
 				*mode = READ_MODE_MIXED;
 				return 0;
 			}
@@ -161,7 +163,8 @@ int snap_handle_read_bio(const struct snap_device *dev, struct bio *bio)
 			bvec_off = bvec->bv_offset;
 
 			while (bvec_off < bvec->bv_offset + bvec->bv_len) {
-				bytes_to_copy = min(bvec->bv_offset + bvec->bv_len - bvec_off, COW_BLOCK_SIZE - block_off);
+				bytes_to_copy =
+						min(bvec->bv_offset + bvec->bv_len - bvec_off, COW_BLOCK_SIZE - block_off);
 				// check if the mapping exists
 				ret = cow_read_mapping(dev->sd_cow, cur_block, &block_mapping);
 				if (ret) {
@@ -172,7 +175,8 @@ int snap_handle_read_bio(const struct snap_device *dev, struct bio *bio)
 				// if the mapping exists, read it into the page,
 				// overwriting the live data
 				if (block_mapping) {
-					ret = cow_read_data(dev->sd_cow, data + bvec_off, block_mapping, block_off, bytes_to_copy);
+					ret = cow_read_data(dev->sd_cow, data + bvec_off, block_mapping, block_off,
+										bytes_to_copy);
 					if (ret) {
 						kunmap(bvec->bv_page);
 						goto out;
@@ -254,8 +258,8 @@ int snap_handle_write_bio(const struct snap_device *dev, struct bio *bio)
 			// pass the block to the cow manager to be handled
 			ret = cow_write_current(dev->sd_cow, start_block, data);
 			if (ret) {
-				LOG_ERROR(ret, "memory demands %llu, memory saved before crash %llu", number_of_blocks * COW_BLOCK_SIZE,
-						  saved_blocks * COW_BLOCK_SIZE);
+				LOG_ERROR(ret, "memory demands %llu, memory saved before crash %llu",
+						  number_of_blocks * COW_BLOCK_SIZE, saved_blocks * COW_BLOCK_SIZE);
 				kunmap(bvec->bv_page);
 				goto error;
 			}

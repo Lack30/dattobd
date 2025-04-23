@@ -25,9 +25,9 @@ struct ftrace_hook {
 	struct ftrace_ops ops;
 };
 
-#define HOOK(_name, _function, _original)                                                                                                  \
-	{                                                                                                                                      \
-		.name = (_name), .function = (_function), .original = (_original),                                                                 \
+#define HOOK(_name, _function, _original)                                                          \
+	{                                                                                              \
+		.name = (_name), .function = (_function), .original = (_original),                         \
 	}
 
 #define USE_FENTRY_OFFSET 0
@@ -46,8 +46,10 @@ static __always_inline struct pt_regs *ftrace_get_regs(struct ftrace_regs *fregs
 #define UMOUNT_NOFOLLOW 0
 #endif
 
-#define handle_bdev_mount_nowrite(dir_name, follow_flags, idx_out) handle_bdev_mount_event(dir_name, follow_flags, idx_out, 0)
-#define handle_bdev_mounted_writable(dir_name, idx_out) handle_bdev_mount_event(dir_name, 0, idx_out, 1)
+#define handle_bdev_mount_nowrite(dir_name, follow_flags, idx_out)                                 \
+	handle_bdev_mount_event(dir_name, follow_flags, idx_out, 0)
+#define handle_bdev_mounted_writable(dir_name, idx_out)                                            \
+	handle_bdev_mount_event(dir_name, 0, idx_out, 1)
 
 #ifdef HAVE_SYS_OLDUMOUNT
 static asmlinkage long (*orig_oldumount)(char __user *);
@@ -58,9 +60,9 @@ int unregister_ftrace_hooks(void);
 
 void set_ftrace_instruction_pointer(struct ftrace_regs *fregs, unsigned long address);
 
-#ifdef CONFIG_HAVE_DYNAMIC_FTRACE_WITH_REGS
+#if defined(CONFIG_HAVE_DYNAMIC_FTRACE_WITH_REGS)
 #define FTRACE_OPS_PARAMS FTRACE_OPS_FL_SAVE_REGS | FTRACE_OPS_FL_RECURSION | FTRACE_OPS_FL_IPMODIFY
-#elif CONFIG_HAVE_DYNAMIC_FTRACE_WITH_ARGS
+#elif defined(CONFIG_HAVE_DYNAMIC_FTRACE_WITH_ARGS)
 #define FTRACE_OPS_PARAMS FTRACE_OPS_FL_RECURSION | FTRACE_OPS_FL_IPMODIFY
 #else
 #define FTRACE_OPS_PARAMS FTRACE_OPS_FL_RECURSION | FTRACE_OPS_FL_IPMODIFY

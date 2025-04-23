@@ -34,7 +34,7 @@ void reenable_page_protection(unsigned long *sctlr)
 	isb(); // 确保指令同步
 }
 
-#elif defined (CONFIG_X86)
+#elif defined(CONFIG_X86)
 
 #ifndef X86_CR0_WP
 #define X86_CR0_WP (1UL << 16)
