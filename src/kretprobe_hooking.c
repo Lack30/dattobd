@@ -5,7 +5,6 @@
  */
 
 #include "kretprobe_hooking.h"
-#include "kernel-config.h"
 
 #define handle_bdev_mount_nowrite(dir_name, follow_flags, idx_out)                                 \
 	handle_bdev_mount_event(dir_name, follow_flags, idx_out, 0)
@@ -48,15 +47,13 @@ int insert_node(struct rb_root *root, unsigned long key, void *data)
 		else if (key > cur->key)
 			new = &(*new)->rb_right;
 		else
-			return -EEXIST; // 键值已存在
+			return -EEXIST;
 	}
 
-	// 分配新节点
 	entry = kmalloc(sizeof(struct probe_entry), GFP_KERNEL);
 	entry->key = key;
 	entry->data = data;
 
-	// 链接节点并调整颜色
 	rb_link_node(&entry->node, parent, new);
 	rb_insert_color(&entry->node, root);
 	return 0;
@@ -82,9 +79,9 @@ void *pop_node(struct rb_root *root, unsigned long key)
 	void *data = NULL;
 	struct probe_entry *entry = search_node(root, key);
 	if (entry) {
-		rb_erase(&entry->node, root); // 从树中移除
+		rb_erase(&entry->node, root); 
 		data = entry->data;
-		kfree(entry); // 释放节点内存
+		kfree(entry); 
 	}
 	return data;
 }

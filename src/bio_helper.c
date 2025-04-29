@@ -421,9 +421,9 @@ static void __on_bio_read_complete(struct bio *bio, int err)
 	}
 
 	/*
-         * Reset the position in each bvec. Unnecessary with bvec iterators.
-         * Will cause multipage bvec capable kernels to lock up.
-         */
+     * Reset the position in each bvec. Unnecessary with bvec iterators.
+     * Will cause multipage bvec capable kernels to lock up.
+     */
 #ifndef HAVE_BVEC_ITER
 	//#if LINUX_VERSION_CODE < KERNEL_VERSION(3,14,0)
 	for (i = 0; i < bio->bi_vcnt; i++) {
@@ -433,11 +433,11 @@ static void __on_bio_read_complete(struct bio *bio, int err)
 #endif
 
 	/*
-         * drop our reference to the tp (will queue the orig_bio if nobody else
-         * is using it) at this point we set bi_private to the snap_device and
-         * change the destructor to use that instead. This only matters on older
-         * kernels
-         */
+     * drop our reference to the tp (will queue the orig_bio if nobody else
+     * is using it) at this point we set bi_private to the snap_device and
+     * change the destructor to use that instead. This only matters on older
+     * kernels
+     */
 	bio->bi_private = dev;
 #ifndef HAVE_BIO_BI_POOL
 	bio->bi_destructor = bio_destructor_snap_dev;
@@ -551,11 +551,12 @@ static void on_bio_read_complete(struct bio *bio)
  */
 struct inode *page_get_inode(struct page *pg)
 {
-	if (!pg)
+	if (!pg) {
 		return NULL;
+	}
 
-		// page_mapping() was not exported until 4.8, use
-		// compound_head() instead
+	// page_mapping() was not exported until 4.8, use
+	// compound_head() instead
 #ifdef HAVE_COMPOUND_HEAD
 	//#if LINUX_VERSION_CODE >= KERNEL_VERSION(2.6.22)
 	pg = compound_head(pg);

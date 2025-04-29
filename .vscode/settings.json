@@ -40,7 +40,13 @@
         "blkdev.h": "c",
         "config.h": "c",
         "tracing_params.h": "c",
-        "dattobd.h": "c"
+        "dattobd.h": "c",
+        "kernel-config.h": "c",
+        "mount.h": "c",
+        "userspace_copy_helpers.h": "c",
+        "cow_manager.h": "c",
+        "libdattobd.h": "c",
+        "ioctl.h": "c"
     },
     // 开启粘贴保存自动格式化
     "editor.formatOnPaste": true,

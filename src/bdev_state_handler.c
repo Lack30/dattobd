@@ -143,9 +143,7 @@ static int __handle_bdev_mount_writable(const char *dir_name, const struct block
 			// if the tracer's block device exists and matches the
 			// one being mounted perform transition
 			if (cur_bdev->bdev == bdev) {
-				LOG_DEBUG("block device mount detected for "
-						  "unverified device %d",
-						  i);
+				LOG_DEBUG("block device mount detected for unverified device %d", i);
 				auto_transition_active(i, dir_name, snap_devices);
 				dattobd_blkdev_put(cur_bdev);
 

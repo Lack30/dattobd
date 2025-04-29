@@ -21,8 +21,7 @@
 struct setup_params {
 	char *bdev; // name of block device to snapshot
 	char *cow; // name of cow file for snapshot
-	unsigned long fallocated_space; // space allocated to the cow file (in
-			// megabytes)
+	unsigned long fallocated_space; // space allocated to the cow file (in megabytes)
 	unsigned long cache_size; // maximum cache size (in bytes)
 	unsigned int minor; // requested minor number of the device
 };
@@ -36,8 +35,7 @@ struct reload_params {
 
 struct transition_snap_params {
 	char *cow; // name of cow file for snapshot
-	unsigned long fallocated_space; // space allocated to the cow file (in
-			// bytes)
+	unsigned long fallocated_space; // space allocated to the cow file (in bytes)
 	unsigned int minor; // requested minor
 };
 
@@ -112,5 +110,99 @@ struct dattobd_info {
 #define IOCTL_EXPAND_COW_FILE _IOW(DATTO_IOCTL_MAGIC, 10, struct expand_cow_file_params)
 #define IOCTL_RECONFIGURE_AUTO_EXPAND                                                              \
 	_IOW(DATTO_IOCTL_MAGIC, 11, struct reconfigure_auto_expand_params)
+
+struct netlink_setup_params {
+	char *bdev; // name of block device to snapshot
+	char *cow; // name of cow file for snapshot
+	unsigned long fallocated_space; // space allocated to the cow file (in megabytes)
+	unsigned long cache_size; // maximum cache size (in bytes)
+	unsigned int minor; // requested minor number of the device
+};
+
+struct netlink_reload_params {
+	char *bdev; // name of block device to snapshot
+	char *cow; // name of cow file for snapshot
+	unsigned long cache_size; // maximum cache size (in bytes)
+	unsigned int minor; // requested minor number of the device
+};
+
+struct netlink_destroy_params {
+	unsigned int minor; // requested minor number of the device
+};
+
+struct netlink_transition_inc_params {
+	unsigned int minor; // requested minor number of the device
+};
+
+struct netlink_transition_snap_params {
+	char *cow; // name of cow file for snapshot
+	unsigned long fallocated_space; // space allocated to the cow file (in bytes)
+	unsigned int minor; // requested minor
+};
+
+struct netlink_reconfigure_params {
+	unsigned long cache_size; // maximum cache size (in bytes)
+	unsigned int minor; // requested minor number of the device
+};
+
+struct netlink_info_params {
+	unsigned int minor;
+};
+
+struct netlink_expand_cow_file_params {
+	uint64_t size; // size in mib
+
+	unsigned int minor; // minor to extend
+};
+
+struct netlink_reconfigure_auto_expand_params {
+	uint64_t step_size; // step size in mib
+	uint64_t reserved_space; // reserved space in mib
+
+	unsigned int minor; // minor to configure
+};
+
+enum msg_type {
+	MSG_SETUP_SNAP = 1,
+	MSG_RELOAD_SNAP = 2,
+	MSG_RELOAD_INC = 3,
+	MSG_DESTROY = 4,
+	MSG_TRANSITION_INC = 5,
+	MSG_TRANSITION_SNAP = 6,
+	MSG_RECONFIGURE = 7,
+	MSG_DATTOBD_INFO = 8,
+	MSG_GET_FREE = 9,
+	MSG_EXPAND_COW_FILE = 10,
+	MSG_RECONFIGURE_AUTO_EXPAND = 11,
+};
+
+struct netlink_request {
+	enum msg_type type;
+	struct netlink_setup_params *setup_params;
+	struct netlink_reload_params *reload_params;
+	struct netlink_destroy_params *destroy_params;
+	struct netlink_transition_inc_params *transition_inc_params;
+	struct netlink_transition_snap_params *transition_snap_params;
+	struct netlink_reconfigure_params *reconfigure_params;
+	struct netlink_info_params *info_params;
+	struct netlink_expand_cow_file_params *expand_cow_file_params;
+	struct netlink_reconfigure_auto_expand_params *reconfigure_auto_expand_params;
+};
+
+struct netlink_dattobd_info {
+	struct dattobd_info *info;
+};
+
+struct netlink_get_free_response {
+	unsigned int minor; // requested minor number of the device
+};
+
+struct netlink_response {
+	enum msg_type type;
+	int ret;
+
+	struct netlink_dattobd_info *info;
+	struct netlink_get_free_response *get_free;
+};
 
 #endif /* DATTOBD_H_ */

@@ -24,6 +24,25 @@ int get_transition_snap_params(const struct transition_snap_params __user *in, u
 int get_reconfigure_params(const struct reconfigure_params __user *in, unsigned int *minor,
 						   unsigned long *cache_size);
 
+int get_netlink_setup_params(const struct netlink_setup_params __user *in, unsigned int *minor,
+							 char **bdev_name, char **cow_path, unsigned long *fallocated_space,
+							 unsigned long *cache_size);
+
+int get_netlink_destroy_params(const struct netlink_destroy_params __user *in, unsigned int *minor);
+
+int get_netlink_transition_inc_params(const struct netlink_transition_inc_params __user *in,
+									  unsigned int *minor);
+
+int get_netlink_reload_params(const struct netlink_reload_params __user *in, unsigned int *minor,
+							  char **bdev_name, char **cow_path, unsigned long *cache_size);
+
+int get_netlink_transition_snap_params(const struct netlink_transition_snap_params __user *in,
+									   unsigned int *minor, char **cow_path,
+									   unsigned long *fallocated_space);
+
+int get_netlink_reconfigure_params(const struct netlink_reconfigure_params __user *in,
+								   unsigned int *minor, unsigned long *cache_size);
+
 int user_path_at(int dfd, const char __user *name, unsigned flags, struct path *path);
 
 #endif /* USERSPACE_COPY_HELPERS_H_ */

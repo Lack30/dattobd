@@ -16,16 +16,17 @@
 #include "tracer.h"
 #include "tracer_helper.h"
 #include "kernel_hooking.h"
+#include "netlink_handlers.h"
 
 // current lowest supported kernel = 2.6.18
 
 // basic information
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Tom Caputi");
-MODULE_DESCRIPTION("Kernel module for supporting block device snapshots and "
-				   "incremental backups.");
+MODULE_DESCRIPTION("Kernel module for supporting block device snapshots and incremental backups.");
 MODULE_VERSION(DATTOBD_VERSION);
 
+#define DATTOBD_DEFAULT_NETLINK_UNIT 25
 #define DATTOBD_DEFAULT_SNAP_DEVICES 24
 #define DATTOBD_MAX_SNAP_DEVICES 255
 
@@ -38,6 +39,7 @@ int major;
  */
 int dattobd_may_hook_syscalls = 1;
 unsigned long dattobd_cow_max_memory_default = (300 * 1024 * 1024);
+unsigned int dattobd_netlink_unit = DATTOBD_DEFAULT_NETLINK_UNIT;
 unsigned int dattobd_cow_fallocate_percentage_default = 10;
 unsigned int dattobd_max_snap_devices = DATTOBD_DEFAULT_SNAP_DEVICES;
 int dattobd_debug = 0;
@@ -56,6 +58,9 @@ MODULE_PARM_DESC(cow_fallocate_percentage_default,
 
 module_param_named(max_snap_devices, dattobd_max_snap_devices, uint, S_IRUGO);
 MODULE_PARM_DESC(max_snap_devices, "maximum number of tracers available");
+
+module_param_named(netlink_unit, dattobd_netlink_unit, uint, S_IRUGO);
+MODULE_PARM_DESC(netlink_unit, "netlink unit for communication with user space");
 
 module_param_named(debug, dattobd_debug, int, S_IRUGO | S_IWUSR);
 MODULE_PARM_DESC(debug, "enables debug logging");
@@ -148,6 +153,8 @@ static void agent_exit(void)
 	UNREGISTER_HOOKS();
 
 	unregister_ioctl_control_interface();
+
+	destroy_netlink_handler();
 
 	unregister_sequential_file_in_proc();
 
@@ -280,6 +287,12 @@ static int __init agent_init(void)
 	ret = register_ioctl_control_interface();
 	if (ret) {
 		LOG_ERROR(ret, "error registering control device");
+		goto error;
+	}
+
+	ret = setup_netlink_handler(dattobd_netlink_unit);
+	if (ret) {
+		LOG_ERROR(ret, "error setting up netlink handler");
 		goto error;
 	}
 

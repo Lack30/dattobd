@@ -79,7 +79,7 @@ static int verify_files(FILE *cow, unsigned minor)
 	}
 
 	// 从 dattobd 驱动程序读取信息
-	ret = dattobd_info(minor, info);
+	ret = dattobd_info(minor, &info);
 	if (ret) {
 		ret = errno;
 		errno = 0;
