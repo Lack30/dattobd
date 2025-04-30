@@ -36,7 +36,7 @@ int __tracer_setup_unverified(struct snap_device *dev, unsigned int minor, const
 							  snap_device_array_mut snap_devices);
 void dattobd_free_request_tracking_ptr(struct snap_device *dev);
 
-/************************IOCTL TRANSITION FUNCTIONS************************/
+/************************NETLINK TRANSITION FUNCTIONS************************/
 
 int tracer_active_snap_to_inc(struct snap_device *old_dev, snap_device_array_mut snap_devices);
 

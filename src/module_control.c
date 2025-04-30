@@ -25,7 +25,6 @@ MODULE_AUTHOR("Tom Caputi");
 MODULE_DESCRIPTION("Kernel module for supporting block device snapshots and incremental backups.");
 MODULE_VERSION(DATTOBD_VERSION);
 
-#define DATTOBD_DEFAULT_NETLINK_UNIT 25
 #define DATTOBD_DEFAULT_SNAP_DEVICES 24
 #define DATTOBD_MAX_SNAP_DEVICES 255
 
@@ -38,7 +37,7 @@ int major;
  */
 int dattobd_may_hook_syscalls = 1;
 unsigned long dattobd_cow_max_memory_default = (300 * 1024 * 1024);
-unsigned int dattobd_netlink_unit = DATTOBD_DEFAULT_NETLINK_UNIT;
+unsigned int dattobd_netlink_unit = DATTOBD_NETLINK_UNIT;
 unsigned int dattobd_cow_fallocate_percentage_default = 10;
 unsigned int dattobd_max_snap_devices = DATTOBD_DEFAULT_SNAP_DEVICES;
 int dattobd_debug = 0;

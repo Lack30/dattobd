@@ -595,7 +595,7 @@ static void handle_request(struct netlink_request *req, struct netlink_response 
 		break;
 	case MSG_SETUP_SNAP:
 
-		ret = get_netlink_setup_params(req->setup_params, &minor, &bdev_path, &cow_path,
+		ret = get_setup_params(req->setup_params, &minor, &bdev_path, &cow_path,
 									   &fallocated_space, &cache_size);
 		if (ret)
 			break;
@@ -608,7 +608,7 @@ static void handle_request(struct netlink_request *req, struct netlink_response 
 
 	case MSG_RELOAD_SNAP:
 
-		ret = get_netlink_reload_params(req->reload_params, &minor, &bdev_path, &cow_path,
+		ret = get_reload_params(req->reload_params, &minor, &bdev_path, &cow_path,
 										&cache_size);
 		if (ret)
 			break;
@@ -620,7 +620,7 @@ static void handle_request(struct netlink_request *req, struct netlink_response 
 		break;
 	case MSG_RELOAD_INC:
 
-		ret = get_netlink_reload_params(req->reload_params, &minor, &bdev_path, &cow_path,
+		ret = get_reload_params(req->reload_params, &minor, &bdev_path, &cow_path,
 										&cache_size);
 		if (ret)
 			break;
@@ -632,7 +632,7 @@ static void handle_request(struct netlink_request *req, struct netlink_response 
 		break;
 
 	case MSG_DESTROY:
-		ret = get_netlink_destroy_params(req->destroy_params, &minor);
+		ret = get_destroy_params(req->destroy_params, &minor);
 		if (ret)
 			break;
 
@@ -642,7 +642,7 @@ static void handle_request(struct netlink_request *req, struct netlink_response 
 
 		break;
 	case MSG_TRANSITION_INC:
-		ret = get_netlink_transition_inc_params(req->transition_inc_params, &minor);
+		ret = get_transition_inc_params(req->transition_inc_params, &minor);
 		if (ret)
 			break;
 
@@ -653,7 +653,7 @@ static void handle_request(struct netlink_request *req, struct netlink_response 
 		break;
 	case MSG_TRANSITION_SNAP:
 
-		ret = get_netlink_transition_snap_params(req->transition_snap_params, &minor, &cow_path,
+		ret = get_transition_snap_params(req->transition_snap_params, &minor, &cow_path,
 												 &fallocated_space);
 		if (ret)
 			break;
@@ -665,7 +665,7 @@ static void handle_request(struct netlink_request *req, struct netlink_response 
 		break;
 
 	case MSG_RECONFIGURE:
-		ret = get_netlink_reconfigure_params(req->reconfigure_params, &minor, &cache_size);
+		ret = get_reconfigure_params(req->reconfigure_params, &minor, &cache_size);
 		if (ret)
 			break;
 
@@ -719,7 +719,7 @@ static void handle_request(struct netlink_request *req, struct netlink_response 
 		break;
 
 	case MSG_EXPAND_COW_FILE:
-		ret = get_netlink_expand_cow_file_params(req->expand_cow_file_params, &minor, &cow_size);
+		ret = get_expand_cow_file_params(req->expand_cow_file_params, &minor, &cow_size);
 		if (ret)
 			break;
 
@@ -730,7 +730,7 @@ static void handle_request(struct netlink_request *req, struct netlink_response 
 		break;
 
 	case MSG_RECONFIGURE_AUTO_EXPAND:
-		ret = get_netlink_reconfigure_auto_expand_params(req->reconfigure_auto_expand_params,
+		ret = get_reconfigure_auto_expand_params(req->reconfigure_auto_expand_params,
 														 &minor, &step_size, &reserved_space);
 		if (ret)
 			break;

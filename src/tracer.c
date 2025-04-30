@@ -1888,7 +1888,7 @@ error:
 	return ret;
 }
 
-/************************IOCTL TRANSITION FUNCTIONS************************/
+/************************NETLINK TRANSITION FUNCTIONS************************/
 
 /**
  * tracer_active_snap_to_inc() - Transitions from snapshot mode to incremental

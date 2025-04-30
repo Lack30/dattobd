@@ -102,7 +102,7 @@ int dattobd_setup_snapshot(unsigned int minor, char *bdev, char *cow,
 						   unsigned long fallocated_space, unsigned long cache_size)
 {
 	int ret;
-	struct netlink_setup_params sp;
+	struct setup_params sp;
 	struct netlink_request req;
 	struct netlink_response resp;
 
@@ -123,7 +123,7 @@ int dattobd_setup_snapshot(unsigned int minor, char *bdev, char *cow,
 int dattobd_reload_snapshot(unsigned int minor, char *bdev, char *cow, unsigned long cache_size)
 {
 	int ret;
-	struct netlink_reload_params rp;
+	struct reload_params rp;
 	struct netlink_request req;
 	struct netlink_response resp;
 
@@ -143,7 +143,7 @@ int dattobd_reload_snapshot(unsigned int minor, char *bdev, char *cow, unsigned 
 int dattobd_reload_incremental(unsigned int minor, char *bdev, char *cow, unsigned long cache_size)
 {
 	int ret;
-	struct netlink_reload_params rp;
+	struct reload_params rp;
 	struct netlink_request req;
 	struct netlink_response resp;
 
@@ -162,7 +162,7 @@ int dattobd_reload_incremental(unsigned int minor, char *bdev, char *cow, unsign
 int dattobd_destroy(unsigned int minor)
 {
 	int ret;
-	struct netlink_destroy_params dp = {
+	struct destroy_params dp = {
 		.minor = minor,
 	};
 	struct netlink_request req;
@@ -179,7 +179,7 @@ int dattobd_destroy(unsigned int minor)
 int dattobd_transition_incremental(unsigned int minor)
 {
 	int ret;
-	struct netlink_transition_inc_params tip = {
+	struct transition_inc_params tip = {
 		.minor = minor,
 	};
 	struct netlink_request req;
@@ -196,7 +196,7 @@ int dattobd_transition_incremental(unsigned int minor)
 int dattobd_transition_snapshot(unsigned int minor, char *cow, unsigned long fallocated_space)
 {
 	int ret;
-	struct netlink_transition_snap_params tp;
+	struct transition_snap_params tp;
 	struct netlink_request req;
 	struct netlink_response resp;
 
@@ -214,7 +214,7 @@ int dattobd_transition_snapshot(unsigned int minor, char *cow, unsigned long fal
 int dattobd_reconfigure(unsigned int minor, unsigned long cache_size)
 {
 	int ret;
-	struct netlink_reconfigure_params rp;
+	struct reconfigure_params rp;
 	struct netlink_request req;
 	struct netlink_response resp;
 
@@ -269,7 +269,7 @@ int dattobd_get_free_minor(void)
 int dattobd_expand_cow_file(unsigned int minor, uint64_t size)
 {
 	int ret;
-	struct netlink_expand_cow_file_params params = {
+	struct expand_cow_file_params params = {
 		.size = size,
 		.minor = minor,
 	};
@@ -287,7 +287,7 @@ int dattobd_expand_cow_file(unsigned int minor, uint64_t size)
 int dattobd_reconfigure_auto_expand(unsigned int minor, uint64_t step_size, uint64_t reserved_space)
 {
 	int ret;
-	struct netlink_reconfigure_auto_expand_params params = {
+	struct reconfigure_auto_expand_params params = {
 		.step_size = step_size,
 		.reserved_space = reserved_space,
 		.minor = minor,

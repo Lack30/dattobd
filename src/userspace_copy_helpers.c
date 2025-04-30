@@ -49,8 +49,7 @@ error:
 }
 
 /**
- * get_setup_params() - Copies &struct setup_params from user space to the
- * kernel.
+ * get_setup_params() - Copies &struct setup_params from user space.
  *
  * @in: The &struct setup_params object pointer from user space.
  * @minor: The minor number.
@@ -118,8 +117,71 @@ error:
 }
 
 /**
- * get_reload_params() - Copies &struct reload_params from user space to the
- * kernel.
+ * get_destroy_params() - Copies &struct destroy_params from user space.
+ *
+ * @in: The &struct destroy_params object pointer from user space.
+ * @minor: The minor number.
+ *
+ * Return:
+ * * 0 - success
+ * * !0 - errno indicating the error.
+ */
+int get_destroy_params(const struct destroy_params __user *in, unsigned int *minor)
+{
+	int ret;
+	struct destroy_params params;
+
+	// copy the params struct
+	ret = copy_from_user(&params, in, sizeof(struct destroy_params));
+	if (ret) {
+		ret = -EFAULT;
+		LOG_ERROR(ret, "error copying destroy_params struct from user space");
+		goto error;
+	}
+
+	*minor = params.minor;
+	return 0;
+
+error:
+	LOG_ERROR(ret, "error copying destroy_params from user space");
+	*minor = 0;
+	return ret;
+}
+
+/**
+ * get_transition_inc_params() - Copies &struct transition_inc_params from user space.
+ *
+ * @in: The &struct transition_inc_params object pointer from user space.
+ * @minor: The minor number.
+ *
+ * Return:
+ * * 0 - success
+ * * !0 - errno indicating the error.
+ */
+int get_transition_inc_params(const struct transition_inc_params __user *in, unsigned int *minor)
+{
+	int ret;
+	struct transition_inc_params params;
+
+	// copy the params struct
+	ret = copy_from_user(&params, in, sizeof(struct transition_inc_params));
+	if (ret) {
+		ret = -EFAULT;
+		LOG_ERROR(ret, "error copying transition_inc_params struct from user space");
+		goto error;
+	}
+
+	*minor = params.minor;
+	return 0;
+
+error:
+	LOG_ERROR(ret, "error copying transition_inc_params from user space");
+	*minor = 0;
+	return ret;
+}
+
+/**
+ * get_reload_params() - Copies &struct reload_params from user space.
  * @in: The &struct reload_params object pointer from user space.
  * @minor: The minor number.
  * @bdev_name: Uses @copy_string_from_user to transfer the block device name.
@@ -183,8 +245,7 @@ error:
 }
 
 /**
- * get_transition_snap_params() - Copies &struct transition_snap_params from
- * user space to the kernel.
+ * get_transition_snap_params() - Copies &struct transition_snap_params from user space.
  *
  * @in: The &struct transition_snap_params object pointer from user space.
  * @minor: The minor number.
@@ -205,8 +266,7 @@ int get_transition_snap_params(const struct transition_snap_params __user *in, u
 	ret = copy_from_user(&params, in, sizeof(struct transition_snap_params));
 	if (ret) {
 		ret = -EFAULT;
-		LOG_ERROR(ret, "error copying transition_snap_params struct "
-					   "from user space");
+		LOG_ERROR(ret, "error copying transition_snap_params struct from user space");
 		goto error;
 	}
 
@@ -236,8 +296,7 @@ error:
 }
 
 /**
- * get_reconfigure_params() - Copies &struct reconfigure_params from user
- * space to kernel space.
+ * get_reconfigure_params() - Copies &struct reconfigure_params from user space.
  * @in: The &struct reconfigure_params object pointer from user space.
  * @minor: The minor number.
  * @cache_size: A number of bytes for section cache.
@@ -273,294 +332,8 @@ error:
 }
 
 /**
- * get_netlink_setup_params() - Copies &struct netlink_setup_params from user space.
- *
- * @in: The &struct netlink_setup_params object pointer from user space.
- * @minor: The minor number.
- * @bdev_name: Uses @copy_string_from_user to transfer the block device name.
- * @cow_path: Uses @copy_string_from_user to transfer the cow file path.
- * @fallocated_space: A number of bytes for fallocated_space.
- * @cache_size: A number of bytes for section cache.
- *
- * Return:
- * * 0 - success
- * * !0 - errno indicating the error.
- */
-int get_netlink_setup_params(const struct netlink_setup_params __user *in, unsigned int *minor,
-							 char **bdev_name, char **cow_path, unsigned long *fallocated_space,
-							 unsigned long *cache_size)
-{
-	int ret;
-	struct netlink_setup_params params;
-
-	// copy the params struct
-	ret = copy_from_user(&params, in, sizeof(struct netlink_setup_params));
-	if (ret) {
-		ret = -EFAULT;
-		LOG_ERROR(ret, "error copying netlink_setup_params struct from user space");
-		goto error;
-	}
-
-	ret = copy_string_from_user((char __user *)params.bdev, bdev_name);
-	if (ret)
-		goto error;
-
-	if (!*bdev_name) {
-		ret = -EINVAL;
-		LOG_ERROR(ret, "NULL bdev given");
-		goto error;
-	}
-
-	ret = copy_string_from_user((char __user *)params.cow, cow_path);
-	if (ret)
-		goto error;
-
-	if (!*cow_path) {
-		ret = -EINVAL;
-		LOG_ERROR(ret, "NULL cow given");
-		goto error;
-	}
-
-	*minor = params.minor;
-	*fallocated_space = params.fallocated_space;
-	*cache_size = params.cache_size;
-	return 0;
-
-error:
-	LOG_ERROR(ret, "error copying netlink_setup_params from user space");
-	if (*bdev_name)
-		kfree(*bdev_name);
-	if (*cow_path)
-		kfree(*cow_path);
-
-	*bdev_name = NULL;
-	*cow_path = NULL;
-	*minor = 0;
-	*fallocated_space = 0;
-	*cache_size = 0;
-	return ret;
-}
-
-/**
- * get_netlink_destroy_params() - Copies &struct netlink_destroy_params from user space.
- *
- * @in: The &struct netlink_destroy_params object pointer from user space.
- * @minor: The minor number.
- *
- * Return:
- * * 0 - success
- * * !0 - errno indicating the error.
- */
-int get_netlink_destroy_params(const struct netlink_destroy_params __user *in, unsigned int *minor)
-{
-	int ret;
-	struct netlink_destroy_params params;
-
-	// copy the params struct
-	ret = copy_from_user(&params, in, sizeof(struct netlink_destroy_params));
-	if (ret) {
-		ret = -EFAULT;
-		LOG_ERROR(ret, "error copying netlink_destroy_params struct from user space");
-		goto error;
-	}
-
-	*minor = params.minor;
-	return 0;
-
-error:
-	LOG_ERROR(ret, "error copying netlink_destroy_params from user space");
-	*minor = 0;
-	return ret;
-}
-
-/**
- * get_netlink_transition_inc_params() - Copies &struct netlink_transition_inc_params from user space.
- *
- * @in: The &struct netlink_transition_inc_params object pointer from user space.
- * @minor: The minor number.
- *
- * Return:
- * * 0 - success
- * * !0 - errno indicating the error.
- */
-int get_netlink_transition_inc_params(const struct netlink_transition_inc_params __user *in,
-									  unsigned int *minor)
-{
-	int ret;
-	struct netlink_transition_inc_params params;
-
-	// copy the params struct
-	ret = copy_from_user(&params, in, sizeof(struct netlink_transition_inc_params));
-	if (ret) {
-		ret = -EFAULT;
-		LOG_ERROR(ret, "error copying netlink_transition_inc_params struct from user space");
-		goto error;
-	}
-
-	*minor = params.minor;
-	return 0;
-
-error:
-	LOG_ERROR(ret, "error copying netlink_transition_inc_params from user space");
-	*minor = 0;
-	return ret;
-}
-
-/**
- * get_netlink_reload_params() - Copies &struct reload_params from user space.
- * @in: The &struct reload_params object pointer from user space.
- * @minor: The minor number.
- * @bdev_name: Uses @copy_string_from_user to transfer the block device name.
- * @cow_path: Uses @copy_string_from_user to transfer the cow file path.
- * @cache_size: A number of bytes for section cache.
- *
- * Return:
- * * 0 - success
- * * !0 - errno indicating the error.
- */
-int get_netlink_reload_params(const struct netlink_reload_params __user *in, unsigned int *minor,
-							  char **bdev_name, char **cow_path, unsigned long *cache_size)
-{
-	int ret;
-	struct netlink_reload_params params;
-
-	// copy the params struct
-	ret = copy_from_user(&params, in, sizeof(struct netlink_reload_params));
-	if (ret) {
-		ret = -EFAULT;
-		LOG_ERROR(ret, "error copying netlink_reload_params struct from user space");
-		goto error;
-	}
-
-	ret = copy_string_from_user((char __user *)params.bdev, bdev_name);
-	if (ret)
-		goto error;
-
-	if (!*bdev_name) {
-		ret = -EINVAL;
-		LOG_ERROR(ret, "NULL bdev given");
-		goto error;
-	}
-
-	ret = copy_string_from_user((char __user *)params.cow, cow_path);
-	if (ret)
-		goto error;
-
-	if (!*cow_path) {
-		ret = -EINVAL;
-		LOG_ERROR(ret, "NULL cow given");
-		goto error;
-	}
-
-	*minor = params.minor;
-	*cache_size = params.cache_size;
-	return 0;
-
-error:
-	LOG_ERROR(ret, "error copying netlink_reload_params from user space");
-	if (*bdev_name)
-		kfree(*bdev_name);
-	if (*cow_path)
-		kfree(*cow_path);
-
-	*bdev_name = NULL;
-	*cow_path = NULL;
-	*minor = 0;
-	*cache_size = 0;
-	return ret;
-}
-
-/**
- * get_netlink_transition_snap_params() - Copies &struct transition_snap_params from user space.
- *
- * @in: The &struct transition_snap_params object pointer from user space.
- * @minor: The minor number.
- * @cow_path: Uses @copy_string_from_user to transfer the cow file path.
- * @fallocated_space: A number of bytes for fallocated_space.
- *
- * Return:
- * * 0 - success.
- * * !0 - errno indicating the error.
- */
-int get_netlink_transition_snap_params(const struct netlink_transition_snap_params __user *in,
-									   unsigned int *minor, char **cow_path,
-									   unsigned long *fallocated_space)
-{
-	int ret;
-	struct netlink_transition_snap_params params;
-
-	// copy the params struct
-	ret = copy_from_user(&params, in, sizeof(struct netlink_transition_snap_params));
-	if (ret) {
-		ret = -EFAULT;
-		LOG_ERROR(ret, "error copying netlink_transition_snap_params struct from user space");
-		goto error;
-	}
-
-	ret = copy_string_from_user((char __user *)params.cow, cow_path);
-	if (ret)
-		goto error;
-
-	if (!*cow_path) {
-		ret = -EINVAL;
-		LOG_ERROR(ret, "NULL cow given");
-		goto error;
-	}
-
-	*minor = params.minor;
-	*fallocated_space = params.fallocated_space;
-	return 0;
-
-error:
-	LOG_ERROR(ret, "error copying netlink_transition_snap_params from user space");
-	if (*cow_path)
-		kfree(*cow_path);
-
-	*cow_path = NULL;
-	*minor = 0;
-	*fallocated_space = 0;
-	return ret;
-}
-
-/**
- * get_netlink_reconfigure_params() - Copies &struct reconfigure_params from user space.
- * @in: The &struct reconfigure_params object pointer from user space.
- * @minor: The minor number.
- * @cache_size: A number of bytes for section cache.
- *
- * Return:
- * * 0 - success.
- * * !0 - errno indicating the error.
- */
-int get_netlink_reconfigure_params(const struct netlink_reconfigure_params __user *in,
-								   unsigned int *minor, unsigned long *cache_size)
-{
-	int ret;
-	struct netlink_reconfigure_params params;
-
-	// copy the params struct
-	ret = copy_from_user(&params, in, sizeof(struct netlink_reconfigure_params));
-	if (ret) {
-		ret = -EFAULT;
-		LOG_ERROR(ret, "error copying netlink_reconfigure_params struct from user space");
-		goto error;
-	}
-
-	*minor = params.minor;
-	*cache_size = params.cache_size;
-	return 0;
-
-error:
-	LOG_ERROR(ret, "error copying netlink_reconfigure_params from user space");
-
-	*minor = 0;
-	*cache_size = 0;
-	return ret;
-}
-
-/**
- * get_netlink_expand_cow_file_params() - Copies &struct netlink_expand_cow_file_params from user space.
- * @in: The &struct netlink_expand_cow_file_params object pointer from user space.
+ * get_expand_cow_file_params() - Copies &struct expand_cow_file_params from user space.
+ * @in: The &struct expand_cow_file_params object pointer from user space.
  * @minor: The minor number.
  * @size: A number of bytes for cow file size.
  *
@@ -568,17 +341,17 @@ error:
  * * 0 - success.
  * * !0 - errno indicating the error.
  */
-int get_netlink_expand_cow_file_params(const struct netlink_expand_cow_file_params __user *in,
-									   unsigned int *minor, uint64_t *size)
+int get_expand_cow_file_params(const struct expand_cow_file_params __user *in, unsigned int *minor,
+							   uint64_t *size)
 {
 	int ret;
-	struct netlink_expand_cow_file_params params;
+	struct expand_cow_file_params params;
 
 	// copy the params struct
-	ret = copy_from_user(&params, in, sizeof(struct netlink_expand_cow_file_params));
+	ret = copy_from_user(&params, in, sizeof(struct expand_cow_file_params));
 	if (ret) {
 		ret = -EFAULT;
-		LOG_ERROR(ret, "error copying netlink_expand_cow_file_params struct from user space");
+		LOG_ERROR(ret, "error copying expand_cow_file_params struct from user space");
 		goto error;
 	}
 
@@ -587,7 +360,7 @@ int get_netlink_expand_cow_file_params(const struct netlink_expand_cow_file_para
 	return 0;
 
 error:
-	LOG_ERROR(ret, "error copying netlink_expand_cow_file_params from user space");
+	LOG_ERROR(ret, "error copying expand_cow_file_params from user space");
 
 	*minor = 0;
 	*size = 0;
@@ -595,9 +368,9 @@ error:
 }
 
 /**
- * get_netlink_reconfigure_auto_expand_params() - Copies &struct netlink_reconfigure_auto_expand_params from user space.
+ * get_reconfigure_auto_expand_params() - Copies &struct reconfigure_auto_expand_params from user space.
  *
- * @in: The &struct netlink_reconfigure_auto_expand_params object pointer from user space.
+ * @in: The &struct reconfigure_auto_expand_params object pointer from user space.
  * @minor: The minor number.
  * @step_size: A number of bytes for step size.
  * @reserved_space: A number of bytes for reserved space.
@@ -606,19 +379,18 @@ error:
  * * 0 - success
  * * !0 - errno indicating the error.
  */
-int get_netlink_reconfigure_auto_expand_params(
-		const struct netlink_reconfigure_auto_expand_params __user *in, unsigned int *minor,
-		uint64_t *step_size, uint64_t *reserved_space)
+int get_reconfigure_auto_expand_params(const struct reconfigure_auto_expand_params __user *in,
+									   unsigned int *minor, uint64_t *step_size,
+									   uint64_t *reserved_space)
 {
 	int ret;
-	struct netlink_reconfigure_auto_expand_params params;
+	struct reconfigure_auto_expand_params params;
 
 	// copy the params struct
-	ret = copy_from_user(&params, in, sizeof(struct netlink_reconfigure_auto_expand_params));
+	ret = copy_from_user(&params, in, sizeof(struct reconfigure_auto_expand_params));
 	if (ret) {
 		ret = -EFAULT;
-		LOG_ERROR(ret,
-				  "error copying netlink_reconfigure_auto_expand_params struct from user space");
+		LOG_ERROR(ret, "error copying reconfigure_auto_expand_params struct from user space");
 		goto error;
 	}
 
@@ -627,7 +399,7 @@ int get_netlink_reconfigure_auto_expand_params(
 	*reserved_space = params.reserved_space;
 	return 0;
 error:
-	LOG_ERROR(ret, "error copying netlink_reconfigure_auto_expand_params from user space");
+	LOG_ERROR(ret, "error copying reconfigure_auto_expand_params from user space");
 
 	*minor = 0;
 	*step_size = 0;
