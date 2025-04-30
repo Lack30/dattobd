@@ -368,7 +368,7 @@ int get_netlink_destroy_params(const struct netlink_destroy_params __user *in, u
 	return 0;
 
 error:
-	LOG_ERROR(ret, "error copying netlink_setup_params from user space");
+	LOG_ERROR(ret, "error copying netlink_destroy_params from user space");
 	*minor = 0;
 	return ret;
 }
@@ -555,6 +555,83 @@ error:
 
 	*minor = 0;
 	*cache_size = 0;
+	return ret;
+}
+
+/**
+ * get_netlink_expand_cow_file_params() - Copies &struct netlink_expand_cow_file_params from user space.
+ * @in: The &struct netlink_expand_cow_file_params object pointer from user space.
+ * @minor: The minor number.
+ * @size: A number of bytes for cow file size.
+ *
+ * Return:
+ * * 0 - success.
+ * * !0 - errno indicating the error.
+ */
+int get_netlink_expand_cow_file_params(const struct netlink_expand_cow_file_params __user *in,
+									   unsigned int *minor, uint64_t *size)
+{
+	int ret;
+	struct netlink_expand_cow_file_params params;
+
+	// copy the params struct
+	ret = copy_from_user(&params, in, sizeof(struct netlink_expand_cow_file_params));
+	if (ret) {
+		ret = -EFAULT;
+		LOG_ERROR(ret, "error copying netlink_expand_cow_file_params struct from user space");
+		goto error;
+	}
+
+	*minor = params.minor;
+	*size = params.size;
+	return 0;
+
+error:
+	LOG_ERROR(ret, "error copying netlink_expand_cow_file_params from user space");
+
+	*minor = 0;
+	*size = 0;
+	return ret;
+}
+
+/**
+ * get_netlink_reconfigure_auto_expand_params() - Copies &struct netlink_reconfigure_auto_expand_params from user space.
+ *
+ * @in: The &struct netlink_reconfigure_auto_expand_params object pointer from user space.
+ * @minor: The minor number.
+ * @step_size: A number of bytes for step size.
+ * @reserved_space: A number of bytes for reserved space.
+ *
+ * Return:
+ * * 0 - success
+ * * !0 - errno indicating the error.
+ */
+int get_netlink_reconfigure_auto_expand_params(
+		const struct netlink_reconfigure_auto_expand_params __user *in, unsigned int *minor,
+		uint64_t *step_size, uint64_t *reserved_space)
+{
+	int ret;
+	struct netlink_reconfigure_auto_expand_params params;
+
+	// copy the params struct
+	ret = copy_from_user(&params, in, sizeof(struct netlink_reconfigure_auto_expand_params));
+	if (ret) {
+		ret = -EFAULT;
+		LOG_ERROR(ret,
+				  "error copying netlink_reconfigure_auto_expand_params struct from user space");
+		goto error;
+	}
+
+	*minor = params.minor;
+	*step_size = params.step_size;
+	*reserved_space = params.reserved_space;
+	return 0;
+error:
+	LOG_ERROR(ret, "error copying netlink_reconfigure_auto_expand_params from user space");
+
+	*minor = 0;
+	*step_size = 0;
+	*reserved_space = 0;
 	return ret;
 }
 

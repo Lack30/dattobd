@@ -69,6 +69,8 @@ struct reconfigure_auto_expand_params {
 #define COW_VERSION_0 0
 #define COW_VERSION_CHANGED_BLOCKS 1
 
+#define MAX_PAYLOAD 1024
+
 /**
  * struct cow_header - Encapsulates the values stored at the beginning of the
  * COW file.
@@ -145,10 +147,6 @@ struct netlink_reconfigure_params {
 	unsigned int minor; // requested minor number of the device
 };
 
-struct netlink_info_params {
-	unsigned int minor;
-};
-
 struct netlink_expand_cow_file_params {
 	uint64_t size; // size in mib
 
@@ -163,17 +161,18 @@ struct netlink_reconfigure_auto_expand_params {
 };
 
 enum msg_type {
-	MSG_SETUP_SNAP = 1,
-	MSG_RELOAD_SNAP = 2,
-	MSG_RELOAD_INC = 3,
-	MSG_DESTROY = 4,
-	MSG_TRANSITION_INC = 5,
-	MSG_TRANSITION_SNAP = 6,
-	MSG_RECONFIGURE = 7,
-	MSG_DATTOBD_INFO = 8,
-	MSG_GET_FREE = 9,
-	MSG_EXPAND_COW_FILE = 10,
-	MSG_RECONFIGURE_AUTO_EXPAND = 11,
+	MSG_PING = 1,
+	MSG_SETUP_SNAP = 2,
+	MSG_RELOAD_SNAP = 3,
+	MSG_RELOAD_INC = 4,
+	MSG_DESTROY = 5,
+	MSG_TRANSITION_INC = 6,
+	MSG_TRANSITION_SNAP = 7,
+	MSG_RECONFIGURE = 8,
+	MSG_DATTOBD_INFO = 9,
+	MSG_GET_FREE = 10,
+	MSG_EXPAND_COW_FILE = 11,
+	MSG_RECONFIGURE_AUTO_EXPAND = 12,
 };
 
 struct netlink_request {
@@ -184,13 +183,9 @@ struct netlink_request {
 	struct netlink_transition_inc_params *transition_inc_params;
 	struct netlink_transition_snap_params *transition_snap_params;
 	struct netlink_reconfigure_params *reconfigure_params;
-	struct netlink_info_params *info_params;
+	struct dattobd_info *info_params;
 	struct netlink_expand_cow_file_params *expand_cow_file_params;
 	struct netlink_reconfigure_auto_expand_params *reconfigure_auto_expand_params;
-};
-
-struct netlink_dattobd_info {
-	struct dattobd_info *info;
 };
 
 struct netlink_get_free_response {
@@ -198,11 +193,12 @@ struct netlink_get_free_response {
 };
 
 struct netlink_response {
-	enum msg_type type;
 	int ret;
+	enum msg_type type;
 
-	struct netlink_dattobd_info *info;
-	struct netlink_get_free_response *get_free;
+	union {
+		struct netlink_get_free_response get_free;
+	};
 };
 
 #endif /* DATTOBD_H_ */

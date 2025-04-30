@@ -46,7 +46,9 @@
         "userspace_copy_helpers.h": "c",
         "cow_manager.h": "c",
         "libdattobd.h": "c",
-        "ioctl.h": "c"
+        "ioctl.h": "c",
+        "unistd.h": "c",
+        "errno.h": "c"
     },
     // 开启粘贴保存自动格式化
     "editor.formatOnPaste": true,

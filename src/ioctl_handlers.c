@@ -700,8 +700,7 @@ long ctrl_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 		ret = copy_from_user(info, (struct dattobd_info __user *)arg, sizeof(struct dattobd_info));
 		if (ret) {
 			ret = -EFAULT;
-			LOG_ERROR(ret, "error copying dattobd info struct from "
-						   "user space");
+			LOG_ERROR(ret, "error copying dattobd info struct from user space");
 			break;
 		}
 

@@ -13,6 +13,8 @@
 extern "C" {
 #endif
 
+int dattobd_ping(void);
+
 int dattobd_setup_snapshot(unsigned int minor, char *bdev, char *cow, unsigned long fallocated_space, unsigned long cache_size);
 
 int dattobd_reload_snapshot(unsigned int minor, char *bdev, char *cow, unsigned long cache_size);
@@ -27,7 +29,7 @@ int dattobd_transition_snapshot(unsigned int minor, char *cow, unsigned long fal
 
 int dattobd_reconfigure(unsigned int minor, unsigned long cache_size);
 
-int dattobd_info(unsigned int minor, struct dattobd_info **info);
+int dattobd_info(unsigned int minor, struct dattobd_info *info);
 
 int dattobd_expand_cow_file(unsigned int minor, uint64_t size);
 

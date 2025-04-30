@@ -1,6 +1,7 @@
 #include "netlink_handlers.h"
 
 #include "blkdev.h"
+#include "dattobd.h"
 #include "hints.h"
 #include "includes.h"
 #include "linux/mutex.h"
@@ -574,7 +575,7 @@ static int get_free_minor(void)
 	return (found ? i : -ENOENT);
 }
 
-static int handle_request(struct netlink_request *req)
+static void handle_request(struct netlink_request *req, struct netlink_response *resp)
 {
 	int ret, idx;
 	char *bdev_path = NULL;
@@ -582,12 +583,16 @@ static int handle_request(struct netlink_request *req)
 	struct dattobd_info *info = NULL;
 	unsigned int minor = 0;
 	unsigned long fallocated_space = 0, cache_size = 0;
-	struct expand_cow_file_params *expand_params = NULL;
-	struct reconfigure_auto_expand_params *reconfigure_auto_expand_params = NULL;
+	uint64_t cow_size = 0;
+	uint64_t step_size = 0, reserved_space = 0;
 
 	mutex_lock(&netlink_mutex);
 
 	switch (req->type) {
+	case MSG_PING:
+		ret = 0;
+		
+		break;
 	case MSG_SETUP_SNAP:
 
 		ret = get_netlink_setup_params(req->setup_params, &minor, &bdev_path, &cow_path,
@@ -671,7 +676,71 @@ static int handle_request(struct netlink_request *req)
 		break;
 
 	case MSG_DATTOBD_INFO:
+		info = kmalloc(sizeof(struct dattobd_info), GFP_KERNEL);
+		if (!info) {
+			ret = -ENOMEM;
+			LOG_ERROR(ret, "error allocating dattobd info");
+			break;
+		}
+
+		ret = copy_from_user(info, (struct dattobd_info __user *)req->info_params,
+							 sizeof(struct dattobd_info));
+		if (ret) {
+			ret = -EFAULT;
+			LOG_ERROR(ret, "error copying dattobd info struct from user space");
+			break;
+		}
+
+		ret = netlink_dattobd_info(info);
+		if (ret)
+			break;
+
+		LOG_DEBUG("dattobd info: minor %u, cow_path: %s, bdev: %s, seqid %lld", info->minor,
+				  info->cow, info->bdev, info->seqid);
+		ret = copy_to_user((struct dattobd_info __user *)req->info_params, info,
+						   sizeof(struct dattobd_info));
+		if (ret) {
+			ret = -EFAULT;
+			LOG_ERROR(ret, "error copying dattobd info struct to user space");
+			break;
+		}
+
 		break;
+
+	case MSG_GET_FREE:
+		idx = get_free_minor();
+		if (idx < 0) {
+			ret = idx;
+			LOG_ERROR(ret, "no free devices");
+			break;
+		}
+
+		resp->get_free.minor = idx;
+		break;
+
+	case MSG_EXPAND_COW_FILE:
+		ret = get_netlink_expand_cow_file_params(req->expand_cow_file_params, &minor, &cow_size);
+		if (ret)
+			break;
+
+		ret = netlink_expand_cow_file(cow_size, minor);
+		if (ret)
+			break;
+
+		break;
+
+	case MSG_RECONFIGURE_AUTO_EXPAND:
+		ret = get_netlink_reconfigure_auto_expand_params(req->reconfigure_auto_expand_params,
+														 &minor, &step_size, &reserved_space);
+		if (ret)
+			break;
+
+		ret = netlink_reconfigure_auto_expand(step_size, reserved_space, minor);
+		if (ret)
+			break;
+
+		break;
+
 	default:
 		LOG_ERROR(-EINVAL, "unknown netlink message type");
 		break;
@@ -683,8 +752,11 @@ static int handle_request(struct netlink_request *req)
 		kfree(bdev_path);
 	if (cow_path)
 		kfree(cow_path);
+	if (info)
+		kfree(info);
 
-	return ret;
+	resp->ret = ret;
+	resp->type = req->type;
 }
 
 int dattobd_netlink_sendto(struct netlink_response *resp, int pid)
@@ -698,7 +770,7 @@ int dattobd_netlink_sendto(struct netlink_response *resp, int pid)
 		return -1;
 	}
 
-	nlh = nlmsg_put(nl_skb, pid, 0, NETLINK_USERSOCK, payload_size, 0);
+	nlh = nlmsg_put(nl_skb, 0, 0, NLMSG_DONE, payload_size, 0);
 	if (!nlh) {
 		nlmsg_free(nl_skb);
 		return -1;
@@ -728,12 +800,10 @@ static void recv_cb(struct sk_buff *__skb)
 		nlh = nlmsg_hdr(skb);
 		req = NLMSG_DATA(nlh);
 		if (req) {
-			ret = handle_request(req);
 			resp = kmalloc(sizeof(struct netlink_response), GFP_KERNEL);
-			resp->type = req->type;
-			resp->ret = ret;
+			handle_request(req, resp);
 			ret = dattobd_netlink_sendto(resp, nlh->nlmsg_pid);
-			if (ret)
+			if (ret != 0)
 				LOG_ERROR(ret, "error sending netlink response");
 		}
 	}

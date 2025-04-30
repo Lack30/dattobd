@@ -43,6 +43,13 @@ int get_netlink_transition_snap_params(const struct netlink_transition_snap_para
 int get_netlink_reconfigure_params(const struct netlink_reconfigure_params __user *in,
 								   unsigned int *minor, unsigned long *cache_size);
 
+int get_netlink_expand_cow_file_params(const struct netlink_expand_cow_file_params __user *in,
+									   unsigned int *minor, uint64_t *size);
+
+int get_netlink_reconfigure_auto_expand_params(const struct netlink_reconfigure_auto_expand_params __user *in, 
+											   unsigned int *minor, uint64_t *step_size,
+											   uint64_t *reserved_space);
+
 int user_path_at(int dfd, const char __user *name, unsigned flags, struct path *path);
 
 #endif /* USERSPACE_COPY_HELPERS_H_ */

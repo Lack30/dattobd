@@ -4,39 +4,39 @@
  * Copyright (C) 2015 Datto Inc.
  */
 
-#include "dattobd.h"
 #include <unistd.h>
 #include <fcntl.h>
 #include <errno.h>
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <sys/ioctl.h>
-#include "libdattobd.h"
-
 #include <sys/socket.h>
 #include <linux/netlink.h>
+
+#include "dattobd.h"
+#include "libdattobd.h"
 
 int datto_netlink_submit(struct netlink_request *req, struct netlink_response *resp)
 {
 	int sockfd, ret;
 	struct sockaddr_nl local, remote;
 	struct nlmsghdr *nlh = NULL;
+	struct msghdr msg;
+	struct iovec iov;
 	size_t req_size = sizeof(struct netlink_request);
 
 	sockfd = socket(AF_NETLINK, SOCK_RAW, 25);
 	if (sockfd == -1) {
-		// printf("create socket failure! %s\n", strerror(errno));
-		return 1;
+		return -EINVAL;
 	}
 
 	memset(&local, 0, sizeof(local));
 	local.nl_family = AF_NETLINK;
-	local.nl_pid = 50;
+	local.nl_pid = getpid();
+
 	local.nl_groups = 0;
 	if (bind(sockfd, (struct sockaddr *)&local, sizeof(local)) != 0) {
-		// printf("bind() error!\n");
-		ret = 1;
+		ret = -EINVAL;
 		goto error;
 	}
 
@@ -45,42 +45,56 @@ int datto_netlink_submit(struct netlink_request *req, struct netlink_response *r
 	remote.nl_pid = 0;
 	remote.nl_groups = 0;
 
-	nlh = (struct nlmsghdr *)malloc(NLMSG_SPACE(sizeof(struct nlmsghdr)));
-	memset(nlh, 0, sizeof(struct nlmsghdr));
-	nlh->nlmsg_len = NLMSG_SPACE(req_size);
+	nlh = (struct nlmsghdr *)malloc(NLMSG_SPACE(MAX_PAYLOAD));
+	nlh->nlmsg_len = NLMSG_SPACE(MAX_PAYLOAD);
 	nlh->nlmsg_flags = NLM_F_REQUEST;
-	nlh->nlmsg_type = NETLINK_USERSOCK;
-	nlh->nlmsg_seq = 0;
 	nlh->nlmsg_pid = local.nl_pid;
 
-	//printf("send to kernel!!\n");
 	memcpy(NLMSG_DATA(nlh), req, req_size);
-	ret = sendto(sockfd, nlh, nlh->nlmsg_len, 0, (struct sockaddr *)&remote,
-				 sizeof(struct sockaddr_nl));
+	memset(&iov, 0, sizeof(iov));
+	iov.iov_base = (void *)nlh;
+	iov.iov_len = nlh->nlmsg_len;
+
+	memset(&msg, 0, sizeof(msg));
+	msg.msg_name = (void *)&remote;
+	msg.msg_namelen = sizeof(remote);
+	msg.msg_iov = &iov;
+	msg.msg_iovlen = 1;
+
+	ret = sendmsg(sockfd, &msg, 0);
 	if (ret < 0) {
-		// printf("send to kernel error!\n");
-		ret = 1;
+		ret = -EINVAL;
 		goto error;
 	}
 
-	//printf("recv from kernel!!\n");
 	memset(nlh, 0, sizeof(struct nlmsghdr));
-	ret = recvfrom(sockfd, nlh, NLMSG_LENGTH(sizeof(struct netlink_response)), 0, NULL, NULL);
+	nlh->nlmsg_len = NLMSG_SPACE(sizeof(struct netlink_response));
+	ret = recvmsg(sockfd, &msg, 0);
 	if (ret < 0) {
-		// printf("recv from kernel error!\n");
-		ret = 1;
+		ret = -EINVAL;
 		goto error;
 	}
 	resp = (struct netlink_response *)NLMSG_DATA(nlh);
 	ret = resp->ret;
 
 error:
-	if (nlh)
-		free((void *)nlh);
-
 	if (sockfd)
 		close(sockfd);
 
+	if (nlh)
+		free((void *)nlh);
+
+	return ret;
+}
+
+int dattobd_ping(void) {
+	int ret;
+	struct netlink_request req;
+	struct netlink_response resp;
+
+	req.type = MSG_PING;
+
+	ret = datto_netlink_submit(&req, &resp);
 	return ret;
 }
 
@@ -214,10 +228,9 @@ int dattobd_reconfigure(unsigned int minor, unsigned long cache_size)
 	return ret;
 }
 
-int dattobd_info(unsigned int minor, struct dattobd_info **info)
+int dattobd_info(unsigned int minor, struct dattobd_info *info)
 {
 	int ret;
-	struct netlink_info_params ip;
 	struct netlink_request req;
 	struct netlink_response resp;
 
@@ -226,14 +239,14 @@ int dattobd_info(unsigned int minor, struct dattobd_info **info)
 		return -1;
 	}
 
-	ip.minor = minor;
+	memset(info, 0, sizeof(struct dattobd_info));
+	info->minor = minor;
 
 	req.type = MSG_DATTOBD_INFO;
-	req.info_params = &ip;
+	req.info_params = info;
 
 	ret = datto_netlink_submit(&req, &resp);
-	if (!ret)
-		*info = resp.info->info;
+	// printf("ok\n");
 
 	return ret;
 }
@@ -249,7 +262,7 @@ int dattobd_get_free_minor(void)
 	ret = datto_netlink_submit(&req, &resp);
 
 	if (!ret)
-		return resp.get_free->minor;
+		return resp.get_free.minor;
 	return ret;
 }
 

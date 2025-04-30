@@ -61,6 +61,16 @@ error:
 	return ret;
 }
 
+char *get_uuid(uint8_t uuid[16])
+{
+	int i, offset = 0;
+	char *s = malloc(37);
+	for (i = 0; i < COW_UUID_SIZE; i++) {
+		offset += snprintf(s + offset, 37 - offset, "%02x", uuid[i]);
+	}
+	return s;
+}
+
 // 验证 COW 文件和快照设备是否匹配
 static int verify_files(FILE *cow, unsigned minor)
 {
@@ -79,7 +89,7 @@ static int verify_files(FILE *cow, unsigned minor)
 	}
 
 	// 从 dattobd 驱动程序读取信息
-	ret = dattobd_info(minor, &info);
+	ret = dattobd_info(minor, info);
 	if (ret) {
 		ret = errno;
 		errno = 0;
@@ -113,7 +123,8 @@ static int verify_files(FILE *cow, unsigned minor)
 	// 检查序列号是否正确
 	if (ch.seqid != info->seqid - 1) {
 		ret = EINVAL;
-		fprintf(stderr, "snapshot provided does not immediately follow the snapshot that created the cow file\n");
+		fprintf(stderr,
+				"snapshot provided does not immediately follow the snapshot that created the cow file\n");
 		goto error;
 	}
 
@@ -221,8 +232,9 @@ int main(int argc, char **argv)
 		if (bytes != blocks_to_read * sizeof(uint64_t)) {
 			ret = errno;
 			errno = 0;
-			fprintf(stderr, "error reading mappings into memory: bytes %ld, expect %ld(block=%ld, fact=%ld)\n", bytes,
-					blocks_to_read * sizeof(uint64_t), blocks_to_read, sizeof(uint64_t));
+			fprintf(stderr,
+					"error reading mappings into memory: bytes %ld, expect %ld(block=%ld, fact=%ld)\n",
+					bytes, blocks_to_read * sizeof(uint64_t), blocks_to_read, sizeof(uint64_t));
 			goto error;
 		}
 
