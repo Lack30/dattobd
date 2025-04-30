@@ -31,9 +31,9 @@
 #define netlink_reload_inc(minor, bdev_path, cow_path, cache_size)                                 \
 	__netlink_setup(minor, bdev_path, cow_path, 0, cache_size, 0, 1)
 
-static struct sock *netlink_sock = NULL;
-
 struct mutex netlink_mutex;
+
+static struct sock *netlink_sock = NULL;
 
 /************************NETLINK HANDLER FUNCTIONS************************/
 
@@ -591,7 +591,7 @@ static void handle_request(struct netlink_request *req, struct netlink_response 
 	switch (req->type) {
 	case MSG_PING:
 		ret = 0;
-		
+
 		break;
 	case MSG_SETUP_SNAP:
 

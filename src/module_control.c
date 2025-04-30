@@ -9,7 +9,6 @@
 #include "dattobd.h"
 #include "includes.h"
 #include "callback_refs.h"
-#include "ioctl_handlers.h"
 #include "logging.h"
 #include "proc_seq_file.h"
 #include "snap_device.h"
@@ -67,20 +66,6 @@ MODULE_PARM_DESC(debug, "enables debug logging");
 
 static struct proc_dir_entry *info_proc;
 
-static const struct file_operations snap_control_fops = {
-	.owner = THIS_MODULE,
-	.unlocked_ioctl = ctrl_ioctl,
-	.compat_ioctl = ctrl_ioctl,
-	.open = nonseekable_open,
-	.llseek = noop_llseek,
-};
-
-static struct miscdevice snap_control_device = {
-	.minor = MISC_DYNAMIC_MINOR,
-	.name = CONTROL_DEVICE_NAME,
-	.fops = &snap_control_fops,
-};
-
 #ifndef HAVE_PROC_CREATE
 //#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,25)
 
@@ -114,17 +99,6 @@ error:
 #endif
 
 /**
- * unregister_ioctl_control_interface() - Tears down the miscellaneous device
- * driver created to provide user space with an IOCTL API to control this block
- * device driver.
- */
-static void unregister_ioctl_control_interface(void)
-{
-	LOG_DEBUG("unregistering control device");
-	misc_deregister(&snap_control_device);
-}
-
-/**
  * unregister_sequential_file_in_proc - Tears down the sequential file in /proc.
  */
 static void unregister_sequential_file_in_proc(void)
@@ -151,8 +125,6 @@ static void agent_exit(void)
 	LOG_DEBUG("module exit");
 
 	UNREGISTER_HOOKS();
-
-	unregister_ioctl_control_interface();
 
 	destroy_netlink_handler();
 
@@ -226,25 +198,6 @@ static int register_sequential_file_in_proc(void)
 }
 
 /**
- * register_ioctl_control_interface() - Creates a miscellaneous device driver
- *                                      that provides an IOCTL control API for
- *                                      this block device driver. After this
- *                                      call there will be a device file
- *                                      created in /dev that can be used to
- *                                      issue IOCTL commands to, for instance,
- *                                      create or remove snapshots.
- *
- * Return:
- * * 0 - success
- * * !0 - Not successful, the value gives some indication of what went wrong.
- */
-static int register_ioctl_control_interface(void)
-{
-	LOG_DEBUG("registering control device");
-	return misc_register(&snap_control_device);
-}
-
-/**
  * agent_init() - The function to setup the dattobd module.
  *
  * Return:
@@ -257,7 +210,7 @@ static int __init agent_init(void)
 
 	LOG_DEBUG("module init");
 
-	mutex_init(&ioctl_mutex);
+	mutex_init(&netlink_mutex);
 
 #ifndef USE_BDOPS_SUBMIT_BIO
 	// mrf ref hashtable init
@@ -281,12 +234,6 @@ static int __init agent_init(void)
 	ret = register_sequential_file_in_proc();
 	if (ret) {
 		LOG_ERROR(ret, "error registering proc file");
-		goto error;
-	}
-
-	ret = register_ioctl_control_interface();
-	if (ret) {
-		LOG_ERROR(ret, "error registering control device");
 		goto error;
 	}
 

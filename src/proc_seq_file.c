@@ -1,8 +1,8 @@
 #include "cow_manager.h"
 #include "dattobd.h"
 #include "includes.h"
-#include "ioctl_handlers.h"
 #include "module_control.h"
+#include "netlink_handlers.h"
 #include "snap_device.h"
 #include "tracer_helper.h"
 #include "proc_seq_file.h"
@@ -234,13 +234,13 @@ static int dattobd_proc_show(struct seq_file *m, void *v)
 
 static int dattobd_proc_open(struct inode *inode, struct file *filp)
 {
-	mutex_lock(&ioctl_mutex);
+	mutex_lock(&netlink_mutex);
 	return seq_open(filp, &dattobd_seq_proc_ops);
 }
 
 static int dattobd_proc_release(struct inode *inode, struct file *file)
 {
 	seq_release(inode, file);
-	mutex_unlock(&ioctl_mutex);
+	mutex_unlock(&netlink_mutex);
 	return 0;
 }

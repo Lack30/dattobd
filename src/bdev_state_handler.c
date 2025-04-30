@@ -18,9 +18,9 @@ static void auto_transition_dormant(unsigned int minor, snap_device_array snap_d
 {
 	LOG_DEBUG("ENTER %s minor: %d", __func__, minor);
 
-	mutex_lock(&ioctl_mutex);
+	mutex_lock(&netlink_mutex);
 	__tracer_active_to_dormant(snap_devices[minor]);
-	mutex_unlock(&ioctl_mutex);
+	mutex_unlock(&netlink_mutex);
 
 	LOG_DEBUG("EXIT %s", __func__);
 }
@@ -39,7 +39,7 @@ static void auto_transition_active(unsigned int minor, const char *dir_name,
 	struct snap_device *dev = snap_devices[minor];
 
 	LOG_DEBUG("ENTER %s minor: %d", __func__, minor);
-	mutex_lock(&ioctl_mutex);
+	mutex_lock(&netlink_mutex);
 
 	if (test_bit(UNVERIFIED, &dev->sd_state)) {
 		if (test_bit(SNAPSHOT, &dev->sd_state))
@@ -49,7 +49,7 @@ static void auto_transition_active(unsigned int minor, const char *dir_name,
 	} else
 		__tracer_dormant_to_active(dev, dir_name);
 
-	mutex_unlock(&ioctl_mutex);
+	mutex_unlock(&netlink_mutex);
 
 	LOG_DEBUG("EXIT %s", __func__);
 }

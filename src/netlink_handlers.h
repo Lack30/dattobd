@@ -8,6 +8,8 @@
 
 #include "dattobd.h"
 
+extern struct mutex netlink_mutex;
+
 int setup_netlink_handler(unsigned int unit);
 
 void destroy_netlink_handler(void);
