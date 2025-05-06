@@ -13,15 +13,15 @@ struct bio;
 struct snap_device;
 
 struct bsector_list {
-	struct bio_sector_map *head;
-	struct bio_sector_map *tail;
+    struct bio_sector_map *head;
+    struct bio_sector_map *tail;
 };
 
 struct tracing_params {
-	struct bio *orig_bio;
-	struct snap_device *dev;
-	atomic_t refs;
-	struct bsector_list bio_sects;
+    struct bio *orig_bio;
+    struct snap_device *dev;
+    atomic_t refs;
+    struct bsector_list bio_sects;
 };
 
 int tp_alloc(struct snap_device *dev, struct bio *bio, struct tracing_params **tp_out);

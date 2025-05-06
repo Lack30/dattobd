@@ -24,7 +24,7 @@
 #endif
 
 int handle_bdev_mount_event(const char *dir_name, int follow_flags, unsigned int *idx_out,
-							int mount_writable);
+                            int mount_writable);
 
 void post_umount_check(int dormant_ret, int umount_ret, unsigned int idx, const char *dir_name);
 

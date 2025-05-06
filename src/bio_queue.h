@@ -10,9 +10,9 @@
 #include "includes.h"
 
 struct bio_queue {
-	struct bio_list bios;
-	spinlock_t lock;
-	wait_queue_head_t event;
+    struct bio_list bios;
+    spinlock_t lock;
+    wait_queue_head_t event;
 };
 
 void bio_queue_init(struct bio_queue *bq);

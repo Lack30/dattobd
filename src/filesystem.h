@@ -40,7 +40,7 @@
 
 #ifndef HAVE_PATH_PUT
 #define dattobd_d_path(path, page_buf, page_size)                                                  \
-	d_path((path)->dentry, (path)->mnt, page_buf, page_size)
+    d_path((path)->dentry, (path)->mnt, page_buf, page_size)
 #define dattobd_get_nd_dentry(nd) (nd).dentry
 #define dattobd_get_nd_mnt(nd) (nd).mnt
 #else
@@ -58,12 +58,12 @@ struct dentry;
 struct vfsmount;
 
 struct dattobd_mutable_file {
-	struct file *filp;
-	struct dentry *dentry;
-	struct inode *inode;
-	struct vfsmount *mnt;
+    struct file *filp;
+    struct dentry *dentry;
+    struct inode *inode;
+    struct vfsmount *mnt;
 
-	atomic_t writers;
+    atomic_t writers;
 };
 
 struct dattobd_mutable_file *dattobd_mutable_file_wrap(struct file *);
@@ -77,8 +77,8 @@ void dattobd_mutable_file_unwrap(struct dattobd_mutable_file *);
 #ifndef HAVE_STRUCT_PATH
 //#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,20)
 struct path {
-	struct vfsmount *mnt;
-	struct dentry *dentry;
+    struct vfsmount *mnt;
+    struct dentry *dentry;
 };
 #endif
 
@@ -89,12 +89,12 @@ typedef mode_t fmode_t;
 int file_open(const char *filename, int flags, struct file **filp);
 
 int file_io(struct dattobd_mutable_file *dfilp, struct snap_device *dev, int is_write, void *buf,
-			sector_t offset, unsigned long len, unsigned long *done);
+            sector_t offset, unsigned long len, unsigned long *done);
 
 int file_truncate(struct dattobd_mutable_file *dfilp, loff_t len);
 
 int file_allocate(struct dattobd_mutable_file *dfilp, struct snap_device *dev, uint64_t offset,
-				  uint64_t length, uint64_t *done);
+                  uint64_t length, uint64_t *done);
 
 int file_unlink(struct dattobd_mutable_file *dfilp);
 
@@ -115,7 +115,7 @@ int pathname_to_absolute(const char *pathname, char **buf, int *len_res);
 int pathname_concat(const char *pathname1, const char *pathname2, char **path_out);
 
 int user_mount_pathname_concat(const char __user *user_mount_path, const char *rel_path,
-							   char **path_out);
+                               char **path_out);
 
 #ifndef HAVE_NOOP_LLSEEK
 //#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,35)

@@ -18,18 +18,18 @@ struct block_device;
 #endif
 
 struct bdev_wrapper {
-	struct block_device *bdev;
+    struct block_device *bdev;
 
-	union {
+    union {
 #ifdef HAVE_BDEV_HANDLE
-		struct bdev_handle *handle;
+        struct bdev_handle *handle;
 #endif
 // Kernel 6.9+ manages block_device with struct file and file_bdev has to be used to find block_device from file.
 // For us, file_bdev function is marker to check if we have to use
 #ifdef USE_BDEV_AS_FILE
-		struct file *file;
+        struct file *file;
 #endif
-	} _internal;
+    } _internal;
 };
 
 #ifndef HAVE_HD_STRUCT
