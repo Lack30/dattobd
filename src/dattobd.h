@@ -29,7 +29,8 @@
 #define COW_VERSION_0 0
 #define COW_VERSION_CHANGED_BLOCKS 1
 
-#define MAX_PAYLOAD 1024
+#define OP_WRITE_SIZE 512
+#define MAX_PAYLOAD 4096
 
 /**
  * struct cow_header - Encapsulates the values stored at the beginning of the
@@ -58,6 +59,16 @@ struct dattobd_info {
 	char bdev[PATH_MAX];
 	unsigned long long version;
 	unsigned long long nr_changed_blocks;
+};
+
+struct dattobd_watcher {
+	int pid;
+	char root[PATH_MAX];
+
+	unsigned long state;
+	int error;
+	unsigned long long seqid;
+	unsigned long long nr_changed_op;
 };
 
 struct setup_params {
@@ -107,6 +118,11 @@ struct reconfigure_auto_expand_params {
 	unsigned int minor; // minor to configure
 };
 
+struct vfs_watcher_params {
+	unsigned int minor;
+	char *root;
+};
+
 enum msg_type {
 	MSG_PING = 1,
 	MSG_SETUP_SNAP = 2,
@@ -120,6 +136,7 @@ enum msg_type {
 	MSG_GET_FREE = 10,
 	MSG_EXPAND_COW_FILE = 11,
 	MSG_RECONFIGURE_AUTO_EXPAND = 12,
+	MSG_OP_WATCH = 13,
 };
 
 struct netlink_request {
@@ -133,18 +150,103 @@ struct netlink_request {
 	struct dattobd_info *info_params;
 	struct expand_cow_file_params *expand_cow_file_params;
 	struct reconfigure_auto_expand_params *reconfigure_auto_expand_params;
+	struct vfs_watcher_params *vfs_watcher_params;
+};
+
+enum op_type {
+	OP_RELAY = 1,
+	OP_WRITE = 2,
+	OP_RENAME = 3,
+	OP_UNLINK = 4,
+	OP_SYMLINK = 5,
+	OP_MKDIR = 6,
+	OP_RMDIR = 7,
+	OP_CHOWN = 8,
+	OP_CHMOD = 9,
 };
 
 struct get_free_response {
 	unsigned int minor; // requested minor number of the device
 };
 
+struct fs_op_vfs_write {
+	unsigned int minor;
+	unsigned long long timestamp; // timestamp of the operation
+	char path[PATH_MAX]; // path of the file
+	unsigned long i_ino; // inode number
+	unsigned long offset; // offset in the file
+	unsigned long len; // length of the data
+	char buf[OP_WRITE_SIZE];
+};
+
+struct fs_op_vfs_rename {
+	unsigned int minor;
+	unsigned long long timestamp; // timestamp of the operation
+	unsigned long i_ino; // inode number
+	char old_path[PATH_MAX]; // old path of the file
+	char new_path[PATH_MAX]; // new path of the file
+};
+
+struct fs_op_vfs_unlink {
+	unsigned int minor;
+	unsigned long long timestamp; // timestamp of the operation
+	unsigned long i_ino; // inode number
+	char path[PATH_MAX]; // path of the file
+};
+
+struct fs_op_vfs_symlink {
+	unsigned int minor;
+	unsigned long long timestamp; // timestamp of the operation
+	unsigned long i_ino; // inode number
+	char old_path[PATH_MAX]; // old path of the file
+	char new_path[PATH_MAX]; // new path of the file
+};
+
+struct fs_op_vfs_mkdir {
+	unsigned int minor;
+	unsigned long long timestamp;
+	unsigned long i_ino;
+	char path[PATH_MAX];
+};
+
+struct fs_op_vfs_rmdir {
+	unsigned int minor;
+	unsigned long long timestamp;
+	unsigned long i_ino;
+	char path[PATH_MAX];
+};
+
+struct fs_op_vfs_chmod {
+	unsigned int minor;
+	unsigned long long timestamp; // timestamp of the operation
+	unsigned long i_ino; // inode number
+	char path[PATH_MAX]; // path of the file
+	unsigned short mode; // new mode
+};
+
+struct fs_op_vfs_chown {
+	unsigned int minor;
+	unsigned long long timestamp;
+	unsigned long i_ino;
+	unsigned int uid;
+	unsigned int gid;
+};
+
 struct netlink_response {
 	int ret;
 	enum msg_type type;
+	enum op_type op_type; // valid when type is MSG_OP_WATCH
 
 	union {
 		struct get_free_response get_free;
+		struct fs_op_vfs_write op_write;
+		struct fs_op_vfs_rename op_rename;
+		struct fs_op_vfs_unlink op_unlink;
+		struct fs_op_vfs_symlink op_symlink;
+		struct fs_op_vfs_mkdir op_mkdir;
+		struct fs_op_vfs_rmdir op_rmdir;
+		struct fs_op_vfs_chmod op_chmod;
+		struct fs_op_vfs_chown op_chown;
 	};
 };
 
