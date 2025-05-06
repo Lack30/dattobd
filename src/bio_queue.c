@@ -15,9 +15,9 @@
  */
 void bio_queue_init(struct bio_queue *bq)
 {
-	bio_list_init(&bq->bios);
-	spin_lock_init(&bq->lock);
-	init_waitqueue_head(&bq->event);
+    bio_list_init(&bq->bios);
+    spin_lock_init(&bq->lock);
+    init_waitqueue_head(&bq->event);
 }
 
 /**
@@ -30,7 +30,7 @@ void bio_queue_init(struct bio_queue *bq)
  */
 int bio_queue_empty(const struct bio_queue *bq)
 {
-	return bio_list_empty(&bq->bios);
+    return bio_list_empty(&bq->bios);
 }
 
 /**
@@ -42,12 +42,12 @@ int bio_queue_empty(const struct bio_queue *bq)
  */
 void bio_queue_add(struct bio_queue *bq, struct bio *bio)
 {
-	unsigned long flags;
+    unsigned long flags;
 
-	spin_lock_irqsave(&bq->lock, flags);
-	bio_list_add(&bq->bios, bio);
-	spin_unlock_irqrestore(&bq->lock, flags);
-	wake_up(&bq->event);
+    spin_lock_irqsave(&bq->lock, flags);
+    bio_list_add(&bq->bios, bio);
+    spin_unlock_irqrestore(&bq->lock, flags);
+    wake_up(&bq->event);
 }
 
 /**
@@ -61,14 +61,14 @@ void bio_queue_add(struct bio_queue *bq, struct bio *bio)
  */
 struct bio *bio_queue_dequeue(struct bio_queue *bq)
 {
-	unsigned long flags;
-	struct bio *bio;
+    unsigned long flags;
+    struct bio *bio;
 
-	spin_lock_irqsave(&bq->lock, flags);
-	bio = bio_list_pop(&bq->bios);
-	spin_unlock_irqrestore(&bq->lock, flags);
+    spin_lock_irqsave(&bq->lock, flags);
+    bio = bio_list_pop(&bq->bios);
+    spin_unlock_irqrestore(&bq->lock, flags);
 
-	return bio;
+    return bio;
 }
 
 /**
@@ -82,9 +82,9 @@ struct bio *bio_queue_dequeue(struct bio_queue *bq)
  */
 static int bio_overlap(const struct bio *bio1, const struct bio *bio2)
 {
-	return max(bio_sector(bio1), bio_sector(bio2)) <=
-		   min(bio_sector(bio1) + (bio_size(bio1) / SECTOR_SIZE),
-			   bio_sector(bio2) + (bio_size(bio2) / SECTOR_SIZE));
+    return max(bio_sector(bio1), bio_sector(bio2)) <=
+           min(bio_sector(bio1) + (bio_size(bio1) / SECTOR_SIZE),
+               bio_sector(bio2) + (bio_size(bio2) / SECTOR_SIZE));
 }
 
 /**
@@ -105,36 +105,36 @@ static int bio_overlap(const struct bio *bio1, const struct bio *bio2)
  */
 struct bio *bio_queue_dequeue_delay_read(struct bio_queue *bq)
 {
-	unsigned long flags;
-	struct bio *bio, *tmp, *prev = NULL;
+    unsigned long flags;
+    struct bio *bio, *tmp, *prev = NULL;
 
-	spin_lock_irqsave(&bq->lock, flags);
+    spin_lock_irqsave(&bq->lock, flags);
 
-	bio = bio_list_pop(&bq->bios);
+    bio = bio_list_pop(&bq->bios);
 
-	if (!bio_data_dir(bio)) {
-		bio_list_for_each (tmp, &bq->bios) {
-			if (bio_data_dir(tmp) && bio_overlap(bio, tmp)) {
-				if (prev)
-					prev->bi_next = bio;
-				else
-					bq->bios.head = bio;
+    if (!bio_data_dir(bio)) {
+        bio_list_for_each (tmp, &bq->bios) {
+            if (bio_data_dir(tmp) && bio_overlap(bio, tmp)) {
+                if (prev)
+                    prev->bi_next = bio;
+                else
+                    bq->bios.head = bio;
 
-				if (bq->bios.tail == tmp)
-					bq->bios.tail = bio;
+                if (bq->bios.tail == tmp)
+                    bq->bios.tail = bio;
 
-				bio->bi_next = tmp->bi_next;
-				tmp->bi_next = NULL;
-				bio = tmp;
+                bio->bi_next = tmp->bi_next;
+                tmp->bi_next = NULL;
+                bio = tmp;
 
-				goto out;
-			}
-			prev = tmp;
-		}
-	}
+                goto out;
+            }
+            prev = tmp;
+        }
+    }
 
 out:
-	spin_unlock_irqrestore(&bq->lock, flags);
+    spin_unlock_irqrestore(&bq->lock, flags);
 
-	return bio;
+    return bio;
 }

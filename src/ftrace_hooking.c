@@ -4,237 +4,237 @@
 static inline bool dattobd_within_module(unsigned long addr, const struct module *mod)
 {
 #ifdef HAVE_WITHIN_MODULE
-	return within_module(addr, mod);
+    return within_module(addr, mod);
 #else
-	return within_module_init(addr, mod) || within_module_core(addr, mod);
+    return within_module_init(addr, mod) || within_module_core(addr, mod);
 #endif
 }
 
 static int (*orig_path_mount)(const char *dev_name, struct path *path, const char *type_page,
-							  unsigned long flags, void *data_page);
+                              unsigned long flags, void *data_page);
 
 static int ftrace_path_mount(const char *dev_name, struct path *path, const char *type_page,
-							 unsigned long flags, void *data_page)
+                             unsigned long flags, void *data_page)
 
 {
-	int ret = 0;
-	int sys_ret = 0;
-	unsigned int idx = 0;
-	unsigned long real_flags = flags;
-	char *dir_name = NULL;
-	char *buf = NULL;
+    int ret = 0;
+    int sys_ret = 0;
+    unsigned int idx = 0;
+    unsigned long real_flags = flags;
+    char *dir_name = NULL;
+    char *buf = NULL;
 
-	buf = kmalloc(PATH_MAX, GFP_KERNEL);
-	if (!buf) {
-		return -ENOMEM;
-	}
+    buf = kmalloc(PATH_MAX, GFP_KERNEL);
+    if (!buf) {
+        return -ENOMEM;
+    }
 
-	// get rid of the magic value if its present
-	if ((real_flags & MS_MGC_MSK) == MS_MGC_VAL)
-		real_flags &= ~MS_MGC_MSK;
+    // get rid of the magic value if its present
+    if ((real_flags & MS_MGC_MSK) == MS_MGC_VAL)
+        real_flags &= ~MS_MGC_MSK;
 
-	if (real_flags & (MS_BIND | MS_SHARED | MS_PRIVATE | MS_SLAVE | MS_UNBINDABLE | MS_MOVE) ||
-		((real_flags & MS_RDONLY) && !(real_flags & MS_REMOUNT))) {
-		// bind, shared, move, or new read-only mounts it do not affect
-		// the state of the driver
+    if (real_flags & (MS_BIND | MS_SHARED | MS_PRIVATE | MS_SLAVE | MS_UNBINDABLE | MS_MOVE) ||
+        ((real_flags & MS_RDONLY) && !(real_flags & MS_REMOUNT))) {
+        // bind, shared, move, or new read-only mounts it do not affect
+        // the state of the driver
 
-		sys_ret = orig_path_mount(dev_name, path, type_page, flags, data_page);
-	} else if ((real_flags & MS_RDONLY) && (real_flags & MS_REMOUNT)) {
-		// we are remounting read-only, same as umounting as far as the
-		// driver is concerned
-		dir_name = d_path(path, buf, PATH_MAX);
-		ret = handle_bdev_mount_nowrite(dir_name, 0, &idx);
+        sys_ret = orig_path_mount(dev_name, path, type_page, flags, data_page);
+    } else if ((real_flags & MS_RDONLY) && (real_flags & MS_REMOUNT)) {
+        // we are remounting read-only, same as umounting as far as the
+        // driver is concerned
+        dir_name = d_path(path, buf, PATH_MAX);
+        ret = handle_bdev_mount_nowrite(dir_name, 0, &idx);
 
-		sys_ret = orig_path_mount(dev_name, path, type_page, flags, data_page);
-		post_umount_check(ret, sys_ret, idx, dir_name);
-	} else {
-		// new read-write mount
-		sys_ret = orig_path_mount(dev_name, path, type_page, flags, data_page);
+        sys_ret = orig_path_mount(dev_name, path, type_page, flags, data_page);
+        post_umount_check(ret, sys_ret, idx, dir_name);
+    } else {
+        // new read-write mount
+        sys_ret = orig_path_mount(dev_name, path, type_page, flags, data_page);
 
-		if (!sys_ret) {
-			dir_name = d_path(path, buf, PATH_MAX);
-			ret = handle_bdev_mounted_writable(dir_name, &idx);
-		}
-	}
+        if (!sys_ret) {
+            dir_name = d_path(path, buf, PATH_MAX);
+            ret = handle_bdev_mounted_writable(dir_name, &idx);
+        }
+    }
 
-	if (buf)
-		kfree(buf);
-	return sys_ret;
+    if (buf)
+        kfree(buf);
+    return sys_ret;
 }
 
 static long (*orig_do_mount)(const char *dev_name, const char __user *dir_name,
-							 const char *type_page, unsigned long flags, void *data_page);
+                             const char *type_page, unsigned long flags, void *data_page);
 
 static long ftrace_do_mount(const char *dev_name, const char __user *dir_name,
-							const char *type_page, unsigned long flags, void *data_page)
+                            const char *type_page, unsigned long flags, void *data_page)
 {
-	long ret = 0;
-	long sys_ret;
-	unsigned int idx = 0;
-	unsigned long real_flags = flags;
+    long ret = 0;
+    long sys_ret;
+    unsigned int idx = 0;
+    unsigned long real_flags = flags;
 
-	// get rid of the magic value if its present
-	if ((real_flags & MS_MGC_MSK) == MS_MGC_VAL)
-		real_flags &= ~MS_MGC_MSK;
+    // get rid of the magic value if its present
+    if ((real_flags & MS_MGC_MSK) == MS_MGC_VAL)
+        real_flags &= ~MS_MGC_MSK;
 
-	if (real_flags & (MS_BIND | MS_SHARED | MS_PRIVATE | MS_SLAVE | MS_UNBINDABLE | MS_MOVE) ||
-		((real_flags & MS_RDONLY) && !(real_flags & MS_REMOUNT))) {
-		// bind, shared, move, or new read-only mounts it do not affect
-		// the state of the driver
-		sys_ret = orig_do_mount(dev_name, dir_name, type_page, flags, data_page);
-	} else if ((real_flags & MS_RDONLY) && (real_flags & MS_REMOUNT)) {
-		// we are remounting read-only, same as umounting as far as the
-		// driver is concerned
+    if (real_flags & (MS_BIND | MS_SHARED | MS_PRIVATE | MS_SLAVE | MS_UNBINDABLE | MS_MOVE) ||
+        ((real_flags & MS_RDONLY) && !(real_flags & MS_REMOUNT))) {
+        // bind, shared, move, or new read-only mounts it do not affect
+        // the state of the driver
+        sys_ret = orig_do_mount(dev_name, dir_name, type_page, flags, data_page);
+    } else if ((real_flags & MS_RDONLY) && (real_flags & MS_REMOUNT)) {
+        // we are remounting read-only, same as umounting as far as the
+        // driver is concerned
 
-		ret = handle_bdev_mount_nowrite(dir_name, 0, &idx);
-		sys_ret = orig_do_mount(dev_name, dir_name, type_page, flags, data_page);
-		post_umount_check(ret, sys_ret, idx, dir_name);
-	} else {
-		// new read-write mount
-		sys_ret = orig_do_mount(dev_name, dir_name, type_page, flags, data_page);
-		if (!sys_ret) {
-			handle_bdev_mounted_writable(dir_name, &idx);
-		}
-	}
+        ret = handle_bdev_mount_nowrite(dir_name, 0, &idx);
+        sys_ret = orig_do_mount(dev_name, dir_name, type_page, flags, data_page);
+        post_umount_check(ret, sys_ret, idx, dir_name);
+    } else {
+        // new read-write mount
+        sys_ret = orig_do_mount(dev_name, dir_name, type_page, flags, data_page);
+        if (!sys_ret) {
+            handle_bdev_mounted_writable(dir_name, &idx);
+        }
+    }
 
-	return sys_ret;
+    return sys_ret;
 }
 
 static int (*orig_ksys_mount)(char __user *dev_name, char __user *dir_name, char __user *type,
-							  unsigned long flags, void __user *data);
+                              unsigned long flags, void __user *data);
 
 static int ftrace_ksys_mount(char __user *dev_name, char __user *dir_name, char __user *type,
-							 unsigned long flags, void __user *data)
+                             unsigned long flags, void __user *data)
 {
-	long ret = 0;
-	long sys_ret = 0;
-	unsigned int idx = 0;
-	unsigned long real_flags = flags;
+    long ret = 0;
+    long sys_ret = 0;
+    unsigned int idx = 0;
+    unsigned long real_flags = flags;
 
-	// get rid of the magic value if its present
-	if ((real_flags & MS_MGC_MSK) == MS_MGC_VAL)
-		real_flags &= ~MS_MGC_MSK;
+    // get rid of the magic value if its present
+    if ((real_flags & MS_MGC_MSK) == MS_MGC_VAL)
+        real_flags &= ~MS_MGC_MSK;
 
-	if (real_flags & (MS_BIND | MS_SHARED | MS_PRIVATE | MS_SLAVE | MS_UNBINDABLE | MS_MOVE) ||
-		((real_flags & MS_RDONLY) && !(real_flags & MS_REMOUNT))) {
-		// bind, shared, move, or new read-only mounts it do not affect
-		// the state of the driver
-		sys_ret = orig_ksys_mount(dev_name, dir_name, type, flags, data);
-	} else if ((real_flags & MS_RDONLY) && (real_flags & MS_REMOUNT)) {
-		// we are remounting read-only, same as umounting as far as the
-		// driver is concerned
-		ret = handle_bdev_mount_nowrite(dir_name, 0, &idx);
-		sys_ret = orig_ksys_mount(dev_name, dir_name, type, flags, data);
-		post_umount_check(ret, sys_ret, idx, dir_name);
-	} else {
-		// new read-write mount
-		sys_ret = orig_ksys_mount(dev_name, dir_name, type, flags, data);
-		if (!sys_ret)
-			handle_bdev_mounted_writable(dir_name, &idx);
-	}
+    if (real_flags & (MS_BIND | MS_SHARED | MS_PRIVATE | MS_SLAVE | MS_UNBINDABLE | MS_MOVE) ||
+        ((real_flags & MS_RDONLY) && !(real_flags & MS_REMOUNT))) {
+        // bind, shared, move, or new read-only mounts it do not affect
+        // the state of the driver
+        sys_ret = orig_ksys_mount(dev_name, dir_name, type, flags, data);
+    } else if ((real_flags & MS_RDONLY) && (real_flags & MS_REMOUNT)) {
+        // we are remounting read-only, same as umounting as far as the
+        // driver is concerned
+        ret = handle_bdev_mount_nowrite(dir_name, 0, &idx);
+        sys_ret = orig_ksys_mount(dev_name, dir_name, type, flags, data);
+        post_umount_check(ret, sys_ret, idx, dir_name);
+    } else {
+        // new read-write mount
+        sys_ret = orig_ksys_mount(dev_name, dir_name, type, flags, data);
+        if (!sys_ret)
+            handle_bdev_mounted_writable(dir_name, &idx);
+    }
 
-	return sys_ret;
+    return sys_ret;
 }
 
 static asmlinkage long (*orig_sys_mount)(char __user *dev_name, char __user *dir_name,
-										 char __user *type, unsigned long flags, void __user *data);
+                                         char __user *type, unsigned long flags, void __user *data);
 
 static asmlinkage long ftrace_sys_mount(char __user *dev_name, char __user *dir_name,
-										char __user *type, unsigned long flags, void __user *data)
+                                        char __user *type, unsigned long flags, void __user *data)
 {
-	int ret = 0;
-	long sys_ret = 0;
-	unsigned int idx = 0;
-	unsigned long real_flags = flags;
+    int ret = 0;
+    long sys_ret = 0;
+    unsigned int idx = 0;
+    unsigned long real_flags = flags;
 
-	// get rid of the magic value if its present
-	if ((real_flags & MS_MGC_MSK) == MS_MGC_VAL)
-		real_flags &= ~MS_MGC_MSK;
+    // get rid of the magic value if its present
+    if ((real_flags & MS_MGC_MSK) == MS_MGC_VAL)
+        real_flags &= ~MS_MGC_MSK;
 
-	if (real_flags & (MS_BIND | MS_SHARED | MS_PRIVATE | MS_SLAVE | MS_UNBINDABLE | MS_MOVE) ||
-		((real_flags & MS_RDONLY) && !(real_flags & MS_REMOUNT))) {
-		// bind, shared, move, or new read-only mounts it do not affect
-		// the state of the driver
-		sys_ret = orig_sys_mount(dev_name, dir_name, type, flags, data);
-	} else if ((real_flags & MS_RDONLY) && (real_flags & MS_REMOUNT)) {
-		// we are remounting read-only, same as umounting as far as the
-		// driver is concerned
-		ret = handle_bdev_mount_nowrite(dir_name, 0, &idx);
-		sys_ret = orig_sys_mount(dev_name, dir_name, type, flags, data);
-		post_umount_check(ret, sys_ret, idx, dir_name);
-	} else {
-		// new read-write mount
-		sys_ret = orig_sys_mount(dev_name, dir_name, type, flags, data);
-		if (!sys_ret)
-			handle_bdev_mounted_writable(dir_name, &idx);
-	}
+    if (real_flags & (MS_BIND | MS_SHARED | MS_PRIVATE | MS_SLAVE | MS_UNBINDABLE | MS_MOVE) ||
+        ((real_flags & MS_RDONLY) && !(real_flags & MS_REMOUNT))) {
+        // bind, shared, move, or new read-only mounts it do not affect
+        // the state of the driver
+        sys_ret = orig_sys_mount(dev_name, dir_name, type, flags, data);
+    } else if ((real_flags & MS_RDONLY) && (real_flags & MS_REMOUNT)) {
+        // we are remounting read-only, same as umounting as far as the
+        // driver is concerned
+        ret = handle_bdev_mount_nowrite(dir_name, 0, &idx);
+        sys_ret = orig_sys_mount(dev_name, dir_name, type, flags, data);
+        post_umount_check(ret, sys_ret, idx, dir_name);
+    } else {
+        // new read-write mount
+        sys_ret = orig_sys_mount(dev_name, dir_name, type, flags, data);
+        if (!sys_ret)
+            handle_bdev_mounted_writable(dir_name, &idx);
+    }
 
-	return sys_ret;
+    return sys_ret;
 }
 
 static int (*orig_path_umount)(struct path *path, int flags);
 
 static int ftrace_path_umount(struct path *path, int flags)
 {
-	int ret = 0;
-	int sys_ret = 0;
-	unsigned int idx = 0;
-	char *dir_name = NULL;
-	char *buf;
-	int real_flags = flags;
+    int ret = 0;
+    int sys_ret = 0;
+    unsigned int idx = 0;
+    char *dir_name = NULL;
+    char *buf;
+    int real_flags = flags;
 
-	// get rid of the magic value if its present
-	if ((real_flags & MS_MGC_MSK) == MS_MGC_VAL)
-		real_flags &= ~MS_MGC_MSK;
+    // get rid of the magic value if its present
+    if ((real_flags & MS_MGC_MSK) == MS_MGC_VAL)
+        real_flags &= ~MS_MGC_MSK;
 
-	buf = kmalloc(PATH_MAX, GFP_KERNEL);
-	if (!buf) {
-		return -ENOMEM;
-	}
+    buf = kmalloc(PATH_MAX, GFP_KERNEL);
+    if (!buf) {
+        return -ENOMEM;
+    }
 
-	dir_name = d_path(path, buf, PATH_MAX);
-	ret = handle_bdev_mount_nowrite(dir_name, real_flags, &idx);
+    dir_name = d_path(path, buf, PATH_MAX);
+    ret = handle_bdev_mount_nowrite(dir_name, real_flags, &idx);
 
-	sys_ret = orig_path_umount(path, flags);
+    sys_ret = orig_path_umount(path, flags);
 
-	dir_name = d_path(path, buf, PATH_MAX);
-	post_umount_check(ret, sys_ret, idx, dir_name);
+    dir_name = d_path(path, buf, PATH_MAX);
+    post_umount_check(ret, sys_ret, idx, dir_name);
 
-	if (buf)
-		kfree(buf);
+    if (buf)
+        kfree(buf);
 
-	return sys_ret;
+    return sys_ret;
 }
 
 static int (*orig_ksys_umount)(char __user *name, int flags);
 
 static int ftrace_ksys_umount(char __user *name, int flags)
 {
-	int ret = 0;
-	int sys_ret = 0;
-	unsigned int idx = 0;
+    int ret = 0;
+    int sys_ret = 0;
+    unsigned int idx = 0;
 
-	ret = handle_bdev_mount_nowrite(name, flags, &idx);
+    ret = handle_bdev_mount_nowrite(name, flags, &idx);
 
-	sys_ret = orig_ksys_umount(name, flags);
-	post_umount_check(ret, sys_ret, idx, name);
+    sys_ret = orig_ksys_umount(name, flags);
+    post_umount_check(ret, sys_ret, idx, name);
 
-	return sys_ret;
+    return sys_ret;
 }
 
 static asmlinkage long (*orig_sys_umount)(char __user *name, int flags);
 
 static asmlinkage long ftrace_sys_umount(char __user *name, int flags)
 {
-	int ret = 0;
-	long sys_ret = 0;
-	unsigned int idx = 0;
+    int ret = 0;
+    long sys_ret = 0;
+    unsigned int idx = 0;
 
-	ret = handle_bdev_mount_nowrite(name, flags, &idx);
-	sys_ret = orig_sys_umount(name, flags);
-	post_umount_check(ret, sys_ret, idx, name);
+    ret = handle_bdev_mount_nowrite(name, flags, &idx);
+    sys_ret = orig_sys_umount(name, flags);
+    post_umount_check(ret, sys_ret, idx, name);
 
-	return sys_ret;
+    return sys_ret;
 }
 
 #ifdef HAVE_SYS_OLDUMOUNT
@@ -242,33 +242,33 @@ asmlinkage long (*orig_sys_oldumount)(char __user *name);
 
 asmlinkage long ftrace_sys_oldumount(char __user *name)
 {
-	int ret;
-	long sys_ret;
-	unsigned int idx;
+    int ret;
+    long sys_ret;
+    unsigned int idx;
 
-	ret = handle_bdev_mount_nowrite(name, 0, &idx);
-	sys_ret = orig_sys_oldumount(name);
-	post_umount_check(ret, sys_ret, idx, name);
+    ret = handle_bdev_mount_nowrite(name, 0, &idx);
+    sys_ret = orig_sys_oldumount(name);
+    post_umount_check(ret, sys_ret, idx, name);
 
-	return sys_ret;
+    return sys_ret;
 }
 #endif //HAVE_SYS_OLDUMOUNT
 
 static struct ftrace_hook ftrace_hooks[] = {
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 9, 0)
-	HOOK("path_mount", ftrace_path_mount, &orig_path_mount),
-	HOOK("path_umount", ftrace_path_umount, &orig_path_umount),
+    HOOK("path_mount", ftrace_path_mount, &orig_path_mount),
+    HOOK("path_umount", ftrace_path_umount, &orig_path_umount),
 #elif LINUX_VERSION_CODE >= KERNEL_VERSION(5, 5, 0)
-	HOOK("do_mount", ftrace_do_mount, &orig_do_mount),
-	HOOK("ksys_umount", ftrace_ksys_umount, &orig_ksys_umount),
+    HOOK("do_mount", ftrace_do_mount, &orig_do_mount),
+    HOOK("ksys_umount", ftrace_ksys_umount, &orig_ksys_umount),
 #elif LINUX_VERSION_CODE >= KERNEL_VERSION(4, 17, 0)
-	HOOK("ksys_mount", ftrace_ksys_mount, &orig_ksys_mount),
-	HOOK("ksys_umount", ftrace_ksys_umount, &orig_ksys_umount),
+    HOOK("ksys_mount", ftrace_ksys_mount, &orig_ksys_mount),
+    HOOK("ksys_umount", ftrace_ksys_umount, &orig_ksys_umount),
 #else
-	HOOK("sys_mount", ftrace_sys_mount, &orig_sys_mount),
-	HOOK("sys_umount", ftrace_sys_umount, &orig_sys_umount),
+    HOOK("sys_mount", ftrace_sys_mount, &orig_sys_mount),
+    HOOK("sys_umount", ftrace_sys_umount, &orig_sys_umount),
 #ifdef HAVE_SYS_OLDUMOUNT
-	HOOK("sys_oldumount", ftrace_sys_oldumount, &orig_sys_oldumount),
+    HOOK("sys_oldumount", ftrace_sys_oldumount, &orig_sys_oldumount),
 #endif //HAVE_SYS_OLDUMOUNT
 #endif //LINUX_VERSION_CODE
 };
@@ -277,57 +277,57 @@ static struct ftrace_hook ftrace_hooks[] = {
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 7, 0)
 static unsigned long lookup_name(const char *name)
 {
-	struct kprobe kp = { .symbol_name = name };
-	unsigned long address = 0;
-	int ret = 0;
+    struct kprobe kp = { .symbol_name = name };
+    unsigned long address = 0;
+    int ret = 0;
 
-	ret = register_kprobe(&kp);
-	if (ret < 0) {
-		LOG_ERROR(ret, "failed registering kprobe for %s", name);
-		return 0;
-	}
-	address = (unsigned long)kp.addr;
-	unregister_kprobe(&kp);
+    ret = register_kprobe(&kp);
+    if (ret < 0) {
+        LOG_ERROR(ret, "failed registering kprobe for %s", name);
+        return 0;
+    }
+    address = (unsigned long)kp.addr;
+    unregister_kprobe(&kp);
 
-	return address;
+    return address;
 }
 #else
 static unsigned long lookup_name(const char *name)
 {
-	unsigned long address;
-	address = kallsyms_lookup_name(name);
+    unsigned long address;
+    address = kallsyms_lookup_name(name);
 
-	return address;
+    return address;
 }
 #endif //LINUX_VERSION_CODE
 
 static int resolve_hook_address(struct ftrace_hook *hook)
 {
-	hook->address = lookup_name(hook->name);
-	if (!hook->address) {
-		LOG_ERROR(-ENOENT, "unresolved symbol: %s", hook->name);
-		return -ENOENT;
-	}
+    hook->address = lookup_name(hook->name);
+    if (!hook->address) {
+        LOG_ERROR(-ENOENT, "unresolved symbol: %s", hook->name);
+        return -ENOENT;
+    }
 
 #if USE_FENTRY_OFFSET
-	*((unsigned long *)hook->original) = hook->address + MCOUNT_INSN_SIZE;
+    *((unsigned long *)hook->original) = hook->address + MCOUNT_INSN_SIZE;
 #else
-	*((unsigned long *)hook->original) = hook->address;
+    *((unsigned long *)hook->original) = hook->address;
 #endif //USE_FENTRY_OFFSET
 
-	return 0;
+    return 0;
 }
 
 static void notrace ftrace_callback_handler(unsigned long ip, unsigned long parent_ip,
-											struct ftrace_ops *ops, struct ftrace_regs *fregs)
+                                            struct ftrace_ops *ops, struct ftrace_regs *fregs)
 {
-	struct ftrace_hook *hook = container_of(ops, struct ftrace_hook, ops);
+    struct ftrace_hook *hook = container_of(ops, struct ftrace_hook, ops);
 
 #if USE_FENTRY_OFFSET
-	set_ftrace_instruction_pointer(fregs, (unsigned long)hook->function);
+    set_ftrace_instruction_pointer(fregs, (unsigned long)hook->function);
 #else
-	if (!dattobd_within_module(parent_ip, THIS_MODULE))
-		set_ftrace_instruction_pointer(fregs, (unsigned long)hook->function);
+    if (!dattobd_within_module(parent_ip, THIS_MODULE))
+        set_ftrace_instruction_pointer(fregs, (unsigned long)hook->function);
 #endif //USE_FENTRY_OFFSET
 }
 
@@ -341,33 +341,33 @@ static void notrace ftrace_callback_handler(unsigned long ip, unsigned long pare
  */
 static int register_hook(struct ftrace_hook *hook)
 {
-	int ret = 0;
+    int ret = 0;
 
-	ret = resolve_hook_address(hook);
-	if (ret) {
-		LOG_ERROR(ret, "failed resolving hook address for %s", hook->name);
-		return ret;
-	}
+    ret = resolve_hook_address(hook);
+    if (ret) {
+        LOG_ERROR(ret, "failed resolving hook address for %s", hook->name);
+        return ret;
+    }
 
-	hook->ops.func = ftrace_callback_handler;
-	hook->ops.flags = FTRACE_OPS_PARAMS;
+    hook->ops.func = ftrace_callback_handler;
+    hook->ops.flags = FTRACE_OPS_PARAMS;
 
-	ret = ftrace_set_filter_ip(&hook->ops, hook->address, 0, 0);
-	if (ret) {
-		LOG_ERROR(ret, "failed setting ftrace filter ip: %d for %s", ret, hook->name);
-		return ret;
-	}
+    ret = ftrace_set_filter_ip(&hook->ops, hook->address, 0, 0);
+    if (ret) {
+        LOG_ERROR(ret, "failed setting ftrace filter ip: %d for %s", ret, hook->name);
+        return ret;
+    }
 
-	ret = register_ftrace_function(&hook->ops);
-	if (ret) {
-		LOG_ERROR(ret, "failed registering ftrace function for %s", hook->name);
-		ftrace_set_filter_ip(&hook->ops, hook->address, 1, 0);
-		return ret;
-	}
+    ret = register_ftrace_function(&hook->ops);
+    if (ret) {
+        LOG_ERROR(ret, "failed registering ftrace function for %s", hook->name);
+        ftrace_set_filter_ip(&hook->ops, hook->address, 1, 0);
+        return ret;
+    }
 
-	LOG_DEBUG("registered ftrace hook for %s", hook->name);
+    LOG_DEBUG("registered ftrace hook for %s", hook->name);
 
-	return ret;
+    return ret;
 }
 
 /**
@@ -380,64 +380,64 @@ static int register_hook(struct ftrace_hook *hook)
  */
 static int unregister_hook(struct ftrace_hook *hook)
 {
-	int ret = 0;
+    int ret = 0;
 
-	ret = unregister_ftrace_function(&hook->ops);
-	if (ret) {
-		LOG_ERROR(ret, "failed unregistering ftrace function for %s", hook->name);
-	}
+    ret = unregister_ftrace_function(&hook->ops);
+    if (ret) {
+        LOG_ERROR(ret, "failed unregistering ftrace function for %s", hook->name);
+    }
 
-	ret = ftrace_set_filter_ip(&hook->ops, hook->address, 1, 0);
-	if (ret) {
-		LOG_ERROR(ret, "failed setting ftrace filter ip for %s", hook->name);
-	}
-	return ret;
+    ret = ftrace_set_filter_ip(&hook->ops, hook->address, 1, 0);
+    if (ret) {
+        LOG_ERROR(ret, "failed setting ftrace filter ip for %s", hook->name);
+    }
+    return ret;
 }
 
 int register_ftrace_hooks(void)
 {
-	int ret = 0;
-	int i;
-	int count = ARRAY_SIZE(ftrace_hooks);
+    int ret = 0;
+    int i;
+    int count = ARRAY_SIZE(ftrace_hooks);
 
-	for (i = 0; i < count; i++) {
-		ret = register_hook(&ftrace_hooks[i]);
-		if (ret)
-			goto error;
-	}
+    for (i = 0; i < count; i++) {
+        ret = register_hook(&ftrace_hooks[i]);
+        if (ret)
+            goto error;
+    }
 
-	return 0;
+    return 0;
 error:
-	while (i != 0) {
-		unregister_hook(&ftrace_hooks[--i]);
-	}
-	return ret;
+    while (i != 0) {
+        unregister_hook(&ftrace_hooks[--i]);
+    }
+    return ret;
 }
 
 int unregister_ftrace_hooks(void)
 {
-	int ret = 0;
-	int i;
-	int count = ARRAY_SIZE(ftrace_hooks);
+    int ret = 0;
+    int i;
+    int count = ARRAY_SIZE(ftrace_hooks);
 
-	for (i = 0; i < count; i++) {
-		unregister_hook(&ftrace_hooks[i]);
-	}
+    for (i = 0; i < count; i++) {
+        unregister_hook(&ftrace_hooks[i]);
+    }
 
-	return ret;
+    return ret;
 }
 
 void set_ftrace_instruction_pointer(struct ftrace_regs *fregs, unsigned long address)
 {
 #if !defined(CONFIG_HAVE_DYNAMIC_FTRACE_WITH_REGS) && defined(CONFIG_HAVE_DYNAMIC_FTRACE_WITH_ARGS)
-	struct ftrace_regs *regs = fregs;
+    struct ftrace_regs *regs = fregs;
 #else
-	struct pt_regs *regs = ftrace_get_regs(fregs);
+    struct pt_regs *regs = ftrace_get_regs(fregs);
 #endif
 
 #ifdef CONFIG_ARM64
-	regs->pc = address;
+    regs->pc = address;
 #else
-	regs->ip = address;
+    regs->ip = address;
 #endif
 }

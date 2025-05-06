@@ -18,9 +18,9 @@
  */
 void disable_page_protection(unsigned long *sctlr)
 {
-	asm volatile("mrs %0, sctlr_el1" : "=r"(*sctlr)); // 读取 SCTLR_EL1
-	asm volatile("msr sctlr_el1, %0" : : "r"(*sctlr & ~0x1)); // 清除 WP 位
-	isb(); // 确保指令同步
+    asm volatile("mrs %0, sctlr_el1" : "=r"(*sctlr)); // 读取 SCTLR_EL1
+    asm volatile("msr sctlr_el1, %0" : : "r"(*sctlr & ~0x1)); // 清除 WP 位
+    isb(); // 确保指令同步
 }
 
 /**
@@ -30,8 +30,8 @@ void disable_page_protection(unsigned long *sctlr)
  */
 void reenable_page_protection(unsigned long *sctlr)
 {
-	asm volatile("msr sctlr_el1, %0" : : "r"(*sctlr)); // 恢复原始 SCTLR_EL1 值
-	isb(); // 确保指令同步
+    asm volatile("msr sctlr_el1, %0" : : "r"(*sctlr)); // 恢复原始 SCTLR_EL1 值
+    isb(); // 确保指令同步
 }
 
 #elif defined(CONFIG_X86)
@@ -43,21 +43,21 @@ void reenable_page_protection(unsigned long *sctlr)
 static inline void wp_cr0(unsigned long cr0)
 {
 #ifdef USE_BDOPS_SUBMIT_BIO
-	__asm__ __volatile__("mov %0, %%cr0" : "+r"(cr0));
+    __asm__ __volatile__("mov %0, %%cr0" : "+r"(cr0));
 #else
-	write_cr0(cr0);
+    write_cr0(cr0);
 #endif
 }
 
 void disable_page_protection(unsigned long *cr0)
 {
-	*cr0 = read_cr0();
-	wp_cr0(*cr0 & ~X86_CR0_WP);
+    *cr0 = read_cr0();
+    wp_cr0(*cr0 & ~X86_CR0_WP);
 }
 
 void reenable_page_protection(unsigned long *cr0)
 {
-	write_cr0(*cr0);
+    write_cr0(*cr0);
 }
 
 #endif // __aarch64__
