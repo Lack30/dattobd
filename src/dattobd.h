@@ -61,9 +61,14 @@ struct dattobd_info {
     unsigned long long nr_changed_blocks;
 };
 
+struct dattobd_netlink_client {
+    int pid;
+    unsigned long state;
+};
+
 struct dattobd_watcher {
     int pid;
-    char root[PATH_MAX];
+    char *mnt;
 
     unsigned long state;
     int error;
@@ -120,7 +125,6 @@ struct reconfigure_auto_expand_params {
 
 struct vfs_watcher_params {
     unsigned int minor;
-    char *root;
 };
 
 enum msg_type {

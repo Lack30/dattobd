@@ -1,0 +1,58 @@
+# SPDX-License-Identifier: GPL-2.0-only
+# Clangd configuration for dattobd kernel module development
+# This file removes GCC-specific flags that Clang doesn't understand
+
+CompileFlags:
+  Remove:
+    # GCC-specific stack alignment flags (Clang uses -mstack-alignment)
+    - -mpreferred-stack-boundary=*
+    - -mincoming-stack-boundary=*
+    
+    # GCC-specific indirect branch flags (for retpoline mitigation)
+    - -mindirect-branch=*
+    - -mindirect-branch-register
+    - -mfunction-return=*
+    
+    # GCC-specific optimization flags
+    - -fno-allow-store-data-races
+    - -fconserve-stack
+    - -fno-ipa-sra
+    - -fno-ipa-pure-const
+    - -fno-var-tracking-assignments
+    
+    # GCC-specific x86 flags
+    - -mno-fp-ret-in-387
+    - -mrecord-mcount
+    - -mfentry
+    
+    # GCC-specific debug/profiling flags
+    - -pg
+    
+  Add:
+    # Clang-compatible alternatives
+    - -Wno-unknown-warning-option
+    - -Wno-ignored-attributes
+    - -Wno-unknown-attributes
+    - -Wno-unsupported-opt
+
+Diagnostics:
+  # Suppress unknown argument warnings completely
+  Suppress:
+    - drv_unknown_argument
+    - drv_unsupported_opt_for_target
+  ClangTidy:
+    Remove:
+      - bugprone-*
+      - modernize-*
+      - readability-*
+      - google-*
+      - cppcoreguidelines-*
+      - cert-*
+      - misc-*
+      - performance-*
+
+InlayHints:
+  Enabled: No
+
+Hover:
+  ShowAKA: Yes
