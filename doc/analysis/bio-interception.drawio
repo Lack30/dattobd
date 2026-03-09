@@ -1,0 +1,115 @@
+<mxfile host="app.diagrams.net" modified="2024-01-01T00:00:00.000Z" agent="Trae AI" version="22.1.0" type="device">
+  <diagram id="bio-interception" name="BIO 拦截机制图">
+    <mxGraphModel dx="1422" dy="794" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1100" pageHeight="850" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="original" value="原始流程" style="swimlane;startSize=30;horizontal=1;fillColor=#f5f5f5;strokeColor=#666666;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="40" y="40" width="300" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="o1" value="应用程序" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="original">
+          <mxGeometry x="20" y="50" width="80" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="o2" value="原始 submit_bio" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="original">
+          <mxGeometry x="120" y="50" width="100" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="o3" value="块设备驱动" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="original">
+          <mxGeometry x="20" y="100" width="80" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="oarrow1" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="original" source="o1" target="o2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="oarrow2" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="original" source="o2" target="o3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="intercepted" value="拦截后流程" style="swimlane;startSize=30;horizontal=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="40" y="220" width="500" height="450" as="geometry" />
+        </mxCell>
+        <mxCell id="i1" value="应用程序" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="intercepted">
+          <mxGeometry x="20" y="50" width="80" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="i2" value="tracing_fn&lt;br&gt;(拦截函数)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=1" vertex="1" parent="intercepted">
+          <mxGeometry x="130" y="50" width="100" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="i3" value="BIO 类型?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="intercepted">
+          <mxGeometry x="130" y="120" width="100" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="i4" value="读请求&lt;br&gt;(直接放行)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="intercepted">
+          <mxGeometry x="20" y="210" width="100" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="i5" value="模式?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="intercepted">
+          <mxGeometry x="250" y="210" width="80" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="i6" value="snap_trace_bio()&lt;br&gt;(快照模式)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontStyle=1" vertex="1" parent="intercepted">
+          <mxGeometry x="170" y="290" width="120" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="i7" value="inc_trace_bio()&lt;br&gt;(增量模式)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontStyle=1" vertex="1" parent="intercepted">
+          <mxGeometry x="320" y="290" width="120" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="i8" value="1. 读取原始数据&lt;br&gt;2. 写入 COW 文件&lt;br&gt;3. 放行写请求" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;align=left;" vertex="1" parent="intercepted">
+          <mxGeometry x="170" y="360" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="i9" value="记录变更块位置&lt;br&gt;(不保存数据)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;align=left;" vertex="1" parent="intercepted">
+          <mxGeometry x="320" y="360" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="i10" value="块设备驱动" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1" vertex="1" parent="intercepted">
+          <mxGeometry x="200" y="440" width="100" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="iarrow1" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="intercepted" source="i1" target="i2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="iarrow2" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="intercepted" source="i2" target="i3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="iarrow3" value="读" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="intercepted" source="i3" target="i4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="iarrow4" value="写" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="intercepted" source="i3" target="i5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="iarrow5" value="快照" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="intercepted" source="i5" target="i6">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="iarrow6" value="增量" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="intercepted" source="i5" target="i7">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="iarrow7" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="intercepted" source="i6" target="i8">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="iarrow8" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="intercepted" source="i7" target="i9">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="iarrow9" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="intercepted" source="i4" target="i10">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="iarrow10" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="intercepted" source="i8" target="i10">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="iarrow11" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="intercepted" source="i9" target="i10">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="legend" value="模式对比" style="swimlane;startSize=30;horizontal=1;fillColor=#f5f5f5;strokeColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="600" y="220" width="300" height="200" as="geometry" />
+        </mxCell>
+        <mxCell id="l1" value="快照模式 (SNAPSHOT):" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontStyle=1" vertex="1" parent="legend">
+          <mxGeometry x="20" y="35" width="260" height="25" as="geometry" />
+        </mxCell>
+        <mxCell id="l2" value="• 写前复制原始数据到 COW 文件" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="legend">
+          <mxGeometry x="20" y="60" width="260" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="l3" value="• 保存完整数据，支持完整恢复" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="legend">
+          <mxGeometry x="20" y="80" width="260" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="l4" value="增量模式 (INCREMENTAL):" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontStyle=1" vertex="1" parent="legend">
+          <mxGeometry x="20" y="110" width="260" height="25" as="geometry" />
+        </mxCell>
+        <mxCell id="l5" value="• 只记录变更块位置" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="legend">
+          <mxGeometry x="20" y="135" width="260" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="l6" value="• 性能影响最小，适合长期追踪" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="legend">
+          <mxGeometry x="20" y="155" width="260" height="20" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

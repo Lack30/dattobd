@@ -1,0 +1,93 @@
+<mxfile host="app.diagrams.net" modified="2024-01-01T00:00:00.000Z" agent="Trae AI" version="22.1.0" type="device">
+  <diagram id="state-machine" name="状态机图">
+    <mxGraphModel dx="1422" dy="794" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1100" pageHeight="850" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="start" value="" style="ellipse;whiteSpace=wrap;html=1;fillColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="490" y="40" width="30" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="unverified" value="UNVERIFIED&lt;br&gt;(未验证状态)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="440" y="100" width="130" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="active_snap" value="ACTIVE SNAPSHOT&lt;br&gt;(活动快照模式)&lt;br&gt;━━━━━━━━━━━━&lt;br&gt;追踪写请求&lt;br&gt;保存 COW 数据" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="200" y="240" width="160" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="active_inc" value="ACTIVE INCREMENTAL&lt;br&gt;(活动增量模式)&lt;br&gt;━━━━━━━━━━━━&lt;br&gt;只记录变更块位置&lt;br&gt;不保存数据" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="650" y="240" width="160" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="dormant_snap" value="DORMANT SNAPSHOT&lt;br&gt;(休眠快照模式)&lt;br&gt;━━━━━━━━━━━━&lt;br&gt;COW 文件关闭&lt;br&gt;等待重新挂载" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="200" y="440" width="160" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="dormant_inc" value="DORMANT INCREMENTAL&lt;br&gt;(休眠增量模式)&lt;br&gt;━━━━━━━━━━━━&lt;br&gt;Index 已同步&lt;br&gt;等待重新挂载" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="650" y="440" width="160" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="arrow1" value="模块加载/重载" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#666666;" edge="1" parent="1" source="start" target="unverified">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="arrow2" value="mount (快照模式)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#6c8ebf;" edge="1" parent="1" source="unverified" target="active_snap">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="arrow3" value="mount (增量模式)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#82b366;" edge="1" parent="1" source="unverified" target="active_inc">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="arrow4" value="umount" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#b85450;" edge="1" parent="1" source="active_snap" target="dormant_snap">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="arrow5" value="umount" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#d79b00;" edge="1" parent="1" source="active_inc" target="dormant_inc">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="arrow6" value="mount" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#6c8ebf;" edge="1" parent="1" source="dormant_snap" target="active_snap">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="120" y="490" />
+              <mxPoint x="120" y="290" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="arrow7" value="mount" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#82b366;" edge="1" parent="1" source="dormant_inc" target="active_inc">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="890" y="490" />
+              <mxPoint x="890" y="290" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="arrow8" value="transition-to-incremental" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#82b366;dashed=1;" edge="1" parent="1" source="active_snap" target="active_inc">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="arrow9" value="transition-to-snapshot&lt;br&gt;(创建新 COW 文件)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#6c8ebf;dashed=1;" edge="1" parent="1" source="active_inc" target="active_snap">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="560" y="200" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="legend" value="状态定义" style="swimlane;startSize=30;horizontal=1;fillColor=#f5f5f5;strokeColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="40" y="600" width="400" height="180" as="geometry" />
+        </mxCell>
+        <mxCell id="l1" value="模式位 (bit 0):" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontStyle=1" vertex="1" parent="legend">
+          <mxGeometry x="20" y="35" width="360" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="l2" value="  SNAPSHOT (0): 快照模式 - 保存完整 COW 数据" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="legend">
+          <mxGeometry x="20" y="55" width="360" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="l3" value="  INCREMENTAL (1): 增量模式 - 只记录变更块位置" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="legend">
+          <mxGeometry x="20" y="75" width="360" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="l4" value="状态位 (bit 1-2):" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontStyle=1" vertex="1" parent="legend">
+          <mxGeometry x="20" y="100" width="360" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="l5" value="  ACTIVE (1): 活动状态 - 设备已挂载，正在追踪" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="legend">
+          <mxGeometry x="20" y="120" width="360" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="l6" value="  DORMANT (0): 休眠状态 - 设备已卸载，等待重新挂载" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="legend">
+          <mxGeometry x="20" y="140" width="360" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="l7" value="  UNVERIFIED (2): 未验证状态 - 启动时/重载中，等待验证" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="legend">
+          <mxGeometry x="20" y="160" width="360" height="20" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

@@ -1,0 +1,94 @@
+<mxfile host="app.diagrams.net" modified="2024-01-01T00:00:00.000Z" agent="Trae AI" version="22.1.0" type="device">
+  <diagram id="cow-structure" name="COW 文件结构图">
+    <mxGraphModel dx="1422" dy="794" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1100" pageHeight="850" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="header" value="Header (4096 bytes)" style="swimlane;startSize=30;horizontal=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="40" y="40" width="400" height="280" as="geometry" />
+        </mxCell>
+        <mxCell id="h1" value="0x0000-0x0003: Magic (0x12B8 = 4776)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="header">
+          <mxGeometry x="20" y="40" width="360" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="h2" value="0x0004-0x0007: Flags (状态标志)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="header">
+          <mxGeometry x="20" y="70" width="360" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="h3" value="0x0008-0x000F: fpos (当前文件偏移)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="header">
+          <mxGeometry x="20" y="100" width="360" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="h4" value="0x0010-0x0017: fsize (文件大小)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="header">
+          <mxGeometry x="20" y="130" width="360" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="h5" value="0x0018-0x001F: seqid (快照序列号)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="header">
+          <mxGeometry x="20" y="160" width="360" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="h6" value="0x0020-0x002F: UUID (16 bytes)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="header">
+          <mxGeometry x="20" y="190" width="360" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="h7" value="0x0030-0x0037: version (格式版本)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="header">
+          <mxGeometry x="20" y="220" width="360" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="h8" value="0x0038-0x003F: nr_changed_blocks" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="header">
+          <mxGeometry x="20" y="250" width="360" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="index" value="Index (块映射表)" style="swimlane;startSize=30;horizontal=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="40" y="360" width="400" height="200" as="geometry" />
+        </mxCell>
+        <mxCell id="s0" value="Section 0&lt;br&gt;mappings (4096个)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="index">
+          <mxGeometry x="20" y="40" width="110" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="s1" value="Section 1&lt;br&gt;mappings (4096个)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="index">
+          <mxGeometry x="145" y="40" width="110" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="sn" value="Section N&lt;br&gt;mappings (4096个)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="index">
+          <mxGeometry x="270" y="40" width="110" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="note1" value="每个映射项: uint64_t = COW文件中的块位置&lt;br&gt;值为 0: 该块未被修改&lt;br&gt;值非 0: 指向 COW datastore 中的位置" style="text;html=1;strokeColor=#82b366;fillColor=#d5e8d4;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="index">
+          <mxGeometry x="20" y="120" width="360" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="datastore" value="Datastore (COW 数据区)" style="swimlane;startSize=30;horizontal=1;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="1">
+          <mxGeometry x="40" y="600" width="400" height="160" as="geometry" />
+        </mxCell>
+        <mxCell id="d0" value="Block 0&lt;br&gt;(4KB)&lt;br&gt;原始数据" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="datastore">
+          <mxGeometry x="20" y="40" width="80" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="d1" value="Block 1&lt;br&gt;(4KB)&lt;br&gt;原始数据" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="datastore">
+          <mxGeometry x="105" y="40" width="80" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="d2" value="Block 2&lt;br&gt;(4KB)&lt;br&gt;原始数据" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="datastore">
+          <mxGeometry x="190" y="40" width="80" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="dn" value="...&lt;br&gt;原始数据" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="datastore">
+          <mxGeometry x="275" y="40" width="80" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="note2" value="写前复制 (Copy-on-Write):&lt;br&gt;保存被覆盖前的原始数据" style="text;html=1;strokeColor=#d79b00;fillColor=#ffe6cc;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="datastore">
+          <mxGeometry x="20" y="110" width="360" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="arrow1" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#6c8ebf;" edge="1" parent="1" source="header" target="index">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="arrow2" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#6c8ebf;" edge="1" parent="1" source="index" target="datastore">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="legend" value="COW 文件结构说明" style="swimlane;startSize=30;horizontal=1;fillColor=#f5f5f5;strokeColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="500" y="40" width="300" height="200" as="geometry" />
+        </mxCell>
+        <mxCell id="l1" value="Header: 元数据信息，固定 4KB" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="legend">
+          <mxGeometry x="20" y="40" width="260" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="l2" value="Index: 块映射表，记录数据位置" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="legend">
+          <mxGeometry x="20" y="70" width="260" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="l3" value="Datastore: 实际 COW 数据存储" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="legend">
+          <mxGeometry x="20" y="100" width="260" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="l4" value="每个 Section 管理 4096 个块映射" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="legend">
+          <mxGeometry x="20" y="130" width="260" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="l5" value="块大小: 4KB (8 个扇区)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="legend">
+          <mxGeometry x="20" y="160" width="260" height="30" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

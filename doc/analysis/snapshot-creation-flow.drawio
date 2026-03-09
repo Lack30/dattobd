@@ -1,0 +1,82 @@
+<mxfile host="app.diagrams.net" modified="2024-01-01T00:00:00.000Z" agent="Trae AI" version="22.1.0" type="device">
+  <diagram id="snapshot-creation" name="快照创建流程图">
+    <mxGraphModel dx="1422" dy="794" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1100" pageHeight="850" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="userspace" value="用户空间" style="swimlane;startSize=30;horizontal=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="40" y="40" width="500" height="200" as="geometry" />
+        </mxCell>
+        <mxCell id="user" value="用户" style="shape=umlActor;verticalLabelPosition=bottom;verticalAlign=top;html=1;outlineConnect=0;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="userspace">
+          <mxGeometry x="30" y="60" width="40" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="cli" value="dbdctl" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="userspace">
+          <mxGeometry x="100" y="80" width="80" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="lib" value="libdattobd" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="userspace">
+          <mxGeometry x="220" y="80" width="80" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="nl" value="Netlink Socket" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="userspace">
+          <mxGeometry x="340" y="80" width="100" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="cmd" value="setup-snapshot&lt;br&gt;/dev/sda1 /.datto 0" style="text;html=1;strokeColor=#d6b656;fillColor=#fff2cc;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="userspace">
+          <mxGeometry x="100" y="140" width="140" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="kernelspace" value="内核空间" style="swimlane;startSize=30;horizontal=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="40" y="280" width="500" height="400" as="geometry" />
+        </mxCell>
+        <mxCell id="handler" value="netlink_handlers.c&lt;br&gt;handle_request()" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="kernelspace">
+          <mxGeometry x="40" y="50" width="140" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="tracer" value="tracer.c&lt;br&gt;tracer_setup_active_snap()" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="kernelspace">
+          <mxGeometry x="220" y="50" width="160" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="step1" value="1. 设置状态: SNAPSHOT | ACTIVE" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;align=left;" vertex="1" parent="kernelspace">
+          <mxGeometry x="40" y="120" width="340" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="step2" value="2. __tracer_setup_base_dev(): 打开块设备" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;align=left;" vertex="1" parent="kernelspace">
+          <mxGeometry x="40" y="155" width="340" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="step3" value="3. __tracer_setup_cow_new(): 创建 COW 文件" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;align=left;" vertex="1" parent="kernelspace">
+          <mxGeometry x="40" y="190" width="340" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="step3a" value="   - 分配空间 (默认 10% 卷大小)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="kernelspace">
+          <mxGeometry x="60" y="220" width="300" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="step3b" value="   - 初始化 Header 和 Index" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="kernelspace">
+          <mxGeometry x="60" y="240" width="300" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="step4" value="4. __tracer_setup_snap(): 创建快照设备" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;align=left;" vertex="1" parent="kernelspace">
+          <mxGeometry x="40" y="265" width="340" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="step4a" value="   - 分配 gendisk, 注册 /dev/datto0" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="kernelspace">
+          <mxGeometry x="60" y="295" width="300" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="step5" value="5. __tracer_setup_cow_thread(): 启动 COW 线程" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;align=left;" vertex="1" parent="kernelspace">
+          <mxGeometry x="40" y="320" width="340" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="step6" value="6. __tracer_setup_tracing(): 开始 I/O 拦截" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;align=left;" vertex="1" parent="kernelspace">
+          <mxGeometry x="40" y="355" width="340" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="result" value="结果:&lt;br&gt;• /dev/datto0 设备可用 (只读快照视图)&lt;br&gt;• /.datto COW 文件已创建&lt;br&gt;• 所有写请求被拦截并执行 COW" style="text;html=1;strokeColor=#82b366;fillColor=#d5e8d4;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=1;" vertex="1" parent="kernelspace">
+          <mxGeometry x="40" y="395" width="340" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="arrow1" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="user" target="cli">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="arrow2" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="cli" target="lib">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="arrow3" value="MSG_SETUP_SNAP" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#9673a6;" edge="1" parent="1" source="lib" target="nl">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="arrow4" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#9673a6;" edge="1" parent="1" source="nl" target="handler">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="arrow5" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="handler" target="tracer">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

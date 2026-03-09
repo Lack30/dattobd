@@ -1,0 +1,117 @@
+<mxfile host="app.diagrams.net" modified="2024-01-01T00:00:00.000Z" agent="Trae AI" version="22.1.0" type="device">
+  <diagram id="incremental-backup" name="增量备份流程图">
+    <mxGraphModel dx="1422" dy="794" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1100" pageHeight="850" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="step1" value="步骤 1: 创建初始快照" style="swimlane;startSize=30;horizontal=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="40" y="40" width="500" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="s1a" value="$ dbdctl setup-snapshot /dev/sda1 /.datto 0" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontFamily=monospace;" vertex="1" parent="step1">
+          <mxGeometry x="20" y="35" width="460" height="25" as="geometry" />
+        </mxCell>
+        <mxCell id="s1b" value="$ dd if=/dev/datto0 of=/backup/sda1-full.img bs=1M" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontFamily=monospace;" vertex="1" parent="step1">
+          <mxGeometry x="20" y="60" width="460" height="25" as="geometry" />
+        </mxCell>
+        <mxCell id="step2" value="步骤 2: 转换到增量模式" style="swimlane;startSize=30;horizontal=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="40" y="160" width="500" height="140" as="geometry" />
+        </mxCell>
+        <mxCell id="s2a" value="$ dbdctl transition-to-incremental 0" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontFamily=monospace;" vertex="1" parent="step2">
+          <mxGeometry x="20" y="35" width="460" height="25" as="geometry" />
+        </mxCell>
+        <mxCell id="s2b" value="内核处理:" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontStyle=1" vertex="1" parent="step2">
+          <mxGeometry x="20" y="60" width="460" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="s2c" value="• tracer_active_snap_to_inc()" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="step2">
+          <mxGeometry x="20" y="80" width="460" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="s2d" value="• 截断 COW 文件到只保留 Index" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="step2">
+          <mxGeometry x="20" y="100" width="460" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="s2e" value="• 切换到 inc_trace_bio() 处理写请求" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="step2">
+          <mxGeometry x="20" y="120" width="460" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="step3" value="步骤 3: 系统正常运行 (增量追踪中)" style="swimlane;startSize=30;horizontal=1;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="40" y="320" width="500" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="s3a" value="系统继续运行，所有写操作被记录到 Index 中" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="step3">
+          <mxGeometry x="20" y="35" width="460" height="25" as="geometry" />
+        </mxCell>
+        <mxCell id="s3b" value="• 性能影响最小" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="step3">
+          <mxGeometry x="20" y="60" width="460" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="s3c" value="• 只记录块位置，不复制数据" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="step3">
+          <mxGeometry x="20" y="80" width="460" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="step4" value="步骤 4: 创建新快照并获取增量" style="swimlane;startSize=30;horizontal=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="40" y="440" width="500" height="140" as="geometry" />
+        </mxCell>
+        <mxCell id="s4a" value="$ dbdctl transition-to-snapshot /.datto1 0" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontFamily=monospace;" vertex="1" parent="step4">
+          <mxGeometry x="20" y="35" width="460" height="25" as="geometry" />
+        </mxCell>
+        <mxCell id="s4b" value="内核处理:" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontStyle=1" vertex="1" parent="step4">
+          <mxGeometry x="20" y="60" width="460" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="s4c" value="• 创建新 COW 文件 (/.datto1)" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="step4">
+          <mxGeometry x="20" y="80" width="460" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="s4d" value="• 旧 COW 文件 (/.datto) 保留变更块列表" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="step4">
+          <mxGeometry x="20" y="100" width="460" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="s4e" value="• seqid 递增" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="step4">
+          <mxGeometry x="20" y="120" width="460" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="step5" value="步骤 5: 应用增量更新" style="swimlane;startSize=30;horizontal=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="40" y="600" width="500" height="140" as="geometry" />
+        </mxCell>
+        <mxCell id="s5a" value="$ update-img /dev/datto0 /.datto /backup/sda1-full.img" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontFamily=monospace;" vertex="1" parent="step5">
+          <mxGeometry x="20" y="35" width="460" height="25" as="geometry" />
+        </mxCell>
+        <mxCell id="s5b" value="update-img 工具:" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontStyle=1" vertex="1" parent="step5">
+          <mxGeometry x="20" y="60" width="460" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="s5c" value="• 读取 /.datto 中的变更块列表" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="step5">
+          <mxGeometry x="20" y="80" width="460" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="s5d" value="• 从 /dev/datto0 读取变更块的新数据" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="step5">
+          <mxGeometry x="20" y="100" width="460" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="s5e" value="• 更新 /backup/sda1-full.img 中对应的块" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="step5">
+          <mxGeometry x="20" y="120" width="460" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="step6" value="步骤 6: 清理并循环" style="swimlane;startSize=30;horizontal=1;fillColor=#f8cecc;strokeColor=#b85450;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="40" y="760" width="500" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="s6a" value="$ rm /.datto" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontFamily=monospace;" vertex="1" parent="step6">
+          <mxGeometry x="20" y="35" width="460" height="25" as="geometry" />
+        </mxCell>
+        <mxCell id="s6b" value="$ dbdctl transition-to-incremental 0" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontFamily=monospace;" vertex="1" parent="step6">
+          <mxGeometry x="20" y="60" width="460" height="25" as="geometry" />
+        </mxCell>
+        <mxCell id="arrow1" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#6c8ebf;" edge="1" parent="1" source="step1" target="step2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="arrow2" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#82b366;" edge="1" parent="1" source="step2" target="step3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="arrow3" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#d6b656;" edge="1" parent="1" source="step3" target="step4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="arrow4" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#9673a6;" edge="1" parent="1" source="step4" target="step5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="arrow5" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#d79b00;" edge="1" parent="1" source="step5" target="step6">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="loop" value="回到步骤 2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#b85450;dashed=1;" edge="1" parent="1" source="step6" target="step2">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="580" y="810" />
+              <mxPoint x="580" y="230" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

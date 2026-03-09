@@ -1,0 +1,73 @@
+<mxfile host="app.diagrams.net" modified="2024-01-01T00:00:00.000Z" agent="Trae AI" version="22.1.0" type="device">
+  <diagram id="architecture" name="核心架构图">
+    <mxGraphModel dx="1422" dy="794" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1100" pageHeight="850" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="userspace" value="用户空间 (User Space)" style="swimlane;startSize=30;horizontal=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="40" y="40" width="1020" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="dbdctl" value="dbdctl&lt;br&gt;(CLI)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="userspace">
+          <mxGeometry x="40" y="40" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="libdattobd" value="libdattobd.so&lt;br&gt;(Library)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="userspace">
+          <mxGeometry x="200" y="40" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="updateimg" value="update-img&lt;br&gt;(增量更新工具)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="userspace">
+          <mxGeometry x="360" y="40" width="140" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="kernelspace" value="内核空间 (Kernel Space)" style="swimlane;startSize=30;horizontal=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="40" y="200" width="1020" height="400" as="geometry" />
+        </mxCell>
+        <mxCell id="netlink" value="netlink_handlers.c&lt;br&gt;(Netlink 消息处理)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="kernelspace">
+          <mxGeometry x="40" y="40" width="180" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="tracer" value="tracer.c/h&lt;br&gt;(核心追踪管理器)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="kernelspace">
+          <mxGeometry x="280" y="40" width="180" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="ftrace" value="ftrace_hooking&lt;br&gt;(ftrace 钩子)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="kernelspace">
+          <mxGeometry x="200" y="140" width="140" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="kretprobe" value="kretprobe_hooking&lt;br&gt;(kretprobe 钩子)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="kernelspace">
+          <mxGeometry x="380" y="140" width="150" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="snapdevice" value="snap_device&lt;br&gt;(设备管理)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="kernelspace">
+          <mxGeometry x="570" y="140" width="140" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="cowmanager" value="cow_manager.c/h&lt;br&gt;(COW 文件管理器)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="kernelspace">
+          <mxGeometry x="280" y="240" width="180" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="cowfile" value="COW File (/.datto)&lt;br&gt;Header | Index | Datastore" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="kernelspace">
+          <mxGeometry x="530" y="230" width="180" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="blocklayer" value="块设备层 (Block Device Layer)" style="swimlane;startSize=30;horizontal=1;fillColor=#f5f5f5;strokeColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="40" y="640" width="1020" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="datto0" value="/dev/datto0&lt;br&gt;(只读快照视图)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="blocklayer">
+          <mxGeometry x="200" y="40" width="140" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="original" value="原始块设备&lt;br&gt;(/dev/sda1)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="blocklayer">
+          <mxGeometry x="500" y="40" width="140" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="arrow1" value="Netlink Socket (Unit 25)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#6c8ebf;" edge="1" parent="1" source="dbdctl" target="netlink">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="arrow2" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="netlink" target="tracer">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="arrow3" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="tracer" target="ftrace">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="arrow4" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="tracer" target="cowmanager">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="arrow5" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="cowmanager" target="cowfile">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="arrow6" value="快照视图" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#6c8ebf;dashed=1;" edge="1" parent="1" source="datto0" target="original">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

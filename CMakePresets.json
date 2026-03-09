@@ -1,0 +1,95 @@
+{
+    "version": 3,
+    "configurePresets": [
+        {
+            "name": "default",
+            "displayName": "Default Configuration",
+            "description": "Default build configuration",
+            "binaryDir": "${sourceDir}/build",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+            }
+        },
+        {
+            "name": "debug",
+            "displayName": "Debug Configuration",
+            "description": "Debug build with symbols",
+            "binaryDir": "${sourceDir}/build-debug",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+            }
+        },
+        {
+            "name": "release",
+            "displayName": "Release Configuration",
+            "description": "Release build with optimizations",
+            "binaryDir": "${sourceDir}/build-release",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+            }
+        },
+        {
+            "name": "user-space-only",
+            "displayName": "User-space Only",
+            "description": "Build only user-space components (no kernel module)",
+            "binaryDir": "${sourceDir}/build-userspace",
+            "cacheVariables": {
+                "BUILD_DRIVER": "OFF",
+                "BUILD_LIBRARY": "ON",
+                "BUILD_APPLICATION": "ON",
+                "BUILD_UTILS": "ON",
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+            }
+        },
+        {
+            "name": "driver-only",
+            "displayName": "Kernel Module Only",
+            "description": "Build only the kernel module",
+            "binaryDir": "${sourceDir}/build-driver",
+            "cacheVariables": {
+                "BUILD_DRIVER": "ON",
+                "BUILD_LIBRARY": "OFF",
+                "BUILD_APPLICATION": "OFF",
+                "BUILD_UTILS": "OFF",
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+            }
+        },
+        {
+            "name": "clang",
+            "displayName": "Clang Build",
+            "description": "Build using Clang compiler",
+            "binaryDir": "${sourceDir}/build-clang",
+            "cacheVariables": {
+                "CMAKE_C_COMPILER": "clang",
+                "CMAKE_CXX_COMPILER": "clang++",
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+            }
+        }
+    ],
+    "buildPresets": [
+        {
+            "name": "default",
+            "configurePreset": "default",
+            "jobs": 4
+        },
+        {
+            "name": "debug",
+            "configurePreset": "debug",
+            "jobs": 4
+        },
+        {
+            "name": "release",
+            "configurePreset": "release",
+            "jobs": 4
+        }
+    ],
+    "testPresets": [
+        {
+            "name": "default",
+            "configurePreset": "default"
+        }
+    ]
+}
