@@ -4,9 +4,14 @@
  * Copyright (C) 2022 Datto Inc.
  */
 
+/*
+ * 实现快照读写和增量变更集合的具体处理逻辑，负责在基设备与 COW 数据之间组织数据读写。
+ */
+
 #include "snap_handle.h"
 
 #include "bio_helper.h"
+#include "binlog_export.h"
 #include "cow_manager.h"
 #include "filesystem.h"
 #include "logging.h"
@@ -274,14 +279,19 @@ error:
 int inc_handle_sset(const struct snap_device *dev, struct sector_set *sset)
 {
     int ret;
-    sector_t start_block = SECTOR_TO_BLOCK(sset->sect);
-    sector_t end_block = NUM_SEGMENTS(sset->sect + sset->len, COW_BLOCK_LOG_SIZE - SECTOR_SHIFT);
+    sector_t block_start = SECTOR_TO_BLOCK(sset->sect);
+    sector_t end_block =
+            NUM_SEGMENTS(sset->sect + sset->len, COW_BLOCK_LOG_SIZE - SECTOR_SHIFT);
+    sector_t start_block;
 
-    for (; start_block < end_block; start_block++) {
+    for (start_block = block_start; start_block < end_block; start_block++) {
         ret = cow_write_filler_mapping(dev->sd_cow, start_block);
         if (ret)
             goto error;
     }
+
+    /* Export hook: runs off hot path (async inc_sset_thread). */
+    binlog_export_blocks_changed(dev, block_start, end_block - block_start);
 
     return 0;
 
