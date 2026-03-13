@@ -7,7 +7,7 @@
 #ifndef HINTS_H_
 #define HINTS_H_
 
-// macros for compilation
+/* 编译期提示宏 */
 #define MAYBE_UNUSED(x) (void)(x)
 
 #ifndef ACCESS_ONCE

@@ -8,8 +8,8 @@
 #include "sset_list.h"
 
 /**
- * sset_queue_init() - Initialized a &struct sset_queue for use.
- * @sq: The &struct sset_queue object pointer.
+ * sset_queue_init() - 初始化 &struct sset_queue 以供使用。
+ * @sq: &struct sset_queue 对象指针。
  */
 void sset_queue_init(struct sset_queue *sq)
 {
@@ -19,14 +19,11 @@ void sset_queue_init(struct sset_queue *sq)
 }
 
 /**
- * sset_queue_empty() - Checks to see if the supplied &struct sset_queue
- * is empty.
+ * sset_queue_empty() - 检查 &struct sset_queue 是否为空。
  *
- * @sq: The &struct sset_queue object pointer.
+ * @sq: &struct sset_queue 对象指针。
  *
- * Return:
- * * 0 - when empty
- * * !0 - otherwise
+ * Return: 空时为 0，否则非 0。
  */
 int sset_queue_empty(const struct sset_queue *sq)
 {
@@ -34,10 +31,10 @@ int sset_queue_empty(const struct sset_queue *sq)
 }
 
 /**
- * sset_queue_add() - adds @sset to the queue @sq.
+ * sset_queue_add() - 将 @sset 加入队列 @sq。
  *
- * @sq: The &struct sset_queue object pointer.
- * @sset: The &struct sector_set object pointer t obe added to the @sq.
+ * @sq: &struct sset_queue 对象指针。
+ * @sset: 要加入 @sq 的 &struct sector_set 对象指针。
  */
 void sset_queue_add(struct sset_queue *sq, struct sector_set *sset)
 {
@@ -50,11 +47,11 @@ void sset_queue_add(struct sset_queue *sq, struct sector_set *sset)
 }
 
 /**
- * sset_queue_dequeue() - Dequeues an element from @sq.
+ * sset_queue_dequeue() - 从 @sq 队首取出一个元素。
  *
- * @sq: The &struct sset_queue object pointer.
+ * @sq: &struct sset_queue 对象指针。
  *
- * Return: The element at the head of the queue, NULL if empty.
+ * Return: 队首元素，空队列返回 NULL。
  */
 struct sector_set *sset_queue_dequeue(struct sset_queue *sq)
 {

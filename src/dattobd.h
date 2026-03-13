@@ -33,18 +33,17 @@
 #define MAX_PAYLOAD 4096
 
 /**
- * struct cow_header - Encapsulates the values stored at the beginning of the
- * COW file.
+ * struct cow_header - COW 文件开头的元数据。
  */
 struct cow_header {
-    uint32_t magic; // COW header magic
-    uint32_t flags; // COW file flags
-    uint64_t fpos; // current file offset
-    uint64_t fsize; // file size
-    uint64_t seqid; // seqential id of snapshot (starts at 1)
-    uint8_t uuid[COW_UUID_SIZE]; // uuid for this series of snapshots
-    uint64_t version; // version of cow file format
-    uint64_t nr_changed_blocks; // number of changed blocks since last snapshot
+    uint32_t magic; // COW 头魔数
+    uint32_t flags; // COW 文件标志
+    uint64_t fpos; // 当前文件偏移
+    uint64_t fsize; // 文件大小
+    uint64_t seqid; // 快照顺序 id（从 1 开始）
+    uint8_t uuid[COW_UUID_SIZE]; // 本系列快照的 uuid
+    uint64_t version; // COW 文件格式版本
+    uint64_t nr_changed_blocks; // 自上次快照以来变更块数
 };
 
 struct dattobd_info {
@@ -77,50 +76,48 @@ struct dattobd_watcher {
 };
 
 struct setup_params {
-    char *bdev; // name of block device to snapshot
-    char *cow; // name of cow file for snapshot
-    unsigned long fallocated_space; // space allocated to the cow file (in megabytes)
-    unsigned long cache_size; // maximum cache size (in bytes)
-    unsigned int minor; // requested minor number of the device
+    char *bdev; // 要快照的块设备名
+    char *cow; // 快照用 COW 文件名
+    unsigned long fallocated_space; // COW 文件预分配空间（兆字节）
+    unsigned long cache_size; // 最大缓存大小（字节）
+    unsigned int minor; // 请求的设备次设备号
 };
 
 struct reload_params {
-    char *bdev; // name of block device to snapshot
-    char *cow; // name of cow file for snapshot
-    unsigned long cache_size; // maximum cache size (in bytes)
-    unsigned int minor; // requested minor number of the device
+    char *bdev; // 要快照的块设备名
+    char *cow; // 快照用 COW 文件名
+    unsigned long cache_size; // 最大缓存大小（字节）
+    unsigned int minor; // 请求的设备次设备号
 };
 
 struct destroy_params {
-    unsigned int minor; // requested minor number of the device
+    unsigned int minor; // 请求的设备次设备号
 };
 
 struct transition_inc_params {
-    unsigned int minor; // requested minor number of the device
+    unsigned int minor; // 请求的设备次设备号
 };
 
 struct transition_snap_params {
-    char *cow; // name of cow file for snapshot
-    unsigned long fallocated_space; // space allocated to the cow file (in bytes)
-    unsigned int minor; // requested minor
+    char *cow; // 快照用 COW 文件名
+    unsigned long fallocated_space; // COW 文件预分配空间（字节）
+    unsigned int minor; // 请求的次设备号
 };
 
 struct reconfigure_params {
-    unsigned long cache_size; // maximum cache size (in bytes)
-    unsigned int minor; // requested minor number of the device
+    unsigned long cache_size; // 最大缓存大小（字节）
+    unsigned int minor; // 请求的设备次设备号
 };
 
 struct expand_cow_file_params {
-    uint64_t size; // size in mib
-
-    unsigned int minor; // minor to extend
+    uint64_t size; // 扩展大小（MiB）
+    unsigned int minor; // 要扩展的设备次设备号
 };
 
 struct reconfigure_auto_expand_params {
-    uint64_t step_size; // step size in mib
-    uint64_t reserved_space; // reserved space in mib
-
-    unsigned int minor; // minor to configure
+    uint64_t step_size; // 步长（MiB）
+    uint64_t reserved_space; // 保留空间（MiB）
+    unsigned int minor; // 要配置的次设备号
 };
 
 struct vfs_watcher_params {
@@ -170,40 +167,40 @@ enum op_type {
 };
 
 struct get_free_response {
-    unsigned int minor; // requested minor number of the device
+    unsigned int minor; // 请求的设备次设备号
 };
 
 struct fs_op_vfs_write {
     unsigned int minor;
-    unsigned long long timestamp; // timestamp of the operation
-    char path[PATH_MAX]; // path of the file
-    unsigned long i_ino; // inode number
-    unsigned long offset; // offset in the file
-    unsigned long len; // length of the data
+    unsigned long long timestamp; // 操作时间戳
+    char path[PATH_MAX]; // 文件路径
+    unsigned long i_ino; // inode 号
+    unsigned long offset; // 文件内偏移
+    unsigned long len; // 数据长度
     char buf[OP_WRITE_SIZE];
 };
 
 struct fs_op_vfs_rename {
     unsigned int minor;
-    unsigned long long timestamp; // timestamp of the operation
-    unsigned long i_ino; // inode number
-    char old_path[PATH_MAX]; // old path of the file
-    char new_path[PATH_MAX]; // new path of the file
+    unsigned long long timestamp; // 操作时间戳
+    unsigned long i_ino; // inode 号
+    char old_path[PATH_MAX]; // 文件原路径
+    char new_path[PATH_MAX]; // 文件新路径
 };
 
 struct fs_op_vfs_unlink {
     unsigned int minor;
-    unsigned long long timestamp; // timestamp of the operation
-    unsigned long i_ino; // inode number
-    char path[PATH_MAX]; // path of the file
+    unsigned long long timestamp; // 操作时间戳
+    unsigned long i_ino; // inode 号
+    char path[PATH_MAX]; // 文件路径
 };
 
 struct fs_op_vfs_symlink {
     unsigned int minor;
-    unsigned long long timestamp; // timestamp of the operation
-    unsigned long i_ino; // inode number
-    char old_path[PATH_MAX]; // old path of the file
-    char new_path[PATH_MAX]; // new path of the file
+    unsigned long long timestamp; // 操作时间戳
+    unsigned long i_ino; // inode 号
+    char old_path[PATH_MAX]; // 文件原路径
+    char new_path[PATH_MAX]; // 文件新路径
 };
 
 struct fs_op_vfs_mkdir {
@@ -222,10 +219,10 @@ struct fs_op_vfs_rmdir {
 
 struct fs_op_vfs_chmod {
     unsigned int minor;
-    unsigned long long timestamp; // timestamp of the operation
-    unsigned long i_ino; // inode number
-    char path[PATH_MAX]; // path of the file
-    unsigned short mode; // new mode
+    unsigned long long timestamp; // 操作时间戳
+    unsigned long i_ino; // inode 号
+    char path[PATH_MAX]; // 文件路径
+    unsigned short mode; // 新 mode
 };
 
 struct fs_op_vfs_chown {
@@ -239,7 +236,7 @@ struct fs_op_vfs_chown {
 struct netlink_response {
     int ret;
     enum msg_type type;
-    enum op_type op_type; // valid when type is MSG_OP_WATCH
+    enum op_type op_type; // type 为 MSG_OP_WATCH 时有效
 
     union {
         struct get_free_response get_free;

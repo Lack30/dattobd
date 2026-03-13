@@ -23,10 +23,7 @@
 #define SECTOR_TO_BLOCK(sect) ((sect) / SECTORS_PER_BLOCK)
 
 #if !defined HAVE_MAKE_REQUEST_FN_IN_QUEUE && defined HAVE_BDOPS_SUBMIT_BIO
-// Linux kernel version 5.9+
-// make_request_fn has been moved from the request queue structure to the
-// block_device_operations as submit_bio function.
-// See https://github.com/torvalds/linux/commit/c62b37d96b6eb3ec5ae4cbe00db107bf15aebc93
+/* 5.9+ 内核：make_request_fn 已从 request_queue 移至 block_device_operations 的 submit_bio */
 #define USE_BDOPS_SUBMIT_BIO
 
 #ifdef HAVE_NONVOID_SUBMIT_BIO_1
@@ -36,12 +33,11 @@ typedef void(make_request_fn)(struct bio *bio);
 #endif
 #endif
 
-// macros for working with bios
+/* bio 相关宏 */
 #define BIO_SET_SIZE 256
 #define bio_last_sector(bio) (bio_sector(bio) + (bio_size(bio) / SECTOR_SIZE))
 
-// the kernel changed the usage of bio_for_each_segment in 3.14. Do not use any
-// fields directly or you will lose compatibility.
+/* 3.14 起内核改变了 bio_for_each_segment 的用法，勿直接访问相关字段以保持兼容 */
 #ifndef HAVE_BVEC_ITER
 //#if LINUX_VERSION_CODE < KERNEL_VERSION(3,14,0)
 typedef int bio_iter_t;
@@ -82,21 +78,16 @@ void dattobd_bio_set_dev(struct bio *bio, struct block_device *bdev);
 
 void dattobd_bio_copy_dev(struct bio *dst, struct bio *src);
 
-/* don't perform COW operation */
+// 不执行 COW 操作
 #ifdef HAVE_ENUM_REQ_OP
 //#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,8,0) && LINUX_VERSION_CODE <
-// KERNEL_VERSION(4,10,0)
-/* special case for deb9's 4.9 train
- * Bit 30 conflicts with struct bio's bi_opf opcode bitfield, which occupies the
- * top 3 bits of the member. If we set that bit, it will mutate the operation
- * that the bio is representing. Setting this to 28 puts this in an unused flag
- * for bi_opf (that flag means something in struct request's cmd_flags, but
- * we're not setting that).
+/* 对应 KERNEL_VERSION(4,10,0) */
+/* deb9 4.9 特例：位 30 与 struct bio 的 bi_opf 操作码位域冲突（占高 3 位），
+ * 设置该位会改变 bio 表示的操作。设为 28 可放在 bi_opf 的未用标志位。
  */
-#define __DATTOBD_PASSTHROUGH 28 // set as the last flag bit
+#define __DATTOBD_PASSTHROUGH 28
 #else
-// set as an unused flag in versions older than 4.8
-// set as an unused opcode bit in kernels newer than 4.9
+/* 4.8 以下版本用未用标志位，4.9 以上内核用未用操作码位 */
 #define __DATTOBD_PASSTHROUGH 30
 #endif
 #define DATTOBD_PASSTHROUGH (1ULL << __DATTOBD_PASSTHROUGH)
@@ -112,10 +103,10 @@ void dattobd_bio_copy_dev(struct bio *dst, struct bio *src);
 typedef enum req_op {
     REQ_OP_READ,
     REQ_OP_WRITE,
-    REQ_OP_DISCARD, /* request to discard sectors */
-    REQ_OP_SECURE_ERASE, /* request to securely erase sectors */
-    REQ_OP_WRITE_SAME, /* write same block many times */
-    REQ_OP_FLUSH, /* request for cache flush */
+    REQ_OP_DISCARD,     /* 丢弃扇区请求 */
+    REQ_OP_SECURE_ERASE, /* 安全擦除扇区请求 */
+    REQ_OP_WRITE_SAME,  /* 同一块多次写入 */
+    REQ_OP_FLUSH,       /* 缓存刷写请求 */
 } req_op_t;
 #endif
 typedef enum req_op req_op_t;

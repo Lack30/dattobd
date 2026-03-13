@@ -14,28 +14,28 @@
 #ifndef USE_BDOPS_SUBMIT_BIO
 
 /**
- * mrf_tracking_init() - Initialize mrf tracking.
+ * mrf_tracking_init() - 初始化 mrf 跟踪。
  *
- * Initializes the hash table used for mrf reference counting.
+ * 初始化用于 mrf 引用计数的哈希表。
  */
 void mrf_tracking_init(void);
 
 /**
- * mrf_get() - Increments the reference count for given mrf.
+ * mrf_get() - 增加指定 mrf 的引用计数。
  *
- * @disk: The block device being tracked.
- * @fn: The mrf to inc the reference count for.
+ * @disk: 被跟踪的块设备。
+ * @fn: 要增加引用计数的 mrf。
  *
- * Return: 0 on success. Non-zero otherwise.
+ * Return: 成功返回 0，否则非 0。
  */
 int mrf_get(const struct gendisk *disk, BIO_REQUEST_CALLBACK_FN *fn);
 
 /**
- * mrf_put() - Decrements the reference count and returns mrf
+ * mrf_put() - 减少引用计数并返回 mrf。
  *
- * @disk: The block device being tracked
- * 
- * Return: Returns the mrf for the block device or NULL on error.
+ * @disk: 被跟踪的块设备。
+ *
+ * Return: 返回该块设备的 mrf，错误时返回 NULL。
  */
 const BIO_REQUEST_CALLBACK_FN *mrf_put(struct gendisk *disk);
 

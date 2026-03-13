@@ -12,16 +12,13 @@
 #include "snap_device.h"
 
 /**
- * tp_alloc() - Allocates and initializes tracing params and increments the
- * reference count.
+ * tp_alloc() - 分配并初始化跟踪参数，并增加引用计数。
  *
- * @dev: The &struct snap_device object pointer.
- * @bio: The &struct bio which describes the I/O.
- * @tp_out: The caller owned &struct tracing_params object.  Use kfree().
+ * @dev: &struct snap_device 对象指针。
+ * @bio: 描述此次 I/O 的 &struct bio。
+ * @tp_out: 调用方持有的 &struct tracing_params，需用 kfree() 释放。
  *
- * Return:
- * * 0 - success
- * * !0 - errno indicating the error.
+ * Return: 0 表示成功，非 0 为表示错误的 errno。
  */
 int tp_alloc(struct snap_device *dev, struct bio *bio, struct tracing_params **tp_out)
 {
@@ -45,9 +42,9 @@ int tp_alloc(struct snap_device *dev, struct bio *bio, struct tracing_params **t
 }
 
 /**
- * tp_get() - Increments the reference count.
+ * tp_get() - 增加引用计数。
  *
- * @tp: The &struct tracing_params object pointer.
+ * @tp: &struct tracing_params 对象指针。
  */
 void tp_get(struct tracing_params *tp)
 {
@@ -55,22 +52,20 @@ void tp_get(struct tracing_params *tp)
 }
 
 /**
- * tp_put() - Decrement the reference count.
- * @tp: The &struct tracing_params object pointer.
+ * tp_put() - 减少引用计数；若变为 0 则释放与 @tp 关联的内存。
  *
- * Frees memory associated with the @tp object.
+ * @tp: &struct tracing_params 对象指针。
  */
 void tp_put(struct tracing_params *tp)
 {
-    // drop a reference to the tp
+    // 减少对 tp 的引用
     if (atomic_dec_and_test(&tp->refs)) {
         struct bio_sector_map *next, *curr = NULL;
 
-        // if there are no references left, its safe to release the
-        // orig_bio
+        // 无引用后即可释放 orig_bio
         bio_queue_add(&tp->dev->sd_orig_bios, tp->orig_bio);
 
-        // free nodes in the sector map list
+        // 释放 sector map 链表中的节点
         for (curr = tp->bio_sects.head; curr != NULL; curr = next) {
             next = curr->next;
             kfree(curr);
@@ -80,14 +75,12 @@ void tp_put(struct tracing_params *tp)
 }
 
 /**
- * tp_add() - Adds @bio to the &struct tracing_params object.
+ * tp_add() - 将 @bio 加入 &struct tracing_params。
  *
- * @tp: The &struct tracing_params object pointer.
- * @bio: The &struct bio which describes the I/O.
+ * @tp: &struct tracing_params 对象指针。
+ * @bio: 描述此次 I/O 的 &struct bio。
  *
- * Return:
- * * 0 - success
- * * !0 - errno indicating the error.
+ * Return: 0 表示成功，非 0 为表示错误的 errno。
  */
 int tp_add(struct tracing_params *tp, struct bio *bio)
 {

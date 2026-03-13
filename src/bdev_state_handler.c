@@ -9,10 +9,10 @@
 #include "snap_device.h"
 
 /**
- * auto_transition_dormant() - Transitions an active snapshot to dormant.
+ * auto_transition_dormant() - 将活动快照切换为休眠状态。
  *
- * @minor: the device's minor number.
- * @snap_devices: the array of snap devices.
+ * @minor: 设备次设备号。
+ * @snap_devices: 快照设备数组。
  */
 static void auto_transition_dormant(unsigned int minor, snap_device_array snap_devices)
 {
@@ -26,12 +26,11 @@ static void auto_transition_dormant(unsigned int minor, snap_device_array snap_d
 }
 
 /**
- * auto_transition_active() - Transitions a device to an active state
- *                            whether snapshot or incremental.
+ * auto_transition_active() - 将设备切换为活动状态（快照或增量均可）。
  *
- * @minor: the device's minor number.
- * @dir_name: the user-space supplied directory name of the mount.
- * @snap_devices: the array of snap devices.
+ * @minor: 设备次设备号。
+ * @dir_name: 用户空间传入的挂载目录名。
+ * @snap_devices: 快照设备数组。
  */
 static void auto_transition_active(unsigned int minor, const char *dir_name,
                                    snap_device_array_mut snap_devices)
@@ -55,16 +54,13 @@ static void auto_transition_active(unsigned int minor, const char *dir_name,
 }
 
 /**
- * __handle_bdev_mount_nowrite() - Transitions a device to a dormant state
- *                                 when it is unmounted.
+ * __handle_bdev_mount_nowrite() - 设备卸载时将其切换为休眠状态。
  *
- * @mnt: The &struct vfsmount object pointer.
- * @idx_out: Output the minor device number of the transitioned device.
- * @snap_devices: the array of snap devices.
+ * @mnt: &struct vfsmount 对象指针。
+ * @idx_out: 输出被切换设备的次设备号。
+ * @snap_devices: 快照设备数组。
  *
- * Return:
- * * 0 - success
- * * !0 - errno indicating the error
+ * Return: 0 表示成功，非 0 为表示错误的 errno。
  */
 static int __handle_bdev_mount_nowrite(const struct vfsmount *mnt, unsigned int *idx_out,
                                        snap_device_array snap_devices)
@@ -98,17 +94,14 @@ out:
 }
 
 /**
- * __handle_bdev_mount_writable() - Transitions a dormant device to active
- *                                  on mount, if one exists.
+ * __handle_bdev_mount_writable() - 挂载时若存在休眠设备则将其切换为活动状态。
  *
- * @dir_name: the user-space suplied directory name of the mount.
- * @bdev: The &struct block_device that stores the COW data.
- * @idx_out: Output the minor device number of the transitioned device.
- * @snap_devices: the array of snap devices.
+ * @dir_name: 用户空间传入的挂载目录名。
+ * @bdev: 存放 COW 数据的 &struct block_device。
+ * @idx_out: 输出被切换设备的次设备号。
+ * @snap_devices: 快照设备数组。
  *
- * Return:
- * * 0 - success
- * * !0 - errno indicating the error
+ * Return: 0 表示成功，非 0 为表示错误的 errno。
  */
 static int __handle_bdev_mount_writable(const char *dir_name, const struct block_device *bdev,
                                         unsigned int *idx_out, snap_device_array_mut snap_devices)
@@ -132,16 +125,14 @@ static int __handle_bdev_mount_writable(const char *dir_name, const struct block
         }
 
         if (test_bit(UNVERIFIED, &dev->sd_state)) {
-            // get the block device for the unverified tracer we are
-            // looking into
+            // 获取当前正在检查的未验证 tracer 对应的块设备
             cur_bdev = dattobd_blkdev_by_path(dev->sd_bdev_path, FMODE_READ, NULL);
             if (IS_ERR(cur_bdev)) {
                 cur_bdev = NULL;
                 continue;
             }
 
-            // if the tracer's block device exists and matches the
-            // one being mounted perform transition
+            // 若 tracer 的块设备存在且与正在挂载的设备一致则执行状态转换
             if (cur_bdev->bdev == bdev) {
                 LOG_DEBUG("block device mount detected for unverified device %d", i);
                 auto_transition_active(i, dir_name, snap_devices);
@@ -151,7 +142,7 @@ static int __handle_bdev_mount_writable(const char *dir_name, const struct block
                 goto out;
             }
 
-            // put the block device
+            // 释放块设备引用
             dattobd_blkdev_put(cur_bdev);
 
         } else if (dev->sd_base_dev && dev->sd_base_dev->bdev == bdev) {
@@ -172,16 +163,14 @@ out:
 }
 
 /**
- * handle_bdev_mount_event() - A common impl used to handle a mount event.
+ * handle_bdev_mount_event() - 处理挂载事件的通用实现。
  *
- * @dir_name: the user-space supplied directory name of the mount.
- * @follow_flags: flags passed to the system call.cd /
- * @idx_out: Output the minor device number of the transitioned device.
- * @mount_writable: Whether the mount is writable or not.
+ * @dir_name: 用户空间传入的挂载目录名。
+ * @follow_flags: 传入系统调用的标志。
+ * @idx_out: 输出被切换设备的次设备号。
+ * @mount_writable: 挂载是否为可写。
  *
- * Return:
- * * 0 - success.
- * * !0 - errno indicating the error.
+ * Return: 0 表示成功，非 0 为表示错误的 errno。
  */
 int handle_bdev_mount_event(const char *dir_name, int follow_flags, unsigned int *idx_out,
                             int mount_writable)
@@ -211,7 +200,7 @@ int handle_bdev_mount_event(const char *dir_name, int follow_flags, unsigned int
               path.mnt->mnt_root->d_name.name);
 
     if (path.dentry != path.mnt->mnt_root) {
-        // path specified isn't a mount point
+        // 指定路径不是挂载点
         ret = -ENODEV;
         LOG_DEBUG("path specified isn't a mount point %s", dir_name);
 
@@ -235,7 +224,7 @@ int handle_bdev_mount_event(const char *dir_name, int follow_flags, unsigned int
         put_snap_device_array_mut(snap_devices);
     }
     if (ret) {
-        // no block device found that matched an incremental
+        // 未找到与增量设备匹配的块设备
         LOG_DEBUG("no block device found that matched an incremental %s", dir_name);
         goto out;
     }
@@ -250,13 +239,12 @@ out_nopath:
 }
 
 /**
- * post_umount_check() - Checks to make sure umount succeeded and the driver
- *                       is in a good state.
+ * post_umount_check() - 确认 umount 成功且驱动处于正常状态。
  *
- * @dormant_ret: the return value from transitioning to dormant.
- * @umount_ret: the return value from the original umount call.
- * @idx: the device minor number.
- * @dir_name: the user-space supplied directory name of the mount.
+ * @dormant_ret: 切换为休眠时的返回值。
+ * @umount_ret: 原始 umount 调用的返回值。
+ * @idx: 设备次设备号。
+ * @dir_name: 用户空间传入的挂载目录名。
  */
 void post_umount_check(int dormant_ret, int umount_ret, unsigned int idx, const char *dir_name)
 {
@@ -265,7 +253,7 @@ void post_umount_check(int dormant_ret, int umount_ret, unsigned int idx, const 
     snap_device_array_mut snap_devices = NULL;
 
     LOG_DEBUG("ENTER %s", __func__);
-    // if we didn't do anything or failed, just return
+    // 若未做任何操作或已失败则直接返回
     if (dormant_ret) {
         LOG_DEBUG("EXIT %s, dormant_ret", __func__);
         return;
@@ -275,8 +263,7 @@ void post_umount_check(int dormant_ret, int umount_ret, unsigned int idx, const 
 
     dev = snap_devices[idx];
 
-    // if we successfully went dormant, but the umount call failed,
-    // reactivate
+    // 若已成功进入休眠但 umount 失败，则重新激活
     if (umount_ret) {
         struct bdev_wrapper *bdev_w;
         bdev_w = dattobd_blkdev_by_path(dev->sd_bdev_path, FMODE_READ, NULL);
@@ -297,11 +284,10 @@ void post_umount_check(int dormant_ret, int umount_ret, unsigned int idx, const 
 
     put_snap_device_array_mut(snap_devices);
 
-    // force the umount operation to complete synchronously
+    // 强制 umount 同步完成
     task_work_flush();
 
-    // if we went dormant, but the block device is still mounted somewhere,
-    // goto fail state
+    // 若已休眠但块设备仍被某处挂载则进入失败状态
     sb = dattobd_get_super(dev->sd_base_dev->bdev);
     if (sb) {
         if (!(sb->s_flags & MS_RDONLY)) {

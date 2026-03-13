@@ -1,6 +1,6 @@
 # Binaries
 app/dbdctl
-utils/update-img
+app/update-img
 
 # Dynamically generated files
 src/kernel-config.h

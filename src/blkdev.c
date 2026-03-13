@@ -12,16 +12,12 @@
         !defined HAVE_BDEV_OPEN_BY_PATH && !defined HAVE_BDEV_FILE_OPEN_BY_PATH
 
 /**
- * dattobd_lookup_bdev() - Looks up the inode associated with the path, verifies
- * that the file is a block special file, and asks the kernel for a &struct
- * block_device associated with the file.
+ * dattobd_lookup_bdev() - 根据路径查找 inode，确认是块设备文件并向内核获取对应的 &struct block_device。
  *
- * @pathname: the path name of a block special file.
- * @mode: The mode used to open the block special file, likely just FMODE_READ.
+ * @pathname: 块设备文件路径。
+ * @mode: 打开模式，通常为 FMODE_READ。
  *
- * Return:
- * On success the @block_device structure otherwise an error created via
- * ERR_PTR().
+ * Return: 成功返回 block_device 指针，失败为 ERR_PTR() 包装的错误。
  */
 static struct block_device *dattobd_lookup_bdev(const char *pathname, fmode_t mode)
 {
@@ -61,17 +57,13 @@ fail:
 }
 
 /**
- * _blkdev_get_by_path() - Fetches the @block_device struct associated with the
- * @pathname.  This is very similar to @dattobd_lookup_bdev with minor
- * additional validation.
+ * _blkdev_get_by_path() - 根据 @pathname 获取对应的 @block_device，在 dattobd_lookup_bdev 基础上做少量校验。
  *
- * @pathname: the path name of a block special file.
- * @mode: The mode used to open the block special file, likely just FMODE_READ.
- * @holder: unused
+ * @pathname: 块设备文件路径。
+ * @mode: 打开模式，通常为 FMODE_READ。
+ * @holder: 未使用。
  *
- * Return:
- * On success the @block_device structure otherwise an error created via
- * ERR_PTR().
+ * Return: 成功返回 block_device 指针，失败为 ERR_PTR() 包装的错误。
  */
 static struct block_device *_blkdev_get_by_path(const char *pathname, fmode_t mode, void *holder)
 {
@@ -91,19 +83,14 @@ static struct block_device *_blkdev_get_by_path(const char *pathname, fmode_t mo
 #endif
 
 /**
- * dattobd_blkdev_by_path() - Fetches the @block_device struct associated with the
- * @path. This function uses different methods based on available kernel functions
- * to retrieve the block device. Returns @bdev_handle struct which contains
- * information about @block_device and @holder. Made to be in compliance with kernel
- * version 6.8+ standard.
+ * dattobd_blkdev_by_path() - 根据 @path 获取块设备；根据内核可用接口选用不同实现，
+ *                            返回包含 block_device 与 holder 信息的 bdev_wrapper，兼容 6.8+ 内核。
  *
- * @path: the path name of a block special file.
- * @mode: The mode used to open the block special file, likely just FMODE_READ.
- * @holder: unused.
+ * @path: 块设备文件路径。
+ * @mode: 打开模式，通常为 FMODE_READ。
+ * @holder: 未使用。
  *
- * Return:
- * On success the @bdev_handle structure otherwise an error created via
- * ERR_PTR().
+ * Return: 成功返回 bdev_wrapper 指针，失败为 ERR_PTR() 包装的错误。
  */
 struct bdev_wrapper *dattobd_blkdev_by_path(const char *path, fmode_t mode, void *holder)
 {
@@ -147,14 +134,12 @@ struct bdev_wrapper *dattobd_blkdev_by_path(const char *path, fmode_t mode, void
 }
 
 /**
- * dattobd_get_super() - Scans the superblock list and finds the superblock of the 
- * file system mounted on the @bd given. This function uses different methods 
- * based on available kernel functions to retrieve the super block.
+ * dattobd_get_super() - 在超级块链表中查找挂载在 @bd 上的文件系统的超级块；
+ *                       根据内核可用接口选用不同实现。
  *
- * @block_device: mounted block device structure pointer.
+ * @bd: 已挂载的块设备指针。
  *
- * Return:
- * On success the @super_block structure pointer otherwise NULL.
+ * Return: 成功返回 super_block 指针，否则 NULL。
  */
 struct super_block *dattobd_get_super(struct block_device *bd)
 {
@@ -178,14 +163,9 @@ struct super_block *dattobd_get_super(struct block_device *bd)
 }
 
 /**
- * dattobd_drop_super() - Releases the superblock of the file system.
- * This function performs the appropriate action based on the available
- * kernel functions to release or drop the superblock.
+ * dattobd_drop_super() - 释放文件系统超级块的引用；根据内核可用接口执行相应释放操作。
  *
- * @sb: super block structure pointer to be released.
- *
- * Return:
- * void.
+ * @sb: 要释放的超级块指针。
  */
 void dattobd_drop_super(struct super_block *sb)
 {
@@ -203,14 +183,9 @@ void dattobd_drop_super(struct super_block *sb)
 }
 
 /**
- * dattobd_blkdev_put() - Releases a reference to a block device.
- * This function performs the appropriate action based on the available
- * kernel functions to release block device.
+ * dattobd_blkdev_put() - 释放对块设备的引用；根据内核可用接口执行相应释放操作。
  *
- * @bh: bdev_handle structure pointer to be released.
- *
- * Return:
- * void.
+ * @bw: 要释放的 bdev_wrapper 指针。
  */
 void dattobd_blkdev_put(struct bdev_wrapper *bw)
 {
@@ -234,14 +209,13 @@ void dattobd_blkdev_put(struct bdev_wrapper *bw)
 }
 
 /**
- * dattobd_get_start_sect_by_gendisk_for_bio() - Get starting sector of partition according to gendisk and partition number. 
- * 
- * @gd: gendisk
- * @partno: partition number
- * @result: pointer to place result
- * 
- * Result:
- * 0 on success, error otherwise
+ * dattobd_get_start_sect_by_gendisk_for_bio() - 根据 gendisk 与分区号获取分区起始扇区。
+ *
+ * @gd: gendisk 指针。
+ * @partno: 分区号。
+ * @result: 存放结果的指针。
+ *
+ * Return: 成功返回 0，否则返回错误码。
  */
 int dattobd_get_start_sect_by_gendisk_for_bio(struct gendisk *gd, u8 partno, sector_t *result)
 {
@@ -262,7 +236,7 @@ int dattobd_get_start_sect_by_gendisk_for_bio(struct gendisk *gd, u8 partno, sec
     *result = gd->part[partno]->start_sect;
     return 0;
 #elif defined HAVE_BIO_BI_BDEV
-    // Unreachable
+    // 不可达
     LOG_ERROR(-1, "Unreachable code.");
     return -1;
 #else
@@ -271,13 +245,12 @@ int dattobd_get_start_sect_by_gendisk_for_bio(struct gendisk *gd, u8 partno, sec
 }
 
 /**
- * dattobd_get_kstatfs() - Get the file system statistics of the block device.
+ * dattobd_get_kstatfs() - 获取块设备上文件系统的统计信息。
  *
- * @bd: block device structure pointer.
- * @statfs: file system statistics structure pointer.
+ * @bd: 块设备指针。
+ * @statfs: 存放统计信息的结构体指针。
  *
- * Return:
- * 0 on success, error otherwise.
+ * Return: 成功返回 0，否则返回错误码。
  */
 int dattobd_get_kstatfs(struct block_device *bd, struct kstatfs *statfs)
 {

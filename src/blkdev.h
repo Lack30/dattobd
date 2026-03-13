@@ -24,8 +24,8 @@ struct bdev_wrapper {
 #ifdef HAVE_BDEV_HANDLE
         struct bdev_handle *handle;
 #endif
-// Kernel 6.9+ manages block_device with struct file and file_bdev has to be used to find block_device from file.
-// For us, file_bdev function is marker to check if we have to use
+// 内核 6.9+ 用 struct file 管理 block_device，需通过 file_bdev 从 file 得到 block_device。
+// 对我们而言，file_bdev 是否存在用于判断是否采用此路径。
 #ifdef USE_BDEV_AS_FILE
         struct file *file;
 #endif

@@ -16,9 +16,9 @@ PKGBUILDFLAGS := --define "_topdir $(BUILDDIR)" -ba --with devmode
 PKGBUILDROOT_CREATE_CMD = mkdir -p $(BUILDDIR)/DEBS $(BUILDDIR)/SDEBS $(BUILDDIR)/RPMS $(BUILDDIR)/SRPMS \
 			$(BUILDDIR)/SOURCES $(BUILDDIR)/SPECS $(BUILDDIR)/BUILD $(BUILDDIR)/BUILDROOT
 
-.PHONY: all driver library-shared library-static library application application-shared utils clean install uninstall pkgclean pkgprep deb rpm
+.PHONY: all driver library-shared library-static library application application-shared clean install uninstall pkgclean pkgprep deb rpm
 
-all: driver library application utils
+all: driver library application
 
 driver:
 	$(MAKE) -C src
@@ -37,14 +37,10 @@ application-static: library-static
 application: library-shared
 	$(MAKE) -C app CCFLAGS="$(CCFLAGS) -I$(BASE_DIR)/src -I$(BASE_DIR)/lib" shared
 
-utils: library-shared
-	$(MAKE) -C utils CCFLAGS="$(CCFLAGS) -I$(BASE_DIR)/src -I$(BASE_DIR)/lib -D_XOPEN_SOURCE=500"
-
 clean:
 	$(MAKE) -C src clean
 	$(MAKE) -C lib clean
 	$(MAKE) -C app clean
-	$(MAKE) -C utils clean
 
 pkgclean:
 	rm -rf $(BUILDDIR)
@@ -64,10 +60,8 @@ install:
 	$(MAKE) -C src install
 	$(MAKE) -C lib install CCFLAGS="$(CCFLAGS) -I$(BASE_DIR)/src"
 	$(MAKE) -C app install CCFLAGS="$(CCFLAGS) -I$(BASE_DIR)/src -I$(BASE_DIR)/lib"
-	$(MAKE) -C utils install CCFLAGS="$(CCFLAGS) -I$(BASE_DIR)/src -I$(BASE_DIR)/lib -D_XOPEN_SOURCE=500"
 
 uninstall:
 	$(MAKE) -C app uninstall
-	$(MAKE) -C utils uninstall
 	$(MAKE) -C lib uninstall
 	$(MAKE) -C src uninstall

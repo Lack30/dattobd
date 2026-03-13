@@ -38,29 +38,28 @@ static struct sock *netlink_sock = NULL;
 /************************NETLINK HANDLER FUNCTIONS************************/
 
 /**
- * __verify_minor() - Verify the supplied minor device number according to the
- *                    requested mode.
+ * __verify_minor() - 按请求模式校验给定的次设备号。
  *
- * @minor: the minor number to check.
- * @mode: what to verify:
- * * 0: the minor is not in allocated.
- * * 1: the minor is allocated and is not busy.
- * * 2: the minor is allocated whether busy or not.
- * @snap_devices: the array of snap devices.
+ * @minor: 待检查的次设备号。
+ * @mode: 校验内容：
+ * * 0: 该 minor 未被分配。
+ * * 1: 该 minor 已分配且不忙。
+ * * 2: 该 minor 已分配（忙或不忙均可）。
+ * @snap_devices: 快照设备数组。
  *
  * Return:
- * * 0 - successfully validated.
- * * 1 - a negative errno otherwise.
+ * * 0 - 校验通过。
+ * * 负的 errno - 失败。
  */
 static int __verify_minor(unsigned int minor, int mode, snap_device_array snap_devices)
 {
-    // check minor number is within range
+    // 检查次设备号是否在有效范围内
     if (minor >= dattobd_max_snap_devices) {
         LOG_ERROR(-EINVAL, "minor number specified is out of range");
         return -EINVAL;
     }
 
-    // check if the device is in use
+    // 检查设备是否已被占用
     if (mode == 0) {
         if (snap_devices[minor]) {
             LOG_ERROR(-EBUSY, "device specified already exists");
@@ -72,7 +71,7 @@ static int __verify_minor(unsigned int minor, int mode, snap_device_array snap_d
             return -ENOENT;
         }
 
-        // check that the device is not busy if we care
+        // 在需要时检查设备是否正忙
         if (mode == 1 && atomic_read(&snap_devices[minor]->sd_refs)) {
             LOG_ERROR(-EBUSY, "device specified is busy");
             return -EBUSY;
@@ -83,15 +82,14 @@ static int __verify_minor(unsigned int minor, int mode, snap_device_array snap_d
 }
 
 /**
- * __verify_bdev_writable() - Determines if the block device is writable.
+ * __verify_bdev_writable() - 判断块设备是否可写。
  *
- * @bdev_path: the path to the block device.
- * @out: the result
+ * @bdev_path: 块设备路径。
+ * @out: 结果（1 可写，0 不可写）。
  *
  * Return:
- * * 0 - successful, @out contains a boolean value indicating whether the bdev
- * is writable.
- * * !0 - errno indicating the error.
+ * * 0 - 成功，@out 表示块设备是否可写。
+ * * !0 - 表示错误的 errno。
  */
 static int __verify_bdev_writable(const char *bdev_path, int *out)
 {
@@ -99,7 +97,7 @@ static int __verify_bdev_writable(const char *bdev_path, int *out)
     struct bdev_wrapper *bdev_w;
     struct super_block *sb;
 
-    // open the base block device
+    // 打开基块设备
     bdev_w = dattobd_blkdev_by_path(bdev_path, FMODE_READ, NULL);
 
     if (IS_ERR(bdev_w)) {
@@ -119,22 +117,19 @@ static int __verify_bdev_writable(const char *bdev_path, int *out)
 }
 
 /**
- * __netlink_setup() - Sets up for tracking for mounted or unmounted in
- * reload/setup mode as appropriate for the current mount state.
- * block devices
+ * __netlink_setup() - 根据当前挂载状态，以重载/新建方式为块设备建立跟踪。
  *
- * @minor: An unallocated device minor number.
- * @bdev_path: The path to the block device.
- * @cow_path: The path to the cow file.
- * @fallocated_space: The specific amount of space to use if non-zero,
- *                    default otherwise.
- * @cache_size: The specific amount of RAM to use for cache, default otherwise.
- * @is_snap: snapshot or incremental.
- * @is_reload: is a reload or a new setup.
+ * @minor: 未分配的次设备号。
+ * @bdev_path: 块设备路径。
+ * @cow_path: COW 文件路径。
+ * @fallocated_space: 非零时为预分配空间大小，否则用默认值。
+ * @cache_size: 缓存使用的内存大小，0 表示默认。
+ * @is_snap: 1 为快照模式，0 为增量模式。
+ * @is_reload: 1 为重载，0 为新建。
  *
  * Return:
- * * 0 - successfully set up.
- * * !0 - errno indicating the error.
+ * * 0 - 设置成功。
+ * * !0 - 表示错误的 errno。
  */
 static int __netlink_setup(unsigned int minor, const char *bdev_path, const char *cow_path,
                            unsigned long fallocated_space, unsigned long cache_size, int is_snap,
@@ -147,19 +142,19 @@ static int __netlink_setup(unsigned int minor, const char *bdev_path, const char
     LOG_DEBUG("received %s %s netlink - %u : %s : %s", (is_reload) ? "reload" : "setup",
               (is_snap) ? "snap" : "inc", minor, bdev_path, cow_path);
 
-    // verify that the minor number is valid
+    // 校验次设备号有效且可用
     ret = verify_minor_available(minor, snap_devices);
     if (ret) {
         LOG_ERROR(ret, "verify_minor_available");
         goto error;
     }
-    // check if block device is mounted
+    // 检查块设备是否已挂载（可写）
     ret = __verify_bdev_writable(bdev_path, &is_mounted);
     if (ret) {
         LOG_ERROR(ret, "__verify_bdev_writable");
         goto error;
     }
-    // check that reload / setup command matches current mount state
+    // 重载/新建命令须与当前挂载状态匹配（以下为历史注释）
     // if (is_mounted && is_reload) {
     // 	ret = -EINVAL;
     // 	LOG_ERROR(ret, "illegal to perform reload while mounted");
@@ -170,13 +165,13 @@ static int __netlink_setup(unsigned int minor, const char *bdev_path, const char
     // 	goto error;
     // }
 
-    // allocate the tracing struct
+    // 分配跟踪结构体
     ret = tracer_alloc(&dev);
     if (ret) {
         LOG_ERROR(ret, "tracer_alloc");
         goto error;
     }
-    // route to the appropriate setup function
+    // 根据类型调用对应设置函数
     if (is_snap) {
         // if (is_mounted)
         ret = tracer_setup_active_snap(dev, minor, bdev_path, cow_path, fallocated_space,
@@ -209,14 +204,13 @@ error:
 }
 
 /**
- * netlink_destroy() - Tears down an allocated minor device as long as it is not
- *                   referenced(busy).
+ * netlink_destroy() - 在设备未被引用（不忙）时销毁已分配的次设备。
  *
- * @minor: An allocated device minor number.
+ * @minor: 已分配的次设备号。
  *
  * Return:
- * * 0 - successful.
- * * !0 - errno indicating the error.
+ * * 0 - 成功。
+ * * !0 - 表示错误的 errno。
  */
 static int netlink_destroy(unsigned int minor)
 {
@@ -226,7 +220,7 @@ static int netlink_destroy(unsigned int minor)
 
     LOG_DEBUG("received destroy netlink - %u", minor);
 
-    // verify that the minor number is valid
+    // 校验次设备号有效
     ret = verify_minor_in_use_not_busy(minor, snap_devices);
     if (ret) {
         LOG_ERROR(ret, "error during destroy netlink handler");
@@ -243,14 +237,13 @@ static int netlink_destroy(unsigned int minor)
 }
 
 /**
- * netlink_transition_inc() - Transitions the snapshot device to incremental
- *                          tracking.
+ * netlink_transition_inc() - 将快照设备切换为增量跟踪模式。
  *
- * @minor: An allocated device minor number.
+ * @minor: 已分配的次设备号。
  *
  * Return:
- * * 0 - successful.
- * * !0 - errno indicating the error.
+ * * 0 - 成功。
+ * * !0 - 表示错误的 errno。
  */
 static int netlink_transition_inc(unsigned int minor)
 {
@@ -260,21 +253,21 @@ static int netlink_transition_inc(unsigned int minor)
 
     LOG_DEBUG("received transition inc netlink - %u", minor);
 
-    // verify that the minor number is valid
+    // 校验次设备号有效
     ret = verify_minor_in_use_not_busy(minor, snap_devices);
     if (ret)
         goto error;
 
     dev = snap_devices[minor];
 
-    // check that the device is not in the fail state
+    // 检查设备未处于失败状态
     if (tracer_read_fail_state(dev)) {
         ret = -EINVAL;
         LOG_ERROR(ret, "device specified is in the fail state");
         goto error;
     }
 
-    // check that tracer is in active snapshot state
+    // 检查 tracer 处于活动快照状态
     if (!test_bit(SNAPSHOT, &dev->sd_state) || !test_bit(ACTIVE, &dev->sd_state)) {
         ret = -EINVAL;
         LOG_ERROR(ret, "device specified is not in active snapshot mode");
@@ -295,20 +288,17 @@ error:
 }
 
 /**
- * netlink_transition_snap() - Transitions from active incremental mode to
- *                           snapshot mode.
+ * netlink_transition_snap() - 从活动增量模式切换回快照模式。
  *
- * @minor: An allocated device minor number.
- * @cow_path: The path to the cow file.
- * @fallocated_space: The specific amount of space to use if non-zero,
- *                    default otherwise.
+ * @minor: 已分配的次设备号。
+ * @cow_path: COW 文件路径。
+ * @fallocated_space: 非零时为预分配空间大小，否则用默认值。
  *
- * As a result COW data will be used during snapshotting to preserve snapshot
- * data while the live volume might change.
+ * 切换后快照期间将使用 COW 数据保存快照，而在线卷可能已变化。
  *
  * Return:
- * * 0 - successful.
- * * !0 - errno indicating the error.
+ * * 0 - 成功。
+ * * !0 - 表示错误的 errno。
  */
 static int netlink_transition_snap(unsigned int minor, const char *cow_path,
                                    unsigned long fallocated_space)
@@ -319,21 +309,21 @@ static int netlink_transition_snap(unsigned int minor, const char *cow_path,
 
     LOG_DEBUG("received transition snap netlink - %u : %s", minor, cow_path);
 
-    // verify that the minor number is valid
+    // 校验次设备号有效
     ret = verify_minor_in_use_not_busy(minor, snap_devices);
     if (ret)
         goto error;
 
     dev = snap_devices[minor];
 
-    // check that the device is not in the fail state
+    // 检查设备未处于失败状态
     if (tracer_read_fail_state(dev)) {
         ret = -EINVAL;
         LOG_ERROR(ret, "device specified is in the fail state");
         goto error;
     }
 
-    // check that tracer is in active incremental state
+    // 检查 tracer 处于活动增量状态
     if (test_bit(SNAPSHOT, &dev->sd_state) || !test_bit(ACTIVE, &dev->sd_state)) {
         ret = -EINVAL;
         LOG_ERROR(ret, "device specified is not in active incremental mode");
@@ -354,14 +344,13 @@ error:
 }
 
 /**
- * netlink_reconfigure() - Reconfigures the cache size to match the supplied
- *                       value.
- * @minor: An allocated device minor number.
- * @cache_size: The specific amount of RAM to use for cache, default otherwise.
+ * netlink_reconfigure() - 将缓存大小重新配置为指定值。
+ * @minor: 已分配的次设备号。
+ * @cache_size: 缓存使用的内存大小，0 表示默认。
  *
  * Return:
- * * 0 - successful.
- * * !0 - errno indicating the error.
+ * * 0 - 成功。
+ * * !0 - 表示错误的 errno。
  */
 static int netlink_reconfigure(unsigned int minor, unsigned long cache_size)
 {
@@ -371,14 +360,14 @@ static int netlink_reconfigure(unsigned int minor, unsigned long cache_size)
 
     LOG_DEBUG("received reconfigure netlink - %u : %lu", minor, cache_size);
 
-    // verify that the minor number is valid
+    // 校验次设备号有效
     ret = verify_minor_in_use_not_busy(minor, snap_devices);
     if (ret)
         goto error;
 
     dev = snap_devices[minor];
 
-    // check that the device is not in the fail state
+    // 检查设备未处于失败状态
     if (tracer_read_fail_state(dev)) {
         ret = -EINVAL;
         LOG_ERROR(ret, "device specified is in the fail state");
@@ -397,13 +386,13 @@ error:
 }
 
 /**
- * netlink_expand_cow_file() - Expands cow file by the specified size.
- * @size: The size in MiB to expand the cow file by.
- * @minor: An allocated device minor number.
+ * netlink_expand_cow_file() - 按指定大小扩展 COW 文件。
+ * @size: 扩展的容量（MiB）。
+ * @minor: 已分配的次设备号。
  *
  * Return:
- * * 0 - successful.
- * * !0 - errno indicating the error.
+ * * 0 - 成功。
+ * * !0 - 表示错误的 errno。
  */
 static int netlink_expand_cow_file(uint64_t size, unsigned int minor)
 {
@@ -413,21 +402,21 @@ static int netlink_expand_cow_file(uint64_t size, unsigned int minor)
 
     LOG_DEBUG("received expand cow file netlink - %u : %llu", minor, size);
 
-    // verify that the minor number is valid
+    // 校验次设备号有效
     ret = verify_minor_in_use(minor, snap_devices);
     if (ret)
         goto error;
 
     dev = snap_devices[minor];
 
-    // check that the device is not in the fail state
+    // 检查设备未处于失败状态
     if (tracer_read_fail_state(dev)) {
         ret = -EINVAL;
         LOG_ERROR(ret, "device specified is in the fail state");
         goto error;
     }
 
-    // check that tracer is in active snapshot state
+    // 检查 tracer 处于活动快照状态
     if (!test_bit(SNAPSHOT, &dev->sd_state) || !test_bit(ACTIVE, &dev->sd_state) ||
         test_bit(UNVERIFIED, &dev->sd_state)) {
         ret = -EINVAL;
@@ -449,14 +438,14 @@ error:
 }
 
 /**
- * netlink_reconfigure_auto_expand() - Allows cow file to expand by the specified size during snapshot, specified number of times.
- * @step_size: The step size in MiB to expand the cow file by.
- * @reserved_space: The reserved space in MiB to keep free on the block device.
- * @minor: An allocated device minor number.
+ * netlink_reconfigure_auto_expand() - 配置快照期间 COW 文件按指定步长自动扩展。
+ * @step_size: 每次扩展的步长（MiB）。
+ * @reserved_space: 块设备上需保留的空闲空间（MiB）。
+ * @minor: 已分配的次设备号。
  *
  * Return:
- * * 0 - successful.
- * * !0 - errno indicating the error.
+ * * 0 - 成功。
+ * * !0 - 表示错误的 errno。
  */
 static int netlink_reconfigure_auto_expand(uint64_t step_size, uint64_t reserved_space,
                                            unsigned int minor)
@@ -468,21 +457,21 @@ static int netlink_reconfigure_auto_expand(uint64_t step_size, uint64_t reserved
     LOG_DEBUG("received reconfigure auto expand netlink - %u : %llu, %llu", minor, step_size,
               reserved_space);
 
-    // verify that the minor number is valid
+    // 校验次设备号有效
     ret = verify_minor_in_use(minor, snap_devices);
     if (ret)
         goto error;
 
     dev = snap_devices[minor];
 
-    // check that the device is not in the fail state
+    // 检查设备未处于失败状态
     if (tracer_read_fail_state(dev)) {
         ret = -EINVAL;
         LOG_ERROR(ret, "device specified is in the fail state");
         goto error;
     }
 
-    // check that tracer is in active snapshot state
+    // 检查 tracer 处于活动快照状态
     if (!test_bit(SNAPSHOT, &dev->sd_state) || !test_bit(ACTIVE, &dev->sd_state) ||
         test_bit(UNVERIFIED, &dev->sd_state)) {
         ret = -EINVAL;
@@ -514,14 +503,13 @@ error:
 }
 
 /**
- * netlink_dattobd_info() - Stores relevant, current &struct snap_device state
- *                        in @info.
+ * netlink_dattobd_info() - 将当前 &struct snap_device 的相关状态写入 @info。
  *
- * @info: A @struct dattobd_info object pointer.
+ * @info: struct dattobd_info 对象指针。
  *
  * Return:
- * * 0 - successful.
- * * !0 - errno indicating the error.
+ * * 0 - 成功。
+ * * !0 - 表示错误的 errno。
  */
 static int netlink_dattobd_info(struct dattobd_info *info)
 {
@@ -531,7 +519,7 @@ static int netlink_dattobd_info(struct dattobd_info *info)
 
     LOG_DEBUG("received dattobd info netlink - %u", info->minor);
 
-    // verify that the minor number is valid
+    // 校验次设备号有效
     ret = verify_minor_in_use(info->minor, snap_devices);
     if (ret)
         goto error;
@@ -550,9 +538,9 @@ error:
 }
 
 /**
- * get_free_minor() - Determine the next available device minor number.
+ * get_free_minor() - 获取下一个可用的次设备号。
  *
- * Return: The next available minor number or an errno indicating the error.
+ * Return: 下一个可用的 minor，或表示错误的负 errno。
  */
 static int get_free_minor(void)
 {

@@ -38,7 +38,7 @@ int dattobd_call_mrf(make_request_fn *fn, struct request_queue *q, struct bio *b
 MRF_RETURN_TYPE dattobd_null_mrf(struct request_queue *q, struct bio *bio)
 {
     percpu_ref_get(&q->q_usage_counter);
-    // create a make_request_fn for the supplied request_queue.
+    // 为给定 request_queue 走 blk_mq 的 make_request 路径
     return blk_mq_make_request(q, bio);
 }
 #endif
@@ -54,9 +54,9 @@ MRF_RETURN_TYPE(*dattobd_blk_mq_submit_bio)
 
 MRF_RETURN_TYPE dattobd_snap_null_mrf(struct bio *bio)
 {
+#ifdef HAVE_BLK_ALLOC_QUEUE
     percpu_ref_get(&(dattobd_bio_bi_disk(bio))->queue->q_usage_counter);
 #endif
-
     dattobd_blk_mq_submit_bio(bio);
 #ifdef HAVE_NONVOID_SUBMIT_BIO_1
     MRF_RETURN_TYPE exists_to_align_api_only;
@@ -68,28 +68,22 @@ MRF_RETURN_TYPE dattobd_snap_null_mrf(struct bio *bio)
 
 MRF_RETURN_TYPE dattobd_null_mrf(struct bio *bio)
 {
-    // Before we can submit our bio to the original device...
-    // If there's any bio in the bio_list that ISN'T our bio, requeue it and
-    // return early, because that's what would happen anyway if we submit
-    // the bio. submit_bio has a mechanism to prevent multiple bio's from
-    // being active at once. This mechanism also messes us up, since
-    // tracing_fn was already called from a submit_bio - so we have to clear
-    // the bio_list but only if the only bio in the list, is our bio...
+    // 在把 bio 提交到原设备前：若 bio_list 中存在非本 bio 的项，则将其重新入队并提前返回，
+    // 因为提交时也会如此。submit_bio 会限制同时仅有一个 bio 活跃；tracing_fn 本身即由
+    // submit_bio 调用，故须在仅当列表中唯一项为本 bio 时清空 bio_list。
     if (current->bio_list) {
         struct bio *bio_in_list = current->bio_list->head;
         while (bio_in_list) {
             if (bio_in_list != bio) {
                 bio_list_add(&current->bio_list[0], bio);
-                MRF_RETURN(0); // return BLK_QC_T_NONE;
+                MRF_RETURN(0); // 返回 BLK_QC_T_NONE
             }
             bio_in_list = bio_in_list->bi_next;
         }
-        current->bio_list = NULL; // don't free- it's stack allocated.
+        current->bio_list = NULL; // 勿 free，其在栈上分配
     }
-    // Note, this is the global submit_bio - not the submit_bio function ptr
-    // that is a member of struct block_device_operations - because this is
-    // what we'll be using to submit IO to the real disk - the kernel's internal
-    // submit_bio impl. also knows to account for null function ptrs.
+    // 此处使用全局 submit_bio，而非 block_device_operations 的 submit_bio 成员，
+    // 以便向真实磁盘提交 I/O；内核内部 submit_bio 实现也会处理空函数指针。
     return submit_bio(bio);
 }
 

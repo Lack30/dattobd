@@ -1,5 +1,20 @@
 #include "ftrace_hooking.h"
 #include <linux/kprobes.h>
+#include <linux/version.h>
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 9, 0)
+#define USE_PATH_MOUNT
+#define USE_PATH_UMOUNT
+#elif LINUX_VERSION_CODE >= KERNEL_VERSION(5, 5, 0)
+#define USE_DO_MOUNT
+#define USE_KSYS_UMOUNT
+#elif LINUX_VERSION_CODE >= KERNEL_VERSION(4, 17, 0)
+#define USE_KSYS_MOUNT
+#define USE_KSYS_UMOUNT
+#else
+#define USE_SYS_MOUNT
+#define USE_SYS_UMOUNT
+#endif
 
 static inline bool dattobd_within_module(unsigned long addr, const struct module *mod)
 {
@@ -10,6 +25,7 @@ static inline bool dattobd_within_module(unsigned long addr, const struct module
 #endif
 }
 
+#ifdef USE_PATH_MOUNT
 static int (*orig_path_mount)(const char *dev_name, struct path *path, const char *type_page,
                               unsigned long flags, void *data_page);
 

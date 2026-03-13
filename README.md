@@ -1,108 +1,100 @@
-Datto Block Driver
-==================
+# Datto 块设备驱动
 
-For build and install instructions, see [INSTALL.md](INSTALL.md).
-For information about the on-disk .datto file this module creates, see [STRUCTURE.md](doc/STRUCTURE.md).
-For instructions regarding the `dbdctl` tool, see [dbdctl.8.md](doc/dbdctl.8.md).
-For details on the license of the software, see [LICENSING.md](LICENSING.md).
+构建与安装说明见 [INSTALL.md](INSTALL.md)。  
+本模块创建的 .datto 磁盘文件格式说明见 [STRUCTURE.md](doc/STRUCTURE.md)。  
+`dbdctl` 工具用法见 [dbdctl.8.md](doc/dbdctl.8.md)。  
+软件许可详见 [LICENSING.md](LICENSING.md)。
 
-## The Linux Snapshot Problem
+## Linux 快照的现状与问题
 
-Linux has some basic tools for creating instant copy-on-write (COW) “snapshots” of filesystems.  The most prominent of these are LVM and device mapper (on which LVM is built).  Unfortunately, both have limitations that render them unsuitable for supporting live server snapshotting across disparate Linux environments.  Both require an unused volume to be available on the machine to track COW data. Servers, and particularly production servers, may not be preconfigured with the required spare volume.  In addition, these snapshotting systems only allow a read-only volume to be made read-write.  Taking a live backup requires unmounting your data volume, setting up a snapshot of it, mounting the snapshot, and then using a tool like `dd` or `rsync` to copy the original volume to a safe location.  Many production servers simply cannot be brought down for the time it takes to do this and afterwards all of the new data in the COW volume must eventually be merged back in to the original volume (which requires even more downtime). This is impractical and extremely hacky, to say the least.
+Linux 提供了一些用于创建即时写时复制（COW）“快照”的基础工具，其中最主要的是 LVM 与 device mapper（LVM 基于其实现）。两者都有明显限制，难以在差异较大的 Linux 环境中统一支持在线服务器快照：都需要机器上有一块未使用的卷来存放 COW 数据，而服务器（尤其是生产环境）往往没有预先配置这样的空闲卷。此外，这些快照方案只能把只读卷改为读写；要做在线备份，通常需要先卸载数据卷、建立快照、挂载快照，再用 `dd` 或 `rsync` 等把原卷拷到安全位置。很多生产环境无法承受这么长的停机时间，而且事后还要把 COW 卷里的新数据合并回原卷（又会带来额外停机），既不现实也不优雅。
 
-## Datto Block Driver (Linux Kernel Module / Driver)
+## Datto 块设备驱动（Linux 内核模块）
 
-The Datto Block Driver (dattobd) solves the above problems and brings functionality similar to VSS on Windows to a broad range of Linux kernels.  Dattobd is an open source Linux kernel module for point-in-time live snapshotting.  Dattobd can be loaded onto a running Linux machine (without a reboot) and creates a COW file on the original volume representing any block device at the instant the snapshot is taken.  After the first snapshot, the driver tracks incremental changes to the block device and therefore can be used to efficiently update existing backups by copying only the blocks that have changed.  Dattobd is a true live-snapshotting system that will leave your root volume running and available, without requiring a reboot.
+Datto 块设备驱动（dattobd）针对上述问题，在多种 Linux 内核上提供了类似 Windows VSS 的能力。dattobd 是开源的 Linux 内核模块，用于实现时间点在线快照。可在不重启的情况下加载到正在运行的 Linux 上，在创建快照的瞬间，于原卷上生成一个表示任意块设备状态的 COW 文件。首次快照之后，驱动会跟踪块设备的增量变化，因此只需复制发生变化的块即可高效更新已有备份。dattobd 是真正的在线快照方案，根卷可保持运行和可用，无需重启。
 
-Dattobd is designed to run on any linux device from small test virtual machines to live production servers with minimal impact on I/O or CPU performance.  Since the driver works at the block layer, it supports most common filesystems including ext 2,3 and 4 and xfs (although filesystems with their own block device management systems such as ZFS and BTRFS can not be supported).  All COW data is tracked in a file on the source block device itself, eliminating the need to have a spare volume in order to snapshot.  
+dattobd 设计为从小型测试虚拟机到生产服务器均可运行，对 I/O 和 CPU 影响较小。由于工作在块层，支持常见文件系统（如 ext2/3/4、xfs）；自带块设备管理机制的文件系统（如 ZFS、BTRFS）无法支持。所有 COW 数据都记录在源块设备上的一个文件中，因此不需要额外空闲卷即可做快照。
 
-## Performing Incremental Backups
+## 执行增量备份
 
-The primary intended use case of Dattobd is for backing up live Linux systems. The general flow is to take a snapshot, copy it and move the snapshot into 'incremental' mode. Later, we can move the incremental back to snapshot mode and efficiently update the first backup we took. We can then repeat this process to continually update our backed-up image.  What follows is an example of using the driver for this purpose on a simple Ubuntu 12.04 installation with a single root volume on `/dev/sda1`. In this case, we are copying to another (larger) volume mounted at `/backups`. Other Linux distros should work similarly, with minor tweaks.
+dattobd 的主要用途是对在线 Linux 系统做备份。典型流程是：创建快照 → 拷贝快照 → 将快照切换为“增量”模式；之后可再切回快照模式并高效更新第一次的备份，如此反复即可持续更新备份镜像。下面以在简单 Ubuntu 12.04 环境（根卷为 `/dev/sda1`）为例，说明用法；此处将数据拷贝到挂载在 `/backups` 的另一块（更大）卷，其他发行版类似，可能需小幅调整。
 
-1) Install the driver and related tools. Instructions for doing this are explained in [INSTALL.md](INSTALL.md).
+1) 安装驱动及相关工具，步骤见 [INSTALL.md](INSTALL.md)。
 
-2) Create a snapshot:
+2) 创建快照：
 
 	```
 	dbdctl setup-snapshot /dev/sda1 /.datto 0
 	```
 
+这会在 `/dev/datto0` 创建根卷的快照，COW 文件为 `/.datto`。该文件必须位于将要被快照的卷上。
 
-This will create a snapshot of the root volume at `/dev/datto0` with a backing COW file at `/.datto`. This file must exist on the volume that will be snapshotted.
-
-3) Copy the image off the block device:
+3) 将镜像从块设备拷出：
 
 	```
 	dd if=/dev/datto0 of=/backups/sda1-bkp bs=1M
 	```
 
+`dd` 是 Linux 下常用的镜像拷贝工具，这里把 `/dev/datto0` 的内容拷成镜像。使用不当可能严重破坏文件系统，切勿让 `of` 指向存有重要数据的卷。整卷拷贝可能较慢，详见 `dd` 手册。
 
-`dd` is a standard image copying tool in linux. Here it simply copies the contents of the `/dev/datto0` device to an image. Be careful when running this command as it can badly corrupt filesystems if used incorrectly. NEVER execute `dd` with the "of" parameter pointing to a volume that has important data on it. This can take a while to copy the entire volume. See the man page on `dd` for more details.
-
-4) Put the snapshot into incremental mode:
+4) 将快照切换为增量模式：
 
 	```
 	dbdctl transition-to-incremental 0
 	```
 
+该命令让驱动把快照设备（`/dev/datto0`）转为增量模式。此后驱动只记录发生变化的块地址（不保存数据本身），系统负担更小，并为后续用变更块更新备份镜像做准备。
 
-This command requests the driver to move the snapshot (`/dev/datto0`) to incremental mode. From this point on, the driver will only track the addresses of blocks that have changed (without the data itself). This mode is less system intensive, but is important for later when we wish to update the `/backups/sda1-bkp` to reflect a later snapshot of the filesystem.
+5) 正常使用系统。首次备份完成后，大多数时间驱动会保持在增量模式。
 
-5) Continue using your system.
-After the initial backup, the driver will probably be left in incremental mode the vast majority of time.
-
-
-6) Move the incremental back to snapshot mode:
+6) 将增量再次切回快照模式：
 
 	```
 	dbdctl transition-to-snapshot /.datto1 0
 	```
 
+此命令需要指定一个新的 COW 文件名以重新开始记录变更（此处使用 `/.datto1`）。此时驱动已不再使用步骤 2 中的 `/.datto`。`/.datto` 中保存的是自首次快照以来发生变化的块列表，下一步将用它来更新备份镜像。注意不要与步骤 2 中使用的文件名相同，否则会覆盖已有的变更块列表。
 
-This command requires the name of a new COW file to begin tracking changes again (here we chose `/.datto1`). At this point the driver is finished with our `/.datto` file we created in step 2. The `/.datto` file now contains a list of the blocks that have changed since our initial snapshot. We will use this in the next step to update our backed up image. It is important to not use the same file name that we specified in step 2 for this command. Otherwise, we would overwrite our list of changed blocks.
+7) 拷贝变更块以更新镜像：
 
-7) Copy the changes:
+	```
+	update-img /dev/datto0 /.datto /backups/sda1-bkp
+	```
 
-	```update-img /dev/datto0 /.datto /backups/sda1-bkp```
+这里使用驱动自带的 update-img 工具。三个参数分别为：快照设备（`/dev/datto0`）、变更块列表（步骤 1 的 `/.datto`）、原始备份镜像（步骤 3 的 `/backups/sda1-bkp`）。工具会把新快照中对应块拷到已有镜像，从而更新镜像。
 
-
-Here we can use the update-img tool included with the driver. It takes 3 parameters: a snapshot (`/dev/datto0`), the list of changed blocks (`/.datto` from step 1), and an original backup image (`/backups/sda1-bkp` created in step 3). It copies the blocks listed in the block list from the new snapshot to the existing image, effectively updating the image.
-
-8) Clean up the leftover file:
+8) 删除已用过的变更列表文件：
 
 	```
 	rm /.datto
 	```
 
+9) 回到步骤 4 并重复。注意每次应使用不同的 COW 文件路径；若重复使用同一文件名会覆盖变更块列表，只能重新用 dd 做全量拷贝，而无法使用只拷变更块的 `update-img`。
 
-9) Go back to step 4 and repeat:
-Keep in mind it is important to specify a different COW file path for each use. If you use the same file name you will overwrite the list of changed blocks. As a result you will have to use dd to perform a full copy again instead of using the faster `update-img` tool (which only copies the changed blocks).
+若要保留多个版本的镜像，建议将镜像放在支持快照的文件系统（如 BTRFS 或 ZFS）上，在每次全量备份（步骤 3）或差异更新（步骤 7）后再对镜像做快照，以便保留历史版本。
 
-If you wish to keep multiple versions of the image, we recommend that you copy your images a snapshotting filesystem (such as BTRFS or ZFS). You can then snapshot the images after updating them (step 3 for the full backup or 7 the differential). This will allow you to keep a history of revisions to the image.
+## 驱动状态
 
-## Driver Status
+当前 dattobd 驱动状态可从 `/proc/datto-info` 读取，为 JSON 格式，包含 "version" 和 "devices" 数组。每个设备包含以下字段：
 
-The current status of the dattobd driver can be read from the file `/proc/datto-info`. This is a JSON-formatted file with 2 fields: a version number "version" and an array of "devices". Each device has the following fields:
-
-* `minor`: The minor number of the snapshot (for identification purposes).
-* `cow_file`: The path to the cow file *relative* to the mountpoint of the block device. If the device is in an unverified state, the path is presented as it was given to the driver.
-* `block_device`: The block device being tracked by this device.
-* `max_cache`: The maximum amount of memory that may be used to cache metadata for this device (in bytes).
-* `fallocate`: The preallocated size of the cow file (in bytes). This will not be printed if the device is in the unverified state.
-* `cow_size_current`: The current size of the cow file (in bytes). This will not be printed if the device is in the unverified state.
-* `seq_id`: The sequence id of the snapshot. This number starts at 1 for new snapshots and is incremented on each transition to snapshot.
-* `uuid`: Uniquely identifies a series of snapshots. It is not changed on state transition.
-* `auto_expand`: Parameters of auto-expansion of COW-file.
-    * `step_size_mib`: Expansion step size (in megabytes).
-    * `reserved_space_mib`: Space that has to be left available for users during auto-expand process (in megabytes).
-* `error`: This field will only be present if the device has failed. It shows the linux standard error code indicating what went wrong. More specific info is printed to dmesg.
-* `state`: An integer representing the current working state of the device. There are 6 possible states; for more info on these refer to [STRUCTURE.md](doc/STRUCTURE.md).
-	* 0 = dormant incremental
-	* 1 = dormant snapshot
-	* 2 = active incremental
-	* 3 = active snapshot
-	* 4 = unverified incremental
-	* 5 = unverified snapshot
-* `nr_changed_blocks`: The number of blocks that have changed since the last snapshot.
-* `version`: Version of the on-disk format of the COW header.
+* `minor`: 快照设备的次设备号（用于标识）。
+* `cow_file`: COW 文件路径（相对于块设备挂载点）。设备处于未验证状态时，显示的是传入驱动时的路径。
+* `block_device`: 该设备跟踪的块设备。
+* `max_cache`: 该设备可用于缓存元数据的最大内存（字节）。
+* `fallocate`: COW 文件预分配大小（字节）。设备未验证时不显示。
+* `cow_size_current`: COW 文件当前大小（字节）。设备未验证时不显示。
+* `seq_id`: 快照序列号。新快照从 1 开始，每次转为快照模式时递增。
+* `uuid`: 唯一标识一系列快照，状态转换时不变。
+* `auto_expand`: COW 文件自动扩展参数。
+    * `step_size_mib`: 每次扩展的步长（兆字节）。
+    * `reserved_space_mib`: 自动扩展时为用户保留的空间（兆字节）。
+* `error`: 仅当设备失败时存在，为 Linux 标准错误码；更具体的信息会输出到 dmesg。
+* `state`: 设备当前工作状态（整数）。共 6 种，详见 [STRUCTURE.md](doc/STRUCTURE.md)。
+	* 0 = 休眠增量
+	* 1 = 休眠快照
+	* 2 = 活动增量
+	* 3 = 活动快照
+	* 4 = 未验证增量
+	* 5 = 未验证快照
+* `nr_changed_blocks`: 自上次快照以来发生变化的块数。
+* `version`: COW 头部的磁盘格式版本。

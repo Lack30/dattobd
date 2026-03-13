@@ -11,7 +11,7 @@
 
 #define DATTO_TAG "datto"
 
-// printing macros
+/* 日志打印宏 */
 #define LOG_DEBUG(fmt, args...)                                                                    \
     do {                                                                                           \
         if (dattobd_debug)                                                                         \

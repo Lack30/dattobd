@@ -23,7 +23,7 @@
 #define __cow_close_header(cm) __cow_write_header(cm, 1)
 #define __cow_write_current_mapping(cm, pos) __cow_write_mapping(cm, pos, (cm)->curr_pos)
 
-// memory macros
+/* 内存相关宏 */
 #define get_zeroed_pages(flags, order) __get_free_pages(((flags) | __GFP_ZERO), order)
 
 const unsigned long dattobd_cow_ext_buf_size = sizeof(struct fiemap_extent) * 1024;
@@ -52,7 +52,7 @@ inline int __open_dattobd_mutable_file(const char *path, int flags,
     if (IS_ERR(*dfilp)) {
         LOG_ERROR(-ENOMEM, "failed to wrap file pointer");
         __file_close_raw(filp);
-        // filp does not need to be kfreed here, it is handled by the filp_close under the hood
+        // filp 此处无需 kfree，由 filp_close 内部处理
         return -ENOMEM;
     }
 
@@ -60,11 +60,10 @@ inline int __open_dattobd_mutable_file(const char *path, int flags,
 }
 
 /**
- * __cow_free_section() - Frees the memory used to track the section at
- * offset @sect_idx and marks the array entry as unused.
+ * __cow_free_section() - 释放偏移 @sect_idx 处区段占用的内存并将该数组项标为未用。
  *
- * @cm: The &struct cow_manager tracking the block device.
- * @sect_idx: An offset into the array of sections used to track COW data.
+ * @cm: 跟踪块设备的 &struct cow_manager。
+ * @sect_idx: COW 区段数组中的偏移。
  */
 static void __cow_free_section(struct cow_manager *cm, unsigned long sect_idx)
 {
@@ -74,17 +73,15 @@ static void __cow_free_section(struct cow_manager *cm, unsigned long sect_idx)
 }
 
 /**
- * __cow_alloc_section() - Allocates a section in the cache at offset
- * @sect_idx, marks it as having data and updates cache stats.
+ * __cow_alloc_section() - 在缓存中偏移 @sect_idx 处分配区段，标记为有数据并更新缓存统计。
  *
- * @cm: each &struct snap_device has a &struct cow_manager
- * @sect_idx: the cow section index
- * @zero: an int encoded boolean value indicating whether to allocate mappings
- *        initially zeroed or with potentially random data.
+ * @cm: 每个 &struct snap_device 对应一个 &struct cow_manager。
+ * @sect_idx: COW 区段索引。
+ * @zero: 整数形式布尔值，1 表示映射初始化为零，0 表示可能为随机数据。
  *
  * Return:
- * * 0 - success
- * * !0 - errno indicating the error
+ * * 0 - 成功
+ * * !0 - 表示错误的 errno
  */
 static int __cow_alloc_section(struct cow_manager *cm, unsigned long sect_idx, int zero)
 {
@@ -105,14 +102,13 @@ static int __cow_alloc_section(struct cow_manager *cm, unsigned long sect_idx, i
 }
 
 /**
- * __cow_load_section() - Allocates and reads a section from the COW backing
- * file
- * @cm: each &struct snap_device has a &struct cow_manager
- * @sect_idx: An offset into the array of sections used to track COW data.
+ * __cow_load_section() - 分配并从 COW 后备文件读取指定区段。
+ * @cm: 每个 &struct snap_device 对应一个 &struct cow_manager。
+ * @sect_idx: COW 区段数组中的偏移。
  *
  * Return:
- * * 0 - success
- * * !0 - errno indicating the error
+ * * 0 - 成功
+ * * !0 - 表示错误的 errno
  */
 static int __cow_load_section(struct cow_manager *cm, unsigned long sect_idx)
 {
@@ -124,9 +120,6 @@ static int __cow_load_section(struct cow_manager *cm, unsigned long sect_idx)
         goto error;
 
     for (i = 0; i < sect_size_bytes / COW_BLOCK_SIZE; i++) {
-        // int mapping_offset = (COW_BLOCK_SIZE / sizeof(cm->sects[sect_idx].mappings[0])) * i;
-        // int cow_file_offset = COW_BLOCK_SIZE * i;
-
         ret = file_read(cm->dfilp, cm->dev, cm->sects[sect_idx].mappings,
                         cm->sect_size * sect_idx * 8 + COW_HEADER_SIZE, cm->sect_size * 8);
         if (ret)
@@ -143,13 +136,13 @@ error:
 }
 
 /**
- * __cow_write_section() - Transfers the cached section to the backing file.
- * @cm: each &struct snap_device has a &struct cow_manager
- * @sect_idx: An offset into the array of sections used to track COW data.
+ * __cow_write_section() - 将缓存的区段写回后备文件。
+ * @cm: 每个 &struct snap_device 对应一个 &struct cow_manager。
+ * @sect_idx: COW 区段数组中的偏移。
  *
  * Return:
- * * 0 - success
- * * !0 - errno indicating the error
+ * * 0 - 成功
+ * * !0 - 表示错误的 errno
  */
 static int __cow_write_section(struct cow_manager *cm, unsigned long sect_idx)
 {
@@ -157,9 +150,6 @@ static int __cow_write_section(struct cow_manager *cm, unsigned long sect_idx)
     int sect_size_bytes = COW_SECTION_SIZE * sizeof(uint64_t);
 
     for (i = 0; i < sect_size_bytes / COW_BLOCK_SIZE; i++) {
-        // int mapping_offset = (COW_BLOCK_SIZE / sizeof(cm->sects[sect_idx].mappings[0])) * i;
-        // int cow_file_offset = COW_BLOCK_SIZE * i;
-
         ret = file_write(cm->dfilp, cm->dev, cm->sects[sect_idx].mappings,
                          cm->sect_size * sect_idx * 8 + COW_HEADER_SIZE, cm->sect_size * 8);
         if (ret) {
@@ -172,17 +162,14 @@ static int __cow_write_section(struct cow_manager *cm, unsigned long sect_idx)
 }
 
 /**
- * __cow_sync_and_free_sections() - Used to synchronize and deallocate certain
- * sections from the &struct cow_manager.
+ * __cow_sync_and_free_sections() - 将 &struct cow_manager 中部分区段同步到文件并释放。
  *
- * @cm: each &struct snap_device has a &struct cow_manager
- * @thresh: A threshold of zero will free all sections otherwise any section
- *          with a usage at or below the threshold will be synced and
- *          deallocated.
+ * @cm: 每个 &struct snap_device 对应一个 &struct cow_manager。
+ * @thresh: 0 表示释放所有区段；非零时使用量小于等于该阈值的区段会被同步并释放。
  *
  * Return:
- * * 0 - success
- * * !0 - errno indicating the error
+ * * 0 - 成功
+ * * !0 - 表示错误的 errno
  */
 static int __cow_sync_and_free_sections(struct cow_manager *cm, unsigned long thresh)
 {
@@ -207,14 +194,13 @@ static int __cow_sync_and_free_sections(struct cow_manager *cm, unsigned long th
 }
 
 /**
- * __cow_cleanup_mappings() - This deallocates sections from the
- * &struct cow_manager equal to approximately half of the cached sections.
+ * __cow_cleanup_mappings() - 从 &struct cow_manager 中释放约一半的缓存区段。
  *
- * @cm: each &struct snap_device has a &struct cow_manager
+ * @cm: 每个 &struct snap_device 对应一个 &struct cow_manager。
  *
  * Return:
- * * 0 - success
- * * !0 - errno indicating the error
+ * * 0 - 成功
+ * * !0 - 表示错误的 errno
  */
 static int __cow_cleanup_mappings(struct cow_manager *cm)
 {
@@ -222,13 +208,13 @@ static int __cow_cleanup_mappings(struct cow_manager *cm)
     int ret;
     unsigned long granularity, thresh = 0;
 
-    // find the max usage of the sections of the cow manager
+    // 找出 cow manager 各区段的最大使用量
     for (i = 0; i < cm->total_sects; i++) {
         if (cm->sects[i].usage > thresh)
             thresh = cm->sects[i].usage;
     }
 
-    // find the (approximate) median usage of the sections of the cm
+    // 求 cm 各区段使用量的（近似）中位数
     thresh /= 2;
     granularity = thresh;
     while (granularity > 0) {
@@ -251,7 +237,7 @@ static int __cow_cleanup_mappings(struct cow_manager *cm)
             break;
     }
 
-    // deallocate sections of the cm with less usage than the median
+    // 释放使用量低于中位数的区段
     ret = __cow_sync_and_free_sections(cm, thresh);
     if (ret) {
         LOG_ERROR(ret, "error cleaning cow manager mappings");
@@ -262,17 +248,14 @@ static int __cow_cleanup_mappings(struct cow_manager *cm)
 }
 
 /**
- * __cow_write_header() - Transfers in-memory header data to the header stored
- * on the block device.
+ * __cow_write_header() - 将内存中的头部数据写回块设备上的 COW 文件头。
  *
- * @cm: Each &struct snap_device has a &struct cow_manager.
- * @is_clean: Used to indicate whether the COW file has been closed correctly.
- * * 0: clears the COW_CLEAN flag.
- * * !0: sets the COW_CLEAN flag.
+ * @cm: 每个 &struct snap_device 对应一个 &struct cow_manager。
+ * @is_clean: 表示 COW 文件是否已正确关闭。0 清除 COW_CLEAN 标志，非 0 设置该标志。
  *
  * Return:
- * * 0 - success
- * * !0 - errno indicating the error
+ * * 0 - 成功
+ * * !0 - 表示错误的 errno
  */
 static int __cow_write_header(struct cow_manager *cm, int is_clean)
 {
@@ -306,22 +289,17 @@ static int __cow_write_header(struct cow_manager *cm, int is_clean)
 }
 
 /**
- * __cow_open_header() - Reads and validates the &struct cow_header from the
- * beginning of the COW file. Then writes the header back to the backing file
- * to reflect and changes stored in the &struct cow_manager.
+ * __cow_open_header() - 从 COW 文件开头读取并校验 &struct cow_header，再根据
+ *                       &struct cow_manager 中的变更写回后备文件。
  *
- * @cm: each &struct snap_device has a &struct cow_manager
- * @index_only: int encoded bool indicating whether the COW file should be in
- *              incremental or snapshot mode?
- * @reset_vmalloc: int encoded bool indicating whether the COW_VMALLOC_UPPER
- *                 flag should be cleared.  The memory allocated for
- *                 &cow_manager->sects may be allocated by different allocators
- *                 and this presence or lack of this flag indicates how it
- *                 should be freed.
+ * @cm: 每个 &struct snap_device 对应一个 &struct cow_manager。
+ * @index_only: 整数形式布尔值，表示 COW 文件应为增量模式还是快照模式。
+ * @reset_vmalloc: 整数形式布尔值，表示是否清除 COW_VMALLOC_UPPER 标志；
+ *                 cow_manager->sects 可能由不同分配器分配，该标志指示如何释放。
  *
  * Return:
- * * 0 - success
- * * !0 - errno indicating the error
+ * * 0 - 成功
+ * * !0 - 表示错误的 errno
  */
 static int __cow_open_header(struct cow_manager *cm, int index_only, int reset_vmalloc)
 {
@@ -379,10 +357,9 @@ error:
 }
 
 /**
- * cow_free_members() - Frees COW state tracking memory and unlinks the COW
- * backing file.
+ * cow_free_members() - 释放 COW 状态跟踪内存并 unlink COW 后备文件。
  *
- * @cm: each &struct snap_device has a &struct cow_manager
+ * @cm: 每个 &struct snap_device 对应一个 &struct cow_manager。
  */
 void cow_free_members(struct cow_manager *cm)
 {
@@ -409,10 +386,9 @@ void cow_free_members(struct cow_manager *cm)
 }
 
 /**
- * cow_free() - Frees the memory used for COW tracking and unlinks the COW
- * backing file from the block device.
+ * cow_free() - 释放 COW 跟踪所用内存并从块设备上 unlink COW 后备文件。
  *
- * @cm: each &struct snap_device has a &struct cow_manager
+ * @cm: 每个 &struct snap_device 对应一个 &struct cow_manager。
  */
 void cow_free(struct cow_manager *cm)
 {
@@ -421,13 +397,12 @@ void cow_free(struct cow_manager *cm)
 }
 
 /**
- * cow_sync_and_free() - Flushes cached data to the backing file, closes the
- * COW backing file and deallocates the &struct cow_manager.
- * @cm: The &struct cow_manager associated with the &struct snap_device.
+ * cow_sync_and_free() - 将缓存刷写到后备文件、关闭 COW 文件并释放 &struct cow_manager。
+ * @cm: 与 &struct snap_device 关联的 &struct cow_manager。
  *
  * Return:
- * * 0 - success
- * * !0 - errno indicating the error
+ * * 0 - 成功
+ * * !0 - 表示错误的 errno
  */
 int cow_sync_and_free(struct cow_manager *cm)
 {
@@ -465,13 +440,12 @@ error:
 }
 
 /**
- * cow_sync_and_close() - Flushes cached data to the backing file, closes the
- * COW backing file but does not deallocate the &struct cow_manager.
- * @cm: The &struct cow_manager associated with the &struct snap_device.
+ * cow_sync_and_close() - 将缓存刷写到后备文件并关闭 COW 文件，但不释放 &struct cow_manager。
+ * @cm: 与 &struct snap_device 关联的 &struct cow_manager。
  *
  * Return:
- * * 0 - success
- * * !0 - errno indicating the error
+ * * 0 - 成功
+ * * !0 - 表示错误的 errno
  */
 int cow_sync_and_close(struct cow_manager *cm)
 {
@@ -505,14 +479,14 @@ error:
 }
 
 /**
- * cow_reopen() - Re-opens an existing COW file located at @pathname.
+ * cow_reopen() - 重新打开位于 @pathname 的已有 COW 文件。
  *
- * @cm: The &struct cow_manager associated with the &struct snap_device.
- * @pathname: The path of the COW file.
+ * @cm: 与 &struct snap_device 关联的 &struct cow_manager。
+ * @pathname: COW 文件路径。
  *
  * Return:
- * * 0 - success
- * * !0 - errno indicating the error
+ * * 0 - 成功
+ * * !0 - 表示错误的 errno
  */
 int cow_reopen(struct cow_manager *cm, const char *pathname)
 {
@@ -541,17 +515,12 @@ error:
 }
 
 /**
- * __cow_calculate_allowed_sects() - Estimates the total number of cow
- * sections that can fit within the allowed cache size.
+ * __cow_calculate_allowed_sects() - 估算在允许的缓存大小内可容纳的 COW 区段总数。
  *
- * @cache_size: The number of bytes allowed for the cache.  The cache should
- *              be at least as large as the memory required for the array of
- *              &struct cow_section objects used to track data during
- *              snapshotting.
- * @total_sects: The number of sections currently allocated.
+ * @cache_size: 缓存允许的字节数，至少应能容纳快照期间用于跟踪的 cow_section 数组。
+ * @total_sects: 当前已分配的区段数。
  *
- * Return:
- * The remaining sections that would fit within memory set aside for the cache.
+ * Return: 在预留缓存内存内还能容纳的区段数。
  */
 static unsigned long __cow_calculate_allowed_sects(unsigned long cache_size,
                                                    unsigned long total_sects)
@@ -563,21 +532,18 @@ static unsigned long __cow_calculate_allowed_sects(unsigned long cache_size,
 }
 
 /**
- * cow_reload() - Allocates a &struct cow_manager object and reloads it from
- *                data saved in the supplied COW file.  All cached sections
- *                are marked as having data which will trigger loading from
- *                disk for each data section.
- * @path: The path to the COW file.
- * @elements: typically the number of sectors on the block device.
- * @sect_size: The basic unit of size that the &struct cow_manager works with.
- * @cache_size: The amount of RAM dedicated to the data cache.
- * @index_only: int encoded bool indicating whether the COW file should be in
- *              incremental or snapshot mode?
- * @cm_out: The reloaded &struct cow_manager object.
+ * cow_reload() - 分配 &struct cow_manager 并从指定 COW 文件重载；所有缓存区段标记为有数据，
+ *                后续会从磁盘按需加载。
+ * @path: COW 文件路径。
+ * @elements: 通常为块设备扇区数。
+ * @sect_size: &struct cow_manager 使用的基本区段大小。
+ * @cache_size: 数据缓存占用的内存（字节）。
+ * @index_only: 整数形式布尔值，表示 COW 为增量模式还是快照模式。
+ * @cm_out: 重载得到的 &struct cow_manager 指针。
  *
  * Return:
- * * 0 - success
- * * !0 - errno indicating the error
+ * * 0 - 成功
+ * * !0 - 表示错误的 errno
  */
 int cow_reload(const char *path, uint64_t elements, unsigned long sect_size,
                unsigned long cache_size, int index_only, struct cow_manager **cm_out)
@@ -614,7 +580,7 @@ int cow_reload(const char *path, uint64_t elements, unsigned long sect_size,
     LOG_DEBUG("allocating cow manager array (%lu sections)", cm->total_sects);
     cm->sects = kzalloc((cm->total_sects) * sizeof(struct cow_section), GFP_KERNEL | __GFP_NOWARN);
     if (!cm->sects) {
-        // try falling back to vmalloc
+        // 尝试改用 vmalloc
         cm->flags |= (1 << COW_VMALLOC_UPPER);
         cm->sects = vzalloc((cm->total_sects) * sizeof(struct cow_section));
         if (!cm->sects) {
@@ -653,23 +619,20 @@ error:
 }
 
 /**
- * cow_init() - Allocates a &struct cow_manager object and initializes it.
- *              Also creates the COW backing file on disk and writes a
- *              header into it.
- * @dev:  The &struct snap_device that keeps snapshot device state.
- * @path: The path to the COW file.
- * @elements: typically the number of sectors on the block device.
- * @sect_size: The basic unit of size that the &struct cow_manager works with.
- * @cache_size: The amount of RAM dedicated to the data cache.
- * @file_max: The maximum size of the cow file.  It will be allocated to this
- *            size after it is created.
- * @uuid: NULL or a valid pointer to a UUID.
- * @seqid: The sequence ID used to identify the snapshot.
- * @cm_out: The initialized &struct cow_manager object.
+ * cow_init() - 分配并初始化 &struct cow_manager，在磁盘上创建 COW 后备文件并写入头部。
+ * @dev: 保存快照设备状态的 &struct snap_device。
+ * @path: COW 文件路径。
+ * @elements: 通常为块设备扇区数。
+ * @sect_size: &struct cow_manager 使用的基本区段大小。
+ * @cache_size: 数据缓存占用的内存（字节）。
+ * @file_max: COW 文件最大大小，创建后将预分配到此大小。
+ * @uuid: NULL 或有效的 UUID 指针。
+ * @seqid: 用于标识快照的序列 ID。
+ * @cm_out: 初始化得到的 &struct cow_manager 指针。
  *
  * Return:
- * * 0 - success
- * * !0 - errno indicating the error
+ * * 0 - 成功
+ * * !0 - 表示错误的 errno
  */
 int cow_init(struct snap_device *dev, const char *path, uint64_t elements, unsigned long sect_size,
              unsigned long cache_size, uint64_t file_max, const uint8_t *uuid, uint64_t seqid,
@@ -696,18 +659,14 @@ int cow_init(struct snap_device *dev, const char *path, uint64_t elements, unsig
     cm->flags = 0;
     cm->allocated_sects = 0;
     cm->file_size = file_max;
-    cm->sect_size = sect_size; //how many elements(sectors) can section hold (in datastore); = 4096
+    cm->sect_size = sect_size; // 区段可容纳的扇区数（存储侧），= 4096
     cm->seqid = seqid;
-    // get_order(x) = ceil[log2(x / PAGE_SIZE)]
-    // PAGE_SIZE = 4096 bytes; log2[pages in section in index]; = log2(4096*8/4096) = 3
-    // this implies that section uses 2^15 B in index => sector consists of 8 B of metadata in index
-    // means how many pages do we need to store metadata of one section in index
+    // get_order(x)=ceil[log2(x/PAGE_SIZE)]；索引中一区段占的页数
     cm->log_sect_pages = get_order(sect_size * 8);
-    //total sections to store all of the sectors; = ceil(elements / 4096)
     cm->total_sects = NUM_SEGMENTS(elements, cm->log_sect_pages + PAGE_SHIFT - 3);
-    //num of sections that can fit in cache apart from index
+    // 除索引外缓存可容纳的区段数
     cm->allowed_sects = __cow_calculate_allowed_sects(cache_size, cm->total_sects);
-    // data offset in bytes, equals 4096 + [total_sects*4096*8](index size)
+    // 数据区偏移（字节），= 4096 + [total_sects*4096*8]（索引大小）
     cm->data_offset = COW_HEADER_SIZE + (cm->total_sects * (sect_size * 8));
     cm->curr_pos = cm->data_offset / COW_BLOCK_SIZE;
     cm->dev = dev;
@@ -721,7 +680,7 @@ int cow_init(struct snap_device *dev, const char *path, uint64_t elements, unsig
     LOG_DEBUG("allocating cow manager array (%lu sections)", cm->total_sects);
     cm->sects = kzalloc((cm->total_sects) * sizeof(struct cow_section), GFP_KERNEL | __GFP_NOWARN);
     if (!cm->sects) {
-        // try falling back to vmalloc
+        // 尝试改用 vmalloc
         cm->flags |= (1 << COW_VMALLOC_UPPER);
         cm->sects = vzalloc((cm->total_sects) * sizeof(struct cow_section));
         if (!cm->sects) {
@@ -766,20 +725,19 @@ error:
 }
 
 /**
- * cow_truncate_to_index() - Truncates the COW file so that it only contains
- * the header and index.
+ * cow_truncate_to_index() - 将 COW 文件截断为仅包含头部和索引。
  *
- * @cm: The &struct cow_manager associated with the &struct snap_device.
+ * @cm: 与 &struct snap_device 关联的 &struct cow_manager。
  *
  * Return:
- * * 0 - success
- * * !0 - errno indicating the error
+ * * 0 - 成功
+ * * !0 - 表示错误的 errno
  */
 int cow_truncate_to_index(struct cow_manager *cm)
 {
     int ret;
 
-    // truncate the cow file to just the index
+    // 将 COW 文件截断为仅含索引
     cm->flags |= (1 << COW_INDEX_ONLY);
     ret = file_truncate(cm->dfilp, cm->data_offset);
 
@@ -790,14 +748,10 @@ int cow_truncate_to_index(struct cow_manager *cm)
 }
 
 /**
- * cow_modify_cache_size() - Modifies the value of
- *                           &struct cow_manager->allowed_sects.
+ * cow_modify_cache_size() - 修改 &struct cow_manager->allowed_sects。
  *
- * @cm: The &struct cow_manager associated with the &struct snap_device.
- * @cache_size: The number of bytes allowed for the cache.  The cache should
- *              be at least as large as the memory required for the array of
- *              &struct cow_section objects used to track data during
- *              snapshotting.
+ * @cm: 与 &struct snap_device 关联的 &struct cow_manager。
+ * @cache_size: 缓存允许的字节数，至少应能容纳快照期间 cow_section 数组所需内存。
  */
 void cow_modify_cache_size(struct cow_manager *cm, unsigned long cache_size)
 {
@@ -805,17 +759,15 @@ void cow_modify_cache_size(struct cow_manager *cm, unsigned long cache_size)
 }
 
 /**
- * cow_read_mapping() - Loads a section into &struct cow_manager cache.  If
- * the newly loaded section exceeds the number of allowed sections then the
- * cache is cleaned up to free up space.
+ * cow_read_mapping() - 将区段加载到 &struct cow_manager 缓存；若超过允许区段数则清理缓存腾出空间。
  *
- * @cm: The &struct cow_manager associated with the &struct snap_device.
- * @pos: The section index offset within the cache.
- * @out: On success, output of the value stored in the mapping.
+ * @cm: 与 &struct snap_device 关联的 &struct cow_manager。
+ * @pos: 缓存内的区段索引偏移。
+ * @out: 成功时输出该映射中存储的值。
  *
  * Return:
- * * 0 - success
- * * !0 - errno indicating the error
+ * * 0 - 成功
+ * * !0 - 表示错误的 errno
  */
 int cow_read_mapping(struct cow_manager *cm, uint64_t pos, uint64_t *out)
 {
@@ -852,22 +804,22 @@ error:
 }
 
 /**
- * __cow_write_mapping() - Writes the specified section to the COW file.
+ * __cow_write_mapping() - 将指定区段写入 COW 文件。
  *
- * @cm: The &struct cow_manager associated with the &struct snap_device.
- * @pos: The section index offset within the cache.
- * @val:
+ * @cm: 与 &struct snap_device 关联的 &struct cow_manager。
+ * @pos: 缓存内的区段索引偏移。
+ * @val: 要写入的映射值。
  *
  * Return:
- * * 0 - success
- * * !0 - errno indicating the error
+ * * 0 - 成功
+ * * !0 - 表示错误的 errno
  */
 int __cow_write_mapping(struct cow_manager *cm, uint64_t pos, uint64_t val)
 {
     int ret;
     uint64_t sect_idx = pos;
     unsigned long sect_pos = do_div(sect_idx, cm->sect_size);
-    //do_div modifies sect_idx to be the quotient of pos divided by cm->sect_size and returns the remainder
+    // do_div 将 sect_idx 改为 pos/cm->sect_size 的商，返回余数
 
     cm->sects[sect_idx].usage++;
 
@@ -902,15 +854,14 @@ error:
 }
 
 /**
- * __cow_write_data() - Writes a block of COW data to the current position
- * in the COW file.
+ * __cow_write_data() - 在 COW 文件当前偏移处写入一块 COW 数据。
  *
- * @cm: each &struct snap_device has a &struct cow_manager.
- * @buf: A buffer at least as large as COW_BLOCK_SIZE.
+ * @cm: 每个 &struct snap_device 对应一个 &struct cow_manager。
+ * @buf: 至少 COW_BLOCK_SIZE 大小的缓冲区。
  *
  * Return:
- * * 0 - success
- * * !0 - errno indicating the error
+ * * 0 - 成功
+ * * !0 - 表示错误的 errno
  */
 static int __cow_write_data(struct cow_manager *cm, void *buf)
 {
@@ -924,7 +875,7 @@ static int __cow_write_data(struct cow_manager *cm, void *buf)
 
 retry:
     if (curr_size >= cm->file_size) {
-        // try expansion of cow_file
+        // 尝试扩展 COW 文件
         if (cm->auto_expand) {
             kstatfs_ret = 0;
             if (cm->dev && cm->dev->sd_base_dev) {
@@ -979,39 +930,37 @@ error:
 }
 
 /**
- * cow_write_current() - Conditionally writes the @block data stored in @buf
- * to the cow datastore.  Writing is short circuited to prevent overwriting
- * snapshot data if something is already stored for this @block.  When not
- * already present both the mapping and the data are stored.
+ * cow_write_current() - 按需将 @buf 中的 @block 数据写入 COW 存储；若该块已有数据则跳过以免覆盖快照数据，
+ *                       未存在时同时写入映射与数据。
  *
- * @cm: each &struct snap_device has a &struct cow_manager
- * @block: the block associated with the data in @buf
- * @buf: The data belonging to the @block
+ * @cm: 每个 &struct snap_device 对应一个 &struct cow_manager。
+ * @block: 与 @buf 中数据对应的块号。
+ * @buf: 属于 @block 的数据。
  *
  * Return:
- * * 0 - success
- * * !0 - errno indicating the error
+ * * 0 - 成功
+ * * !0 - 表示错误的 errno
  */
 int cow_write_current(struct cow_manager *cm, uint64_t block, void *buf)
 {
     int ret;
     uint64_t block_mapping;
 
-    // read this mapping from the cow manager
+    // 从 cow manager 读取该块映射
     ret = cow_read_mapping(cm, block, &block_mapping);
     if (ret)
         goto error;
 
-    // if the block mapping already exists return so we don't overwrite it
+    // 若块映射已存在则直接返回以免覆盖
     if (block_mapping)
         return 0;
 
-    // write the mapping
+    // 写入映射
     ret = __cow_write_current_mapping(cm, block);
     if (ret)
         goto error;
 
-    // write the data
+    // 写入数据
     ret = __cow_write_data(cm, buf);
     if (ret)
         goto error;
@@ -1024,17 +973,17 @@ error:
 }
 
 /**
- * cow_read_data() - Reads data form the COW file.
+ * cow_read_data() - 从 COW 文件读取数据。
  *
- * @cm: each &struct snap_device has a &struct cow_manager.
- * @buf: A buffer that must be at least @len bytes.
- * @block_pos: Reads at this block position.
- * @block_off: A block offset that can be less than a full COW block.
- * @len: How many bytes to read at the supplied location.
+ * @cm: 每个 &struct snap_device 对应一个 &struct cow_manager。
+ * @buf: 至少 @len 字节的缓冲区。
+ * @block_pos: 读取的块位置。
+ * @block_off: 块内偏移，可小于一个完整 COW 块。
+ * @len: 在该位置要读取的字节数。
  *
  * Return:
- * * 0 - success
- * * !0 - errno indicating the error
+ * * 0 - 成功
+ * * !0 - 表示错误的 errno
  */
 int cow_read_data(struct cow_manager *cm, void *buf, uint64_t block_pos, unsigned long block_off,
                   unsigned long len)
@@ -1296,7 +1245,7 @@ uint64_t cow_auto_expand_manager_get_allowance_free_unknown(struct cow_auto_expa
 
     ret = 0;
     mutex_lock(&aem->lock);
-    // We allow COW-File Auto-Expansion when free space is unknown only for cases where reserved space is 0
+    // 仅在保留空间为 0 时允许在可用空间未知的情况下进行 COW 文件自动扩展
     if (aem->step_size_mib && aem->reserved_space_mib == 0) {
         ret = mib_to_bytes(aem->step_size_mib);
     }

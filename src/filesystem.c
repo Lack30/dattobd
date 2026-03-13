@@ -36,15 +36,13 @@ static int kern_path(const char *name, unsigned int flags, struct path *path)
 #endif
 
 /**
- * dattobd_kernel_read() - This is a wrapper around kernel_read enhanced for
- * systems that don't support it.
- * @dfilp: A dattobd mutable file object.
- * @buf: A buffer with at least @count entries.
- * @count: The number of bytes to read from @filp.
- * @pos: Set to the offset into @filp identifying the first sequential access.
- *       Contains the current file offset after a successful call.
+ * dattobd_kernel_read() - 封装 kernel_read，在不支持该接口的系统上提供增强实现。
+ * @dfilp: dattobd 可变文件对象。
+ * @buf: 至少能容纳 @count 字节的缓冲区。
+ * @count: 从 @filp 读取的字节数。
+ * @pos: 指向 @filp 中首次顺序访问的偏移；成功返回后为当前文件偏移。
  *
- * Return: The number of bytes read or a negative errno.
+ * Return: 读取的字节数，或负的 errno。
  */
 static ssize_t dattobd_kernel_read(struct dattobd_mutable_file *dfilp, struct snap_device *dev,
                                    void *buf, size_t count, loff_t *pos)
@@ -79,15 +77,13 @@ static ssize_t dattobd_kernel_read(struct dattobd_mutable_file *dfilp, struct sn
 }
 
 /**
- * dattobd_kernel_write() - This is a wrapper around kernel_write enhanced for
- * systems that don't support it.
- * @dfilp: A dattobd mutable file object.
- * @buf: A buffer with at least @count entries.
- * @count: The number of bytes to write to @filp.
- * @pos: Set to the offset into @filp identifying the first sequential access.
- *       Contains the current file offset after a successful call.
+ * dattobd_kernel_write() - 封装 kernel_write，在不支持该接口的系统上提供增强实现。
+ * @dfilp: dattobd 可变文件对象。
+ * @buf: 至少包含 @count 字节的缓冲区。
+ * @count: 写入 @filp 的字节数。
+ * @pos: 指向 @filp 中首次顺序访问的偏移；成功返回后为当前文件偏移。
  *
- * Return: The number of bytes written or a negative errno.
+ * Return: 写入的字节数，或负的 errno。
  */
 static ssize_t dattobd_kernel_write(struct dattobd_mutable_file *dfilp, struct snap_device *dev,
                                     const void *buf, size_t count, loff_t *pos)
@@ -121,19 +117,19 @@ static ssize_t dattobd_kernel_write(struct dattobd_mutable_file *dfilp, struct s
 }
 
 /**
- * file_io() - Reads or writes to the supplied file.
+ * file_io() - 对指定文件进行读或写。
  *
- * @dfilp: A dattobd mutable file object.
- * @dev: The snap device object, where file is located.
- * @is_write: An integer encoded bool indicating a write or read operation.
- * @buf: Input/output buffer for write/read, respectively.
- * @offset: Byte offset of the first sequential access within @filp.
- * @len: The number of bytes in the transfer.
- * @done: Pointer to store the number of bytes transferred or NULL if not needed.
+ * @dfilp: dattobd 可变文件对象。
+ * @dev: 快照设备对象，文件所在设备。
+ * @is_write: 整数形式的布尔值，1 表示写，0 表示读。
+ * @buf: 写/读的输入或输出缓冲区。
+ * @offset: 在 @filp 内首次顺序访问的字节偏移。
+ * @len: 传输的字节数。
+ * @done: 存放实际传输字节数的指针，不需要时可传 NULL。
  *
  * Return:
- * * 0 - success
- * * !0 - errno indicating the error
+ * * 0 - 成功
+ * * !0 - 表示错误的 errno
  */
 int file_io(struct dattobd_mutable_file *dfilp, struct snap_device *dev, int is_write, void *buf,
             sector_t offset, unsigned long len, unsigned long *done)
@@ -190,15 +186,15 @@ inline void __file_close_raw(struct file *filp)
 }
 
 /**
- * file_open() - Opens a file.
+ * file_open() - 打开文件。
  *
- * @filename: The full path to a file.
- * @flags: Additional flags to use when opening the file.
- * @filp: The resultant file object pointer, if successful.
+ * @filename: 文件完整路径。
+ * @flags: 打开时使用的附加标志。
+ * @filp: 成功时得到的目标文件对象指针。
  *
  * Return:
- * * 0 - success
- * * !0 - errno indicating the error.
+ * * 0 - 成功
+ * * !0 - 表示错误的 errno。
  */
 int file_open(const char *filename, int flags, struct file **filp)
 {
@@ -236,16 +232,15 @@ error:
 
 #if !defined(HAVE___DENTRY_PATH) && !defined(HAVE_DENTRY_PATH_RAW)
 /**
- * dentry_get_relative_pathname() - Returns the pathname of the supplied dentry
- * relative to the mount point of the block device containing the dentry.
+ * dentry_get_relative_pathname() - 返回给定 dentry 相对于其所在块设备挂载点的路径。
  *
- * @dentry: A dentry object.
- * @buf: Output pathname. Use kfree() on the returned buffer.
- * @len_res: Pathname length of the result, NULL means don't care.
+ * @dentry: dentry 对象。
+ * @buf: 输出路径名，调用方需对返回的缓冲区调用 kfree()。
+ * @len_res: 结果路径长度，NULL 表示不关心。
  *
  * Return:
- * * 0 - success
- * * !0 - errno indicating the error.
+ * * 0 - 成功
+ * * !0 - 表示错误的 errno。
  */
 int dentry_get_relative_pathname(struct dentry *dentry, char **buf, int *len_res)
 {
@@ -280,16 +275,15 @@ int dentry_get_relative_pathname(struct dentry *dentry, char **buf, int *len_res
 }
 #else
 /**
- * dentry_get_relative_pathname() - Returns the pathname of the supplied dentry
- * relative to the mount point of the block device containing the dentry.
+ * dentry_get_relative_pathname() - 返回给定 dentry 相对于其所在块设备挂载点的路径。
  *
- * @dentry: A dentry object.
- * @buf: Output pathname. Use kfree() on the returned buffer.
- * @len_res: Pathname length of the result, NULL means don't care.
+ * @dentry: dentry 对象。
+ * @buf: 输出路径名，调用方需对返回的缓冲区调用 kfree()。
+ * @len_res: 结果路径长度，NULL 表示不关心。
  *
  * Return:
- * * 0 - success
- * * !0 - errno indicating the error.
+ * * 0 - 成功
+ * * !0 - 表示错误的 errno。
  */
 int dentry_get_relative_pathname(struct dentry *dentry, char **buf, int *len_res)
 {
@@ -347,18 +341,17 @@ error:
 #endif
 
 /**
- * path_get_absolute_pathname() - Gets an absolute pathname from the supplied
- *                                &struct path object.
+ * path_get_absolute_pathname() - 从给定的 &struct path 得到绝对路径名。
  *
- * @path: Contains dentry objects for both a directory and its mount point.
- * @buf: Output pathname. Use kfree() on the returned buffer.
- * @len_res: Pathname length of the result, NULL means don't care.
+ * @path: 包含目录及其挂载点的 dentry 的 path。
+ * @buf: 输出路径名，调用方需对返回的缓冲区调用 kfree()。
+ * @len_res: 结果路径长度，NULL 表示不关心。
  *
- * The absolute path must be less than PAGE_SIZE bytes.
+ * 绝对路径长度必须小于 PAGE_SIZE 字节。
  *
  * Return:
- * * 0 - success
- * * !0 - errno indicating the error.
+ * * 0 - 成功
+ * * !0 - 表示错误的 errno。
  */
 static int path_get_absolute_pathname(const struct path *path, char **buf, int *len_res)
 {
@@ -410,18 +403,17 @@ error:
 }
 
 /**
- * file_get_absolute_pathname() - Gets an absolute path from the supplied
- *                                &struct file object.
+ * file_get_absolute_pathname() - 从给定的 &struct file 对象得到绝对路径。
  *
- * @dfilp: A dattobd mutable file object.
- * @buf: Output pathname. Use kfree() on the returned buffer.
- * @len_res: Pathname length of the result, NULL means don't care.
+ * @dfilp: dattobd 可变文件对象。
+ * @buf: 输出路径名，调用方需对返回的缓冲区调用 kfree()。
+ * @len_res: 结果路径长度，NULL 表示不关心。
  *
- * This is a wrapper based on @path_get_absolute_pathname.
+ * 基于 path_get_absolute_pathname() 的封装。
  *
  * Return:
- * * 0 - success
- * * !0 - errno indicating the error.
+ * * 0 - 成功
+ * * !0 - 表示错误的 errno。
  */
 int file_get_absolute_pathname(const struct dattobd_mutable_file *dfilp, char **buf, int *len_res)
 {
@@ -451,18 +443,17 @@ error:
 }
 
 /**
- * pathname_to_absolute() - Converts a pathname, relative or absolute, to
- *                          and absolute pathname.
+ * pathname_to_absolute() - 将相对或绝对路径名转换为绝对路径名。
  *
- * @pathname: The pathname to convert.
- * @buf: Output pathname. Use kfree() on the returned buffer.
- * @len_res: Pathname length of the result, NULL means don't care.
+ * @pathname: 待转换的路径名。
+ * @buf: 输出路径名，调用方需对返回的缓冲区调用 kfree()。
+ * @len_res: 结果路径长度，NULL 表示不关心。
  *
- * This is a wrapper based on @path_get_absolute_pathname.
+ * 基于 path_get_absolute_pathname() 的封装。
  *
  * Return:
- * * 0 - success
- * * !0 - errno indicating the error.
+ * * 0 - 成功
+ * * !0 - 表示错误的 errno。
  */
 int pathname_to_absolute(const char *pathname, char **buf, int *len_res)
 {
@@ -489,15 +480,15 @@ error:
 }
 
 /**
- * pathname_concat() - Appends @pathname2 to @pathname1.
+ * pathname_concat() - 将 @pathname2 拼接到 @pathname1 后。
  *
- * @pathname1: A pathname.
- * @pathname2: The pathname to append to @pathname1.
- * @path_out: Output pathname. Use kfree() on the returned buffer.
+ * @pathname1: 路径名。
+ * @pathname2: 要拼接到 @pathname1 的路径名。
+ * @path_out: 输出路径名，调用方需对返回的缓冲区调用 kfree()。
  *
  * Return:
- * * 0 - success
- * * !0 - errno indicating the error.
+ * * 0 - 成功
+ * * !0 - 表示错误的 errno。
  */
 int pathname_concat(const char *pathname1, const char *pathname2, char **path_out)
 {
@@ -533,16 +524,15 @@ int pathname_concat(const char *pathname1, const char *pathname2, char **path_ou
 }
 
 /**
- * user_mount_pathname_concat() - Concatinates a relative path to a user space
- * mount path.
+ * user_mount_pathname_concat() - 将相对路径拼接到用户空间传入的挂载路径后。
  *
- * @user_mount_path: A user space mount path, will be copied to kernel space.
- * @rel_path: A kernel space relative path.
- * @path_out: Output pathname. Use kfree() on the returned buffer.
+ * @user_mount_path: 用户空间挂载路径，会被拷贝到内核空间。
+ * @rel_path: 内核空间的相对路径。
+ * @path_out: 输出路径名，调用方需对返回的缓冲区调用 kfree()。
  *
  * Return:
- * * 0 - success
- * * !0 - errno indicating the error.
+ * * 0 - 成功
+ * * !0 - 表示错误的 errno。
  */
 int user_mount_pathname_concat(const char __user *user_mount_path, const char *rel_path,
                                char **path_out)
@@ -571,25 +561,23 @@ error:
 }
 
 /**
- * dattobd_should_remove_suid() - Determines flags needed to remove suid.
+ * dattobd_should_remove_suid() - 判断清除 suid 所需的标志。
  *
- * @dentry: A &struct dentry object pointer.
+ * @dentry: &struct dentry 对象指针。
  *
- * Return: The necessary flags.
+ * Return: 所需的标志。
  */
 static int dattobd_should_remove_suid(struct dentry *dentry)
 {
     mode_t mode = dentry->d_inode->i_mode;
     int kill = 0;
 
-    /* suid always must be killed */
+    // suid always must be killed
     if (unlikely(mode & S_ISUID))
         kill = ATTR_KILL_SUID;
 
-    /*
-         * sgid without any exec bits is just a mandatory locking mark; leave
-         * it alone.  If some exec bits are set, it's a real sgid; kill it.
-         */
+    // sgid without any exec bits is just a mandatory locking mark; leave
+    // it alone.  If some exec bits are set, it's a real sgid; kill it.
     if (unlikely((mode & S_ISGID) && (mode & S_IXGRP)))
         kill |= ATTR_KILL_SGID;
 
@@ -600,21 +588,18 @@ static int dattobd_should_remove_suid(struct dentry *dentry)
 }
 
 /**
- * dattobd_do_truncate() - Modifies the attributes of the &struct file object
- *                         to indicate a new file size.  For security the SUID
- *                         and/or SGID bits are removed from the @filp object
- *                         as well.
- * @dentry: The &struct dentry describing the @filp parent.
- * @length: The new length, in bytes.
- * @time_attrs: Time attributes.
- * @filp: The &struct file object.
+ * dattobd_do_truncate() - 修改 &struct file 属性以表示新文件大小；出于安全会同时
+ *                         从 @filp 上去除 SUID/SGID 位。
+ * @dentry: 描述 @filp 父目录的 &struct dentry。
+ * @length: 新长度（字节）。
+ * @time_attrs: 时间属性。
+ * @filp: &struct file 对象。
  *
- * Reimplemented from linux kernel since it isn't exported in the vanilla
- * kernel.
+ * 因主线内核未导出而在此重实现。
  *
  * Return:
- * * 0 - success
- * * !0 - errno indicating the error.
+ * * 0 - 成功
+ * * !0 - 表示错误的 errno。
  */
 static int dattobd_do_truncate(struct dentry *dentry, loff_t length, unsigned int time_attrs,
                                struct file *filp)
@@ -657,16 +642,16 @@ static int dattobd_do_truncate(struct dentry *dentry, loff_t length, unsigned in
 }
 
 /**
- * file_truncate() - Truncates a file to a given length.
+ * file_truncate() - 将文件截断到指定长度。
  *
- * @dfilp: A dattobd mutable file object.
- * @len: The truncation length in bytes.
+ * @dfilp: dattobd 可变文件对象。
+ * @len: 截断后的长度（字节）。
  *
- * Special treatment of SUID and SGID is performed.  See @dattobd_do_truncate.
+ * 会对 SUID/SGID 做特殊处理，见 dattobd_do_truncate()。
  *
  * Return:
- * * 0 - success
- * * !0 - errno indicating the error.
+ * * 0 - 成功
+ * * !0 - 表示错误的 errno。
  */
 int file_truncate(struct dattobd_mutable_file *dfilp, loff_t len)
 {
@@ -706,17 +691,16 @@ error:
 }
 
 /**
- * try_real_fallocate() - Allows the caller to allocate disk space for a file
- * within the range specified by @offset and @length.  Any subregion within
- * this domain that didn't have data before the call will contain zeroes. (TODO: is that true?)
+ * try_real_fallocate() - 在 @offset 与 @length 指定范围内为文件分配磁盘空间；
+ *                        该范围内原先无数据的区域将变为零填充。
  *
- * @dfilp: A dattobd mutable file object.
- * @offset: The offset into @f indicating the start of the allocation.
- * @length: The number of byte to allocate starting at @offset.
+ * @dfilp: dattobd 可变文件对象。
+ * @offset: 分配起始位置在文件中的偏移。
+ * @length: 从 @offset 起要分配的字节数。
  *
  * Return:
- * * 0 - success
- * * !0 - errno indicating the error.
+ * * 0 - 成功
+ * * !0 - 表示错误的 errno。
  */
 static int try_real_fallocate(struct dattobd_mutable_file *dfilp, uint64_t offset, uint64_t length)
 {
@@ -758,19 +742,18 @@ static int try_real_fallocate(struct dattobd_mutable_file *dfilp, uint64_t offse
 }
 
 /**
- * file_allocate() - Allows the caller to allocate disk space for a file
- * within the range specified by @offset and @length.  Attempts to use
- * @try_real_fallocate with a fallback of writing zeroes if that fails.
+ * file_allocate() - 在 @offset 与 @length 指定范围内为文件分配磁盘空间；
+ *                   优先使用 try_real_fallocate()，失败则回退为写零。
  *
- * @dfilp: A dattobd mutable file object.
- * @dev: The snap device object, where file is located.
- * @offset: The offset into @f indicating the start of the allocation.
- * @length: The number of byte to allocate starting at @offset.
- * @done: Pointer to store the number of bytes allocated or NULL if not needed.
+ * @dfilp: dattobd 可变文件对象。
+ * @dev: 文件所在的快照设备对象。
+ * @offset: 分配起始位置在文件中的偏移。
+ * @length: 从 @offset 起要分配的字节数。
+ * @done: 存放实际分配字节数的指针，不需要时可传 NULL。
  *
  * Return:
- * * 0 - success
- * * !0 - errno indicating the error.
+ * * 0 - 成功
+ * * !0 - 表示错误的 errno。
  */
 int file_allocate(struct dattobd_mutable_file *dfilp, struct snap_device *dev, uint64_t offset,
                   uint64_t length, uint64_t *done)
@@ -865,12 +848,12 @@ error:
 }
 
 /**
- * file_unlink() - delete a name and possibly the file it refers to.
- * @dfilp: A dataobd mutable file object.
+ * file_unlink() - 删除一个名称及其所指向的文件（若存在）。
+ * @dfilp: dattobd 可变文件对象。
  *
  * Return:
- * * 0 - success
- * * !0 - errno indicating the error.
+ * * 0 - 成功
+ * * !0 - 表示错误的 errno。
  */
 int file_unlink(struct dattobd_mutable_file *dfilp)
 {
@@ -930,10 +913,10 @@ mnt_error:
 //#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,31)
 
 /**
- * d_unlinked() - Checks to see if a directory has been unlinked.
- * @dentry: A &struct dentry object pointer.
+ * d_unlinked() - 检查目录是否已被 unlink。
+ * @dentry: &struct dentry 对象指针。
  *
- * Return: A boolean indicating whether the dentry has been unlinked.
+ * Return: 表示该 dentry 是否已被 unlink 的布尔值。
  */
 int d_unlinked(struct dentry *dentry)
 {
@@ -946,14 +929,14 @@ int d_unlinked(struct dentry *dentry)
 //#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,35)
 
 /**
- * noop_llseek() - No operation performed llseek implementation
- * @file: The &struct file object to seek on
- * @offset: file offset to seek to
- * @origin: type of seek
+ * noop_llseek() - 不执行实际寻址的 llseek 实现。
+ * @file: 要寻址的 &struct file 对象
+ * @offset: 目标文件偏移
+ * @origin: 寻址类型
  *
- * Reimplemented from linux kernel since it isn't universally available.
+ * 因非所有内核版本都提供而在此重实现。
  *
- * Return: the current file position.
+ * Return: 当前文件位置。
  */
 loff_t noop_llseek(struct file *file, loff_t offset, int origin)
 {
@@ -966,10 +949,10 @@ loff_t noop_llseek(struct file *file, loff_t offset, int origin)
 //#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,25)
 
 /**
- * path_put() - Put a reference to a path.
- * @path: path to put the reference to.
+ * path_put() - 释放对 path 的引用。
+ * @path: 要释放引用的 path。
  *
- * Given a path decrement the reference count to the dentry and the vfsmount.
+ * 对 path 中的 dentry 和 vfsmount 的引用计数减一。
  */
 void path_put(const struct path *path)
 {
@@ -981,10 +964,10 @@ void path_put(const struct path *path)
 #ifndef HAVE_INODE_LOCK
 //#if LINUX_VERSION_CODE < KERNEL_VERSION(4,5,0)
 /**
- * dattobd_inode_lock() - Locks the inode's mutex.
- * @inode: The &struct inode object pointer.
+ * dattobd_inode_lock() - 锁定 inode 的互斥量。
+ * @inode: &struct inode 对象指针。
  *
- * Reimplementation from Linux kernel since it isn't universally available.
+ * 因非所有内核版本都提供而在此重实现。
  */
 void dattobd_inode_lock(struct inode *inode)
 {
@@ -992,10 +975,10 @@ void dattobd_inode_lock(struct inode *inode)
 }
 
 /**
- * dattobd_inode_unlock() - Unlocks the inode's mutex.
- * @inode: The &struct inode object pointer.
+ * dattobd_inode_unlock() - 解锁 inode 的互斥量。
+ * @inode: &struct inode 对象指针。
  *
- * Reimplementation from Linux kernel since it isn't universally available.
+ * 因非所有内核版本都提供而在此重实现。
  */
 void dattobd_inode_unlock(struct inode *inode)
 {

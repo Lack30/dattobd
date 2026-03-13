@@ -65,23 +65,13 @@ static int dattobd_bdev_stack_limits(struct request_queue *t, struct block_devic
 
 #elif !defined(HAVE_BDEV_STACK_LIMITS)
 // #elif LINUX_VERSION_CODE < KERNEL_VERSION(2,6,32)
-
-static int bdev_stack_limits(struct queue_limits *t, struct block_device *bdev, sector_t start)
-{
-    struct request_queue *bq = bdev_get_queue(bdev);
-    start += get_start_sect(bdev);
-    return blk_stack_limits(t, &bq->limits, start << 9);
-}
-
-#define dattobd_bdev_stack_limits(queue, bdev, start)                                              \
-    bdev_stack_limits(&(queue)->limits, bdev, start)
+/* bdev_stack_limits 与 dattobd_bdev_stack_limits 由 stack_limits.h 提供 */
 #else
 #define dattobd_bdev_stack_limits(queue, bdev, start)                                              \
     bdev_stack_limits(&(queue)->limits, bdev, start)
 #endif // # !HAVE_BDEV_STACK_LIMITS) && !HAVE_BLK_SET_DEFAULT_LIMITS
 
-// Helpers to get/set either the make_request_fn or the submit_bio function
-// pointers in a block device.
+/* 获取/设置块设备的 make_request_fn 或 submit_bio 函数指针的辅助函数 */
 static inline BIO_REQUEST_CALLBACK_FN *dattobd_get_bd_fn(struct block_device *bdev)
 {
 #ifdef USE_BDOPS_SUBMIT_BIO
@@ -132,7 +122,7 @@ static inline BIO_REQUEST_CALLBACK_FN *dattobd_get_bd_fn(struct block_device *bd
 #define ROUND_UP(x, chunk) ((((x) + (chunk)-1) / (chunk)) * (chunk))
 #define ROUND_DOWN(x, chunk) (((x) / (chunk)) * (chunk))
 
-// macros for defining sector and block sizes
+/* 扇区与块大小相关宏 */
 #define SECTORS_PER_PAGE (PAGE_SIZE / SECTOR_SIZE)
 #define BLOCK_TO_SECTOR(block) ((block)*SECTORS_PER_BLOCK)
 
@@ -149,18 +139,15 @@ void dattobd_free_request_tracking_ptr(struct snap_device *dev)
 }
 
 /**
- * snap_trace_bio() - Traces a bio when snapshotting.  For bio reads there is
- * nothing to do and the request is passed to the original driver.  For writes
- * the original data must be read and in the event that the original bio
- * cannot be read in a single try multiple attempts are made by creating
- * additional bio requests until the original bio is fully processed.
+ * snap_trace_bio() - 快照时跟踪 bio。读请求直接交给原驱动；写请求需先读原数据，
+ *                   若一次读不完则多次创建 bio 直到处理完整个原 bio。
  *
- * @dev: The &struct snap_device that keeps device state.
- * @bio: The &struct bio which describes the I/O.
+ * @dev: 保存设备状态的 &struct snap_device。
+ * @bio: 描述此次 I/O 的 &struct bio。
  *
  * Return:
- * * 0 - success
- * * !0 - error
+ * * 0 - 成功
+ * * !0 - 错误
  */
 static int snap_trace_bio(struct snap_device *dev, struct bio *bio)
 {
@@ -170,7 +157,7 @@ static int snap_trace_bio(struct snap_device *dev, struct bio *bio)
     sector_t start_sect, end_sect;
     unsigned int bytes, pages;
 
-    // if we don't need to cow this bio just call the real mrf normally
+    // 若无需 COW 则直接调用真实 mrf
     if (!bio_needs_cow(bio, dev->sd_cow_inode) || tracer_read_fail_state(dev)) {
 #ifdef HAVE_NONVOID_SUBMIT_BIO_1
         return SUBMIT_BIO_REAL(dev, bio);
@@ -180,8 +167,7 @@ static int snap_trace_bio(struct snap_device *dev, struct bio *bio)
 #endif
     }
 
-    // the cow manager works in 4096 byte blocks, so read clones must also
-    // be 4096 byte aligned
+    // cow manager 按 4096 字节块工作，读克隆也须 4096 字节对齐
     start_sect =
             ROUND_DOWN(bio_sector(bio) - dev->sd_sect_off, SECTORS_PER_BLOCK) + dev->sd_sect_off;
     end_sect = ROUND_UP(bio_sector(bio) + (bio_size(bio) / SECTOR_SIZE) - dev->sd_sect_off,
@@ -198,8 +184,7 @@ static int snap_trace_bio(struct snap_device *dev, struct bio *bio)
 #endif
     }
 
-    // allocate tracing_params struct to hold all pointers we will need
-    // across contexts
+    // 分配 tracing_params 以在跨上下文中保存所需指针
     ret = tp_alloc(dev, bio, &tp);
     if (ret) {
         LOG_ERROR(ret, "error tracing bio for snapshot");
@@ -212,13 +197,12 @@ static int snap_trace_bio(struct snap_device *dev, struct bio *bio)
     }
 
     while (1) {
-        // allocate and populate read bio clone. This bio may not have all the
-        // pages we need due to queue restrictions
+        // 分配并填充读 bio 克隆；因队列限制可能无法包含全部所需页
         ret = bio_make_read_clone(dev_bioset(dev), tp, bio, start_sect, pages, &new_bio, &bytes);
         if (ret)
             goto error;
 
-        // set pointers for read clone
+        // 为读克隆设置指针
         ret = tp_add(tp, new_bio);
         if (ret)
             goto error;
@@ -236,8 +220,7 @@ static int snap_trace_bio(struct snap_device *dev, struct bio *bio)
         dattobd_submit_bio(new_bio);
 #endif
 
-        // if our bio didn't cover the entire clone we must keep creating bios
-        // until we have
+        // 若当前 bio 未覆盖整个克隆则继续创建 bio 直到覆盖完
         if (bytes / PAGE_SIZE < pages) {
             start_sect += bytes / SECTOR_SIZE;
             pages -= bytes / PAGE_SIZE;
@@ -247,7 +230,7 @@ static int snap_trace_bio(struct snap_device *dev, struct bio *bio)
         break;
     }
 
-    // drop our reference to the tp
+    // 释放对 tp 的引用
     tp_put(tp);
 
     return 0;
@@ -256,7 +239,7 @@ error:
     LOG_ERROR(ret, "error tracing bio for snapshot");
     tracer_set_fail_state(dev, ret);
 
-    // clean up the bio we allocated (but did not submit)
+    // 释放已分配但未提交的 bio
     if (new_bio)
         bio_free_clone(new_bio);
 
@@ -267,23 +250,21 @@ error:
 }
 
 /**
- * inc_make_sset() - This allocates a recordkeeping object to remember the
- * changed passed in the call.  This object is then queued for processing
- * by a kernel thread.
+ * inc_make_sset() - 分配记录对象以保存本次调用传入的变更，并加入内核线程处理队列。
  *
- * @dev: the &struct snap_device used to compute the relative sector offset.
- * @sect: the absolute sector offset of the first changed sector
- * @len: the length of the changes
+ * @dev: 用于计算相对扇区偏移的 &struct snap_device。
+ * @sect: 首个变更扇区的绝对偏移
+ * @len: 变更长度（扇区数）
  *
  * Return:
- * * 0 - success
- * * !0 - an errno indicating the error
+ * * 0 - 成功
+ * * !0 - 表示错误的 errno
  */
 static int inc_make_sset(struct snap_device *dev, sector_t sect, unsigned int len)
 {
     struct sector_set *sset;
 
-    // allocate sector set to hold record of change sectors
+    // 分配 sector set 记录变更扇区
     sset = kmalloc(sizeof(struct sector_set), GFP_NOIO);
     if (!sset) {
         LOG_ERROR(-ENOMEM, "error allocating sector set");
@@ -293,26 +274,23 @@ static int inc_make_sset(struct snap_device *dev, sector_t sect, unsigned int le
     sset->sect = sect - dev->sd_sect_off;
     sset->len = len;
 
-    // queue sset for processing by kernel thread
+    // 将 sset 入队由内核线程处理
     sset_queue_add(&dev->sd_pending_ssets, sset);
 
     return 0;
 }
 
 /**
- * inc_trace_bio() - Determines the regions modified by the @bio and
- * queues their affected regions so that a record of what changed can be
- * kept.  The bio is then processed by the original io submit function
- * (make_request_fn or submit_bio function ptr) so that the
- * modification can be made permanent.  This mode of tracing only
- * records what has changed and does not COW data.
+ * inc_trace_bio() - 确定 @bio 修改的区域并排队记录，以便保存变更记录；随后由原始
+ *                  I/O 提交函数（make_request_fn 或 submit_bio）处理该 bio 使修改落盘。
+ *                  此模式只记录变更，不做 COW 数据。
  *
- * @dev: The &struct snap_device that keeps device state.
- * @bio: The &struct bio which describes the I/O.
+ * @dev: 保存设备状态的 &struct snap_device。
+ * @bio: 描述此次 I/O 的 &struct bio。
  *
  * Return:
- * * 0 - success
- * * !0 - an errno indicating the error
+ * * 0 - 成功
+ * * !0 - 表示错误的 errno
  */
 static int inc_trace_bio(struct snap_device *dev, struct bio *bio)
 {
@@ -358,22 +336,21 @@ out:
         ret = 0;
     }
 
-    // call the original mrf
+    // 调用原始 mrf
     SUBMIT_BIO_REAL(dev, bio);
 
     return ret;
 }
 
 /**
- * bdev_is_already_traced() - Checks to for the existance of the
- * &struct block_device in this driver's tracking state.
+ * bdev_is_already_traced() - 检查该 &struct block_device 是否已被本驱动跟踪。
  *
- * @bdev: The &struct block_device in question.
- * @snap_devices: the array of snap devices.
+ * @bdev: 待检查的 &struct block_device。
+ * @snap_devices: 快照设备数组。
  *
  * Return:
- * * 0 - not being traced
- * * 1 - already being traced
+ * * 0 - 未被跟踪
+ * * 1 - 已被跟踪
  */
 static int bdev_is_already_traced(const struct block_device *bdev, snap_device_array snap_devices)
 {
@@ -392,15 +369,14 @@ static int bdev_is_already_traced(const struct block_device *bdev, snap_device_a
 }
 
 /**
- * file_is_on_bdev() - Checks to see if the &struct dattobd mutable file object is contained
- * within the &struct block_device device.
+ * file_is_on_bdev() - 检查 dattobd 可变文件对象是否位于该块设备上。
  *
- * @dfilp: A dattobd mutable file object.
- * @bdev: the &struct block_device that might hold the @dfilp.
+ * @dfilp: dattobd 可变文件对象。
+ * @bdev: 可能包含 @dfilp 的 &struct block_device。
  *
  * Return:
- * * 0 - the @dfilp is not on the @bdev.
- * * !0 - the @dfilp is on the @bdev.
+ * * 0 - @dfilp 不在 @bdev 上
+ * * !0 - @dfilp 在 @bdev 上
  */
 static int file_is_on_bdev(const struct dattobd_mutable_file *dfilp, struct block_device *bdev)
 {
@@ -419,10 +395,9 @@ static int file_is_on_bdev(const struct dattobd_mutable_file *dfilp, struct bloc
 }
 
 /**
- * minor_range_recalculate() - Updates the device minors tracked by this
- * driver.  This must be done whenever a minor number is no longer in use.
- * 
- * @snap_devices: the array of snap devices.
+ * minor_range_recalculate() - 更新本驱动跟踪的次设备号范围，在某个 minor 不再使用时调用。
+ *
+ * @snap_devices: 快照设备数组。
  */
 static void minor_range_recalculate(snap_device_array snap_devices)
 {
@@ -445,10 +420,9 @@ static void minor_range_recalculate(snap_device_array snap_devices)
 }
 
 /**
- * minor_range_include() - Used to possibly expand the bounds kept to track
- * the minimum and maximum device minor numbers services by this driver.
+ * minor_range_include() - 可能扩大本驱动跟踪的次设备号上下界。
  *
- * @minor: the device's minor number
+ * @minor: 设备次设备号
  */
 static void minor_range_include(unsigned int minor)
 {
@@ -459,9 +433,9 @@ static void minor_range_include(unsigned int minor)
 }
 
 /**
- * __tracer_init() - initializes the &struct snap_device object.
+ * __tracer_init() - 初始化 &struct snap_device 对象。
  *
- * @dev: the &struct snap_device used to track changes to a snapshot device.
+ * @dev: 用于跟踪快照设备变更的 &struct snap_device。
  */
 static void __tracer_init(struct snap_device *dev)
 {
@@ -474,21 +448,20 @@ static void __tracer_init(struct snap_device *dev)
 }
 
 /**
- * tracer_alloc() - Allocates and initializes the &struct snap_device object
- * used to track changes to the newly created snapshot device.
+ * tracer_alloc() - 分配并初始化用于跟踪新快照设备变更的 &struct snap_device。
  *
- * @dev_ptr: resultant &struct snap_device allocated by this call.
+ * @dev_ptr: 本调用分配得到的 &struct snap_device 指针。
  *
  * Return:
- * * 0 - success
- * * !0 - errno indicating the error
+ * * 0 - 成功
+ * * !0 - 表示错误的 errno
  */
 int tracer_alloc(struct snap_device **dev_ptr)
 {
     int ret;
     struct snap_device *dev;
 
-    // allocate struct
+    // 分配设备结构体
     LOG_DEBUG("allocating device struct");
     dev = kzalloc(sizeof(struct snap_device), GFP_KERNEL);
     if (!dev) {
@@ -512,20 +485,18 @@ error:
 }
 
 /**
- * __tracer_destroy_cow() - Tears down COW tracking state, deallocating the
- * &struct cow_manager object in the process.
+ * __tracer_destroy_cow() - 拆除 COW 跟踪状态并释放 &struct cow_manager。
  *
- * @dev: The &struct snap_device that keeps snapshot device state.
- * @close_method: The close method.
- *                * 0: frees memory and unlinks the backing file.
- *                * 1: flushes section cache, closes COW file, deallocates
- *                     &struct cow_manager.
- *                * 2: flushes section cache, closes COW file.
- *                * other: undefined.
+ * @dev: 保存快照设备状态的 &struct snap_device。
+ * @close_method: 关闭方式。
+ *                * 0: 释放内存并 unlink 后备文件。
+ *                * 1: 刷写区段缓存、关闭 COW 文件、释放 &struct cow_manager。
+ *                * 2: 刷写区段缓存、关闭 COW 文件。
+ *                * 其他: 未定义。
  *
  * Return:
- * * 0 - success
- * * !0 - errno indicating the error
+ * * 0 - 成功
+ * * !0 - 表示错误的 errno
  */
 static int __tracer_destroy_cow(struct snap_device *dev, int close_method)
 {
@@ -567,27 +538,24 @@ static int __tracer_destroy_cow(struct snap_device *dev, int close_method)
 }
 
 /**
- * __tracer_setup_cow() - Sets up the COW tracking structures.
+ * __tracer_setup_cow() - 设置 COW 跟踪相关结构。
  *
- * @dev: The &struct snap_device that keeps snapshot device state.
- * @bdev: The &struct block_device that stores the COW data.
- * @cow_path: The path to the COW backing file.
- * @size: The number of sectors to allocate to the COW file.
- * @fallocated_space: A value of zero defaults the size.
- * @cache_size: Limits the size of the COW section cache (in bytes).
- * @uuid: A unique UUID assigned to a series of snapshots, or NULL to
- *        auto-generate a UUID.
- * @seqid: The current sequence ID to use in the header.
- * @open_method: The open method.
- *               The value of open_method determines how the
- *               &struct cow_manager and its cache will be handled.
- *               * 0: creates and initializes a new COW file.
- *               * 3: opens an existing COW file.
- *               * other: reloads the COW manager but not the cache.
+ * @dev: 保存快照设备状态的 &struct snap_device。
+ * @bdev: 存放 COW 数据的 &struct block_device。
+ * @cow_path: COW 后备文件路径。
+ * @size: 为 COW 文件分配的扇区数。
+ * @fallocated_space: 0 表示使用默认预分配大小。
+ * @cache_size: COW 区段缓存大小上限（字节）。
+ * @uuid: 该系列快照的 UUID，NULL 表示自动生成。
+ * @seqid: 头部使用的当前序列 ID。
+ * @open_method: 打开方式。决定 &struct cow_manager 及其缓存的处理方式：
+ *               * 0: 创建并初始化新 COW 文件。
+ *               * 3: 打开已有 COW 文件。
+ *               * 其他: 重载 COW 管理器但不重载缓存。
  *
  * Return:
- * * 0 - success
- * * !0 - errno indicating the error
+ * * 0 - 成功
+ * * !0 - 表示错误的 errno
  */
 static int __tracer_setup_cow(struct snap_device *dev, struct block_device *bdev,
                               const char *cow_path, sector_t size, unsigned long fallocated_space,
@@ -605,7 +573,7 @@ static int __tracer_setup_cow(struct snap_device *dev, struct block_device *bdev
     LOG_DEBUG("bdevname %pg, cow_path: %s", bdev, cow_path);
 #endif
     if (open_method == 3) {
-        // reopen the cow manager
+        // 重新打开 cow manager
         LOG_DEBUG("reopening the cow manager with file '%s'", cow_path);
         ret = cow_reopen(dev->sd_cow, cow_path);
         if (ret)
@@ -617,8 +585,7 @@ static int __tracer_setup_cow(struct snap_device *dev, struct block_device *bdev
             dev->sd_cache_size = cache_size;
 
         if (open_method == 0) {
-            // calculate how much space should be allocated to the
-            // cow file
+            // 计算应为 COW 文件分配的空间
             if (!fallocated_space) {
                 max_file_size = size * SECTOR_SIZE * dattobd_cow_fallocate_percentage_default;
                 do_div(max_file_size, 100);
@@ -629,14 +596,14 @@ static int __tracer_setup_cow(struct snap_device *dev, struct block_device *bdev
                 dev->sd_falloc_size = fallocated_space;
             }
 
-            // create and open the cow manager
+            // 创建并打开 cow manager
             LOG_DEBUG("creating cow manager");
             ret = cow_init(dev, cow_path, SECTOR_TO_BLOCK(size), COW_SECTION_SIZE,
                            dev->sd_cache_size, max_file_size, uuid, seqid, &dev->sd_cow);
             if (ret)
                 goto error;
         } else {
-            // reload the cow manager
+            // 重载 cow manager
             LOG_DEBUG("reloading cow manager");
             ret = cow_reload(cow_path, SECTOR_TO_BLOCK(size), COW_SECTION_SIZE, dev->sd_cache_size,
                              (open_method == 2), &dev->sd_cow);
@@ -648,7 +615,7 @@ static int __tracer_setup_cow(struct snap_device *dev, struct block_device *bdev
         }
     }
 
-    // verify that file is on block device
+    // 确认文件位于块设备上
     // 	if (!file_is_on_bdev(dev->sd_cow->dfilp, bdev)) {
     // 		ret = -EINVAL;
     // #ifdef HAVE_BDEVNAME
@@ -659,7 +626,7 @@ static int __tracer_setup_cow(struct snap_device *dev, struct block_device *bdev
     // 		goto error;
     // 	}
 
-    // find the cow file's inode number
+    // 获取 COW 文件的 inode 号
     LOG_DEBUG("finding cow file inode");
     dev->sd_cow_inode = dev->sd_cow->dfilp->inode;
 
@@ -673,9 +640,9 @@ error:
 }
 
 /**
- * __tracer_destroy_base_dev() - Tears down the base block device.
+ * __tracer_destroy_base_dev() - 拆除底层块设备相关状态。
  *
- * @dev: The &struct snap_device object pointer.
+ * @dev: &struct snap_device 对象指针。
  */
 static void __tracer_destroy_base_dev(struct snap_device *dev)
 {
@@ -696,22 +663,22 @@ static void __tracer_destroy_base_dev(struct snap_device *dev)
 }
 
 /**
- * __tracer_setup_base_dev() - Sets up the base block device.
+ * __tracer_setup_base_dev() - 设置底层块设备。
  *
- * @dev: The &struct snap_device object pointer.
- * @bdev_path: The block device path, e.g., '/dev/loop0'.
- * @snap_devices: the array of snap devices.
+ * @dev: &struct snap_device 对象指针。
+ * @bdev_path: 块设备路径，如 '/dev/loop0'。
+ * @snap_devices: 快照设备数组。
  *
  * Return:
- * * 0 - success
- * * !0 - errno indicating the error
+ * * 0 - 成功
+ * * !0 - 表示错误的 errno
  */
 static int __tracer_setup_base_dev(struct snap_device *dev, const char *bdev_path,
                                    snap_device_array snap_devices)
 {
     int ret;
 
-    // open the base block device
+    // 打开基块设备
     LOG_DEBUG("ENTER __tracer_setup_base_dev");
     dev->sd_base_dev = dattobd_blkdev_by_path(bdev_path, FMODE_READ, NULL);
     if (IS_ERR(dev->sd_base_dev)) {
@@ -725,7 +692,7 @@ static int __tracer_setup_base_dev(struct snap_device *dev, const char *bdev_pat
         goto error;
     }
 
-    // check block device is not already being traced
+    // 检查块设备未被跟踪
     LOG_DEBUG("checking block device is not already being traced");
     if (bdev_is_already_traced(dev->sd_base_dev->bdev, snap_devices)) {
         ret = -EINVAL;
@@ -733,13 +700,13 @@ static int __tracer_setup_base_dev(struct snap_device *dev, const char *bdev_pat
         goto error;
     }
 
-    // fetch the absolute pathname for the base device
+    // 获取基设备的绝对路径
     LOG_DEBUG("fetching the absolute pathname for the base device");
     ret = pathname_to_absolute(bdev_path, &dev->sd_bdev_path, NULL);
     if (ret)
         goto error;
 
-    // check if device represents a partition, calculate size and offset
+    // 若设备为分区则计算大小与偏移
     LOG_DEBUG("calculating block device size and offset");
     if (bdev_whole(dev->sd_base_dev->bdev) != dev->sd_base_dev->bdev) {
         dev->sd_sect_off = get_start_sect(dev->sd_base_dev->bdev);
@@ -761,11 +728,10 @@ error:
 }
 
 /**
- * __tracer_copy_base_dev() - Copies base block device fields from @src
- *                            to @dest.
+ * __tracer_copy_base_dev() - 将底层块设备相关字段从 @src 复制到 @dest。
  *
- * @src: The &struct snap_device source object pointer.
- * @dest: The &struct snap_device destination object pointer.
+ * @src: 源 &struct snap_device 对象指针。
+ * @dest: 目标 &struct snap_device 对象指针。
  */
 static void __tracer_copy_base_dev(const struct snap_device *src, struct snap_device *dest)
 {
@@ -779,16 +745,14 @@ static void __tracer_copy_base_dev(const struct snap_device *src, struct snap_de
 #ifdef HAVE_BVEC_MERGE_DATA
 
 /**
- * snap_merge_bvec() - Determines if it can augment an existing request with
- *                     more data.  Requests queues usually have fixed size
- *                     limits for their requests but specialized devices might
- *                     have varying limits.
+ * snap_merge_bvec() - 判断是否能在现有请求上追加更多数据；请求队列通常有固定大小
+ *                    限制，专用设备可有不同限制。
  *
- * @q: The &struct request_queue object pointer.
- * @bvm: the &struct bvec_merge_data passed to the merge_bvec_fn() call.
- * @bvec: the &struct bio_vec passed to the merge_bvec_fn() call.
+ * @q: &struct request_queue 对象指针。
+ * @bvm: 传入 merge_bvec_fn() 的 &struct bvec_merge_data。
+ * @bvec: 传入 merge_bvec_fn() 的 &struct bio_vec。
  *
- * Return: the result returned from the wrapped function.
+ * Return: 底层函数返回值。
  */
 static int snap_merge_bvec(struct request_queue *q, struct bvec_merge_data *bvm,
                            struct bio_vec *bvec)
@@ -804,16 +768,14 @@ static int snap_merge_bvec(struct request_queue *q, struct bvec_merge_data *bvm,
 #else
 
 /**
- * snap_merge_bvec() - Determines if it can augment an existing request with
- *                     more data.  Requests queues usually have fixed size
- *                     limits for their requests but specialized devices might
- *                     have varying limits.
+ * snap_merge_bvec() - 判断是否能在现有请求上追加更多数据；请求队列通常有固定大小
+ *                    限制，专用设备可有不同限制。
  *
- * @q: The &struct request_queue object pointer.
- * @bio_bvm: the &struct bvec_merge_data passed to the merge_bvec_fn() call.
- * @bvec: the &struct bio_vec passed to the merge_bvec_fn() call.
+ * @q: &struct request_queue 对象指针。
+ * @bio_bvm: 传入 merge_bvec_fn() 的 &struct bio（bvec_merge_data）。
+ * @bvec: 传入 merge_bvec_fn() 的 &struct bio_vec。
  *
- * Return: the result returned from the wrapped function.
+ * Return: 底层函数返回值。
  */
 static int snap_merge_bvec(struct request_queue *q, struct bio *bio_bvm, struct bio_vec *bvec)
 {
@@ -828,15 +790,15 @@ static int snap_merge_bvec(struct request_queue *q, struct bio *bio_bvm, struct 
 #endif
 
 /**
- * __tracer_copy_cow() - Copies COW fields from @src to @dest.
+ * __tracer_copy_cow() - 将 COW 相关字段从 @src 复制到 @dest。
  *
- * @src: The &struct snap_device source object pointer.
- * @dest: The &struct snap_device destination object pointer.
+ * @src: 源 &struct snap_device 对象指针。
+ * @dest: 目标 &struct snap_device 对象指针。
  */
 static void __tracer_copy_cow(const struct snap_device *src, struct snap_device *dest)
 {
     dest->sd_cow = src->sd_cow;
-    // copy cow file extents and update the device
+    // 拷贝 COW 文件区段并更新设备
     dest->sd_cow_extents = src->sd_cow_extents;
     dest->sd_cow_ext_cnt = src->sd_cow_ext_cnt;
     dest->sd_cow_inode = src->sd_cow_inode;
@@ -847,9 +809,9 @@ static void __tracer_copy_cow(const struct snap_device *src, struct snap_device 
 }
 
 /**
- * __tracer_destroy_cow_path() - Tears down the COW path
+ * __tracer_destroy_cow_path() - 释放 COW 路径相关资源。
  *
- * @dev: The &struct snap_device object pointer.
+ * @dev: &struct snap_device 对象指针。
  */
 static void __tracer_destroy_cow_path(struct snap_device *dev)
 {
@@ -861,21 +823,21 @@ static void __tracer_destroy_cow_path(struct snap_device *dev)
 }
 
 /**
- * __tracer_setup_cow_path() - Sets up the COW file path given a &struct file.
+ * __tracer_setup_cow_path() - 根据 &struct file 设置 COW 文件路径。
  *
- * @dev: The &struct snap_device object pointer.
- * @cow_dfile: A &struct dattobd_mutable_file object pointer.
+ * @dev: &struct snap_device 对象指针。
+ * @cow_dfile: &struct dattobd_mutable_file 对象指针。
  *
  * Return:
- * * 0 - success
- * * !0 - errno indicating the error
+ * * 0 - 成功
+ * * !0 - 表示错误的 errno
  */
 static int __tracer_setup_cow_path(struct snap_device *dev,
                                    const struct dattobd_mutable_file *cow_dfile)
 {
     int ret;
 
-    // get the pathname of the cow file (relative to the mountpoint)
+    // 获取 COW 文件路径（相对于挂载点）
     LOG_DEBUG("getting relative pathname of cow file");
     ret = dentry_get_relative_pathname(cow_dfile->dentry, &dev->sd_cow_path, NULL);
     if (ret)
@@ -890,14 +852,10 @@ error:
 }
 
 /**
- * __tracer_copy_cow_path() - Sets up the COW file path given a &struct file.
+ * __tracer_copy_cow_path() - 从源设备复制 COW 文件路径到目标设备。
  *
- * @dev: The &struct snap_device object pointer.
- * @cow_file: The &struct file object pointer.
- *
- * Return:
- * * 0 - success
- * * !0 - errno indicating the error
+ * @src: 源 &struct snap_device 对象指针。
+ * @dest: 目标 &struct snap_device 对象指针。
  */
 static void __tracer_copy_cow_path(const struct snap_device *src, struct snap_device *dest)
 {
@@ -905,9 +863,9 @@ static void __tracer_copy_cow_path(const struct snap_device *src, struct snap_de
 }
 
 /**
- * __tracer_bioset_exit() - Releases the bioset within the &struct snap_device.
+ * __tracer_bioset_exit() - 释放 &struct snap_device 内的 bioset。
  *
- * @dev: The &struct snap_device object pointer.
+ * @dev: &struct snap_device 对象指针。
  */
 static void __tracer_bioset_exit(struct snap_device *dev)
 {
@@ -924,9 +882,9 @@ static void __tracer_bioset_exit(struct snap_device *dev)
 }
 
 /**
- * __tracer_destroy_snap() - Tears down a snap device.
+ * __tracer_destroy_snap() - 拆除快照设备。
  *
- * @dev: The &struct snap_device object pointer.
+ * @dev: &struct snap_device 对象指针。
  */
 static void __tracer_destroy_snap(struct snap_device *dev)
 {
@@ -965,14 +923,13 @@ static void __tracer_destroy_snap(struct snap_device *dev)
 }
 
 /**
- * __tracer_bioset_init() - Initializes the bioset field for the
- *                          &struct snap_device.
+ * __tracer_bioset_init() - 初始化 &struct snap_device 的 bioset 字段。
  *
- * @dev: The &struct snap_device object pointer.
+ * @dev: &struct snap_device 对象指针。
  *
  * Return:
- * * 0 - success
- * * !0 - errno indicating the error
+ * * 0 - 成功
+ * * !0 - 表示错误的 errno
  */
 static int __tracer_bioset_init(struct snap_device *dev)
 {
@@ -988,20 +945,17 @@ static int __tracer_bioset_init(struct snap_device *dev)
 }
 
 /**
- * __tracer_setup_snap() - Allocates &struct snap_device fields for use when
- *                         tracking an active snapshot.  Also sets up the
- *                         read-only disk used to present a snapshot image of
- *                         the underlying live volume and registers it with
- *                         the kernel.
+ * __tracer_setup_snap() - 为活动快照分配 &struct snap_device 字段，并设置用于呈现
+ *                         底层在线卷快照镜像的只读磁盘、向内核注册。
  *
- * @dev: The &struct snap_device object pointer.
- * @minor: the device's minor number.
- * @bdev: The &struct block_device that stores the COW data.
- * @size: The number of sectors to allocate to the block device.
+ * @dev: &struct snap_device 对象指针。
+ * @minor: 设备次设备号。
+ * @bdev: 存放 COW 数据的 &struct block_device。
+ * @size: 为块设备分配的扇区数。
  *
  * Return:
- * * 0 - success
- * * !0 - errno indicating the error
+ * * 0 - 成功
+ * * !0 - 表示错误的 errno
  */
 static int __tracer_setup_snap(struct snap_device *dev, unsigned int minor,
                                struct block_device *bdev, sector_t size)
@@ -1014,7 +968,7 @@ static int __tracer_setup_snap(struct snap_device *dev, unsigned int minor,
         goto error;
     }
 
-    // allocate a gendisk struct
+    // 分配 gendisk 结构体
     LOG_DEBUG("allocating gendisk");
 
 #ifdef HAVE_BLK_ALLOC_DISK
@@ -1064,18 +1018,18 @@ static int __tracer_setup_snap(struct snap_device *dev, unsigned int minor,
 #if defined HAVE_GD_OWNS_QUEUE
     set_bit(GD_OWNS_QUEUE, &dev->sd_gd->state);
 #endif
-    // give our request queue the same properties as the base device's
+    // 使请求队列与基设备属性一致
     LOG_DEBUG("setting queue limits");
     blk_set_stacking_limits(&dev->sd_queue->limits);
     dattobd_bdev_stack_limits(dev->sd_queue, bdev, 0);
 
 #ifdef HAVE_MERGE_BVEC_FN
-    // use a thin wrapper around the base device's merge_bvec_fn
+    // 使用基设备 merge_bvec_fn 的薄封装
     if (bdev_get_queue(bdev)->merge_bvec_fn)
         blk_queue_merge_bvec(dev->sd_queue, snap_merge_bvec);
 #endif
 
-    // initialize gendisk and request queue values
+    // 初始化 gendisk 与请求队列字段
     LOG_DEBUG("initializing gendisk");
     dev->sd_queue->queuedata = dev;
     dev->sd_gd->private_data = dev;
@@ -1085,26 +1039,24 @@ static int __tracer_setup_snap(struct snap_device *dev, unsigned int minor,
     dev->sd_gd->fops = get_snap_ops();
     dev->sd_gd->queue = dev->sd_queue;
 
-    // name our gendisk
+    // 设置 gendisk 名称
     LOG_DEBUG("naming gendisk");
     snprintf(dev->sd_gd->disk_name, 32, SNAP_DEVICE_NAME, minor);
 
-    // set the capacity of our gendisk
+    // 设置 gendisk 容量
     LOG_DEBUG("block device size: %llu", (unsigned long long)size);
     set_capacity(dev->sd_gd, size);
 
 #ifdef HAVE_GENHD_FL_NO_PART_SCAN
     //#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,2,0)
-    // disable partition scanning (the device should not have any
-    // sub-partitions)
+    // 禁用分区扫描（本设备不应有子分区）
     dev->sd_gd->flags |= GENHD_FL_NO_PART_SCAN;
 #elif defined HAVE_GENHD_FL_NO_PART
-    // with removal of genhd.h header file name of kernel's constant
-    // was changed from GENHD_FL_NO_PART_SCAN to GENHD_FL_NO_PART
+    // 内核去掉 genhd.h 后常量由 GENHD_FL_NO_PART_SCAN 改为 GENHD_FL_NO_PART
     dev->sd_gd->flags |= GENHD_FL_NO_PART;
 #endif
 
-    // set the device as read-only
+    // 将设备设为只读
     set_disk_ro(dev->sd_gd, 1);
 
     atomic64_set(&dev->sd_submitted_cnt, 0);
@@ -1119,7 +1071,7 @@ static int __tracer_setup_snap(struct snap_device *dev, unsigned int minor,
         goto error;
     }
 
-    // register gendisk with the kernel
+    // 向内核注册 gendisk
     LOG_DEBUG("adding disk");
 #ifdef HAVE_NONVOID_ADD_DISK
     ret = add_disk(dev->sd_gd);
@@ -1139,9 +1091,9 @@ error:
 }
 
 /**
- * __tracer_bioset_exit() - Releases the bioset within the &struct snap_device.
+ * __tracer_destroy_cow_thread() - 停止并释放 COW 线程。
  *
- * @dev: The &struct snap_device object pointer.
+ * @dev: &struct snap_device 对象指针。
  */
 static void __tracer_destroy_cow_thread(struct snap_device *dev)
 {
@@ -1153,16 +1105,15 @@ static void __tracer_destroy_cow_thread(struct snap_device *dev)
 }
 
 /**
- * __tracer_setup_cow_thread() - Creates a COW thread and associates it with
- *                               the &struct snap_device.
+ * __tracer_setup_cow_thread() - 创建 COW 线程并关联到 &struct snap_device。
  *
- * @dev: The &struct snap_device object pointer.
- * @minor: the device's minor number.
- * @is_snap: snapshot or incremental.
+ * @dev: &struct snap_device 对象指针。
+ * @minor: 设备次设备号。
+ * @is_snap: 1 为快照，0 为增量。
  *
  * Return:
- * * 0 - success
- * * !0 - errno indicating the error
+ * * 0 - 成功
+ * * !0 - 表示错误的 errno
  */
 static int __tracer_setup_cow_thread(struct snap_device *dev, unsigned int minor, int is_snap)
 {
@@ -1190,22 +1141,18 @@ error:
 }
 
 /**
- * __tracer_transition_tracing() - Starts or ends tracing on @bdev depending
- *                                 on whether @dev is defined.  The @bdev is
- *                                 frozen while transitioning and then thawed
- *                                 afterwards so that requests  can be
- *                                 reinstated on @bdev.
+ * __tracer_transition_tracing() - 根据 @dev 是否定义在 @bdev 上启动或结束跟踪；
+ *                                 转换期间会冻结 @bdev 再解冻，以便请求可重新挂到 @bdev。
  *
- * @dev: The &struct snap_device object pointer.
- * @bdev: The &struct block_device that stores the COW data.
- * @new_bio_tracking_ptr: Optional function pointer to be used by the snapshot disk
- *         i/o handling, may be NULL to continue using the current function pointer.
- * @dev_ptr: Contains the output &struct snap_device when successful.
- * @start_tracing: Determines if we start tracing or finish it
+ * @dev: &struct snap_device 对象指针。
+ * @bdev: 存放 COW 数据的 &struct block_device。
+ * @new_bio_tracking_ptr: 快照盘 I/O 处理用可选函数指针，NULL 表示继续使用当前指针。
+ * @dev_ptr: 成功时输出 &struct snap_device。
+ * @start_tracing: 为 true 表示启动跟踪，为 false 表示结束跟踪。
  *
  * Return:
- * * 0 - success
- * * !0 - errno indicating the error
+ * * 0 - 成功
+ * * !0 - 表示错误的 errno
  */
 #ifndef USE_BDOPS_SUBMIT_BIO
 static int __tracer_transition_tracing(struct snap_device *dev, struct block_device *bdev,
@@ -1231,7 +1178,7 @@ static int __tracer_transition_tracing(struct snap_device *dev, struct block_dev
     if (origsb) {
         dattobd_drop_super(origsb);
 
-        // freeze and sync block device
+        // 冻结并同步块设备
 #ifdef HAVE_BDEVNAME
         LOG_DEBUG("freezing '%s'", bdev_name);
 #else
@@ -1312,7 +1259,7 @@ static int __tracer_transition_tracing(struct snap_device *dev, struct block_dev
         smp_wmb();
     }
     if (origsb) {
-        // thaw the block device
+        // 解冻块设备
 #ifdef HAVE_BDEVNAME
         LOG_DEBUG("thawing '%s'", bdev_name);
 #else
@@ -1331,26 +1278,21 @@ static int __tracer_transition_tracing(struct snap_device *dev, struct block_dev
 #else
             LOG_ERROR(ret, "error thawing '%pg'", bdev);
 #endif
-            // We can't reasonably undo what we've done at this
-            // point, and we've replaced the mrf. pretend we
-            // succeeded so we don't break the block device
+            // 此处无法合理回滚且已替换 mrf，假装成功以免破坏块设备
         }
     }
     return 0;
 }
 
-/**     
- * tracing_fn() - This is the entry point for in-flight i/o we intercepted.
- * @q: The &struct request_queue.
- * @bio: The &struct bio which describes the I/O.
+/**
+ * tracing_fn() - 被拦截的在途 I/O 的入口。
+ * @q: &struct request_queue。
+ * @bio: 描述此次 I/O 的 &struct bio。
  *
- * If the BIO has been marked as passthrough then the block device's
- * original device's function pointer for handling i/o is used to process the BIO.
- * Otherwise, depending on whether we're in snapshot or incremental mode, the appropriate
- * handler is called.
+ * 若 BIO 已标记为透传，则使用块设备原有的 I/O 处理函数处理；否则根据当前处于
+ * 快照或增量模式调用相应处理函数。
  *
- * Return: varies across versions of Linux and is what's expected by each for
- *         a make request function.
+ * Return: 随 Linux 版本不同而不同，为各版本对 make request 函数的预期返回值。
  */
 #ifdef USE_BDOPS_SUBMIT_BIO
 static asmlinkage MRF_RETURN_TYPE tracing_fn(struct bio *bio)
@@ -1369,8 +1311,7 @@ static MRF_RETURN_TYPE tracing_fn(struct request_queue *q, struct bio *bio)
     {
         if (!tracer_is_bio_for_dev(dev, bio))
             continue;
-        // If we get here, then we know this is a device we're managing
-        // and the current bio belongs to said device.
+        // 能执行到此说明是本驱动管理的设备且当前 bio 属于该设备
         orig_fn = dev->sd_orig_request_fn;
         if (dattobd_bio_op_flagged(bio, DATTOBD_PASSTHROUGH)) {
             dattobd_bio_op_clear_flag(bio, DATTOBD_PASSTHROUGH);
@@ -1430,17 +1371,16 @@ out:
 #ifndef USE_BDOPS_SUBMIT_BIO
 
 /**
- * dattobd_find_orig_mrf() - Locates the original MRF function associated with
- *                   the @bdev block device.  All tracked block devices
- *                   are checked until a match is found.
+ * dattobd_find_orig_mrf() - 查找与 @bdev 关联的原始 MRF 函数；会遍历所有被跟踪
+ *                           的块设备直到找到匹配。
  *
- * @bdev: The &struct block_device that stores the COW data.
- * @mrf: The original MRF function, if found.
- * @snap_devices: the array of snap devices.
+ * @bdev: 存放 COW 数据的 &struct block_device。
+ * @mrf: 找到的原始 MRF 函数指针。
+ * @snap_devices: 快照设备数组。
  *
  * Return:
- * * 0 - success
- * * !0 - errno indicating the error
+ * * 0 - 成功
+ * * !0 - 表示错误的 errno
  */
 static int dattobd_find_orig_mrf(struct block_device *bdev, make_request_fn **mrf,
                                  snap_device_array snap_devices)
@@ -1452,7 +1392,7 @@ static int dattobd_find_orig_mrf(struct block_device *bdev, make_request_fn **mr
 
     if (orig_mrf != tracing_fn) {
 #ifdef HAVE_BLK_MQ_MAKE_REQUEST
-        // Linux version 5.8
+        // 内核 5.8
         if (!orig_mrf) {
             orig_mrf = dattobd_null_mrf;
             LOG_DEBUG("original mrf is empty, set to dattobd_null_mrf");
@@ -1490,7 +1430,7 @@ int find_orig_bdops(struct block_device *bdev, struct block_device_operations **
     if (orig_mrf != tracing_fn) {
         if (!orig_mrf) {
             LOG_DEBUG("original mrf is empty, setting it to dattobd_snap_null_mrf");
-            // in the future change this to mq interface
+            // 后续可改为 mq 接口
             orig_mrf = dattobd_snap_null_mrf;
         } else {
             LOG_DEBUG("original mrf is not empt orig_mrf= %p, orig ops=%p", orig_mrf, orig_ops);
@@ -1553,14 +1493,14 @@ int tracer_alloc_ops(struct snap_device *dev)
 #endif
 
 /**
- * __tracer_should_reset_mrf() - Searches the traced devices and verifies that
- * the device would have had a make_request_fn when tracing was initiated.
- * @dev: The &struct snap_device object pointer.
- * @snap_devices: the array of snap devices.
+ * __tracer_should_reset_mrf() - 在已跟踪设备中查找，确认该设备在开始跟踪时具有
+ *                               make_request_fn。
+ * @dev: &struct snap_device 对象指针。
+ * @snap_devices: 快照设备数组。
  *
  * Return:
- * * 0 - success
- * * !0 - errno indicating the error
+ * * 0 - 成功
+ * * !0 - 表示错误的 errno
  */
 static int __tracer_should_reset_mrf(const struct snap_device *dev, snap_device_array snap_devices)
 {
@@ -1568,15 +1508,13 @@ static int __tracer_should_reset_mrf(const struct snap_device *dev, snap_device_
         struct snap_device *cur_dev;
         struct request_queue *q = bdev_get_queue(dev->sd_base_dev->bdev);
 #ifdef USE_BDOPS_SUBMIT_BIO
-        struct block_device_operations *ops;
+        struct block_device_operations *ops = dattobd_get_bd_ops(dev->sd_base_dev->bdev);
 #endif
         MAYBE_UNUSED(q);
 
 #ifndef USE_BDOPS_SUBMIT_BIO
     if (GET_BIO_REQUEST_TRACKING_PTR(dev->sd_base_dev->bdev) != tracing_fn)
         return 0;
-#else
-    struct block_device_operations *ops = dattobd_get_bd_ops(dev->sd_base_dev->bdev);
 #endif
 
     //return 0 if there is another device tracing the same queue as dev.
@@ -1598,12 +1536,10 @@ static int __tracer_should_reset_mrf(const struct snap_device *dev, snap_device_
 }
 
 /**
- * __tracer_destroy_tracing() - Stops tracing of the &struct snap_device
- *                              and possibly reinstates the original MRF
- *                              function if necessary.
+ * __tracer_destroy_tracing() - 停止对 &struct snap_device 的跟踪，必要时恢复原始 MRF。
  *
- * @dev: The &struct snap_device object pointer.
- * @snap_devices: the array of snap devices.
+ * @dev: &struct snap_device 对象指针。
+ * @snap_devices: 快照设备数组。
  */
 static void __tracer_destroy_tracing(struct snap_device *dev, snap_device_array_mut snap_devices)
 {
@@ -1659,13 +1595,11 @@ static void __tracer_destroy_tracing(struct snap_device *dev, snap_device_array_
 }
 
 /**
- * __tracer_setup_tracing_unverified() - Assigns @dev to the array of snap
- *                                       devices begin tracked by this
- *                                       driver.
+ * __tracer_setup_tracing_unverified() - 将 @dev 加入本驱动跟踪的快照设备数组。
  *
- * @dev: The &struct snap_device object pointer.
- * @minor: the device's minor number.
- * @snap_devices: the array of snap devices.
+ * @dev: &struct snap_device 对象指针。
+ * @minor: 设备次设备号。
+ * @snap_devices: 快照设备数组。
  */
 static void __tracer_setup_tracing_unverified(struct snap_device *dev, unsigned int minor,
                                               snap_device_array_mut snap_devices)
@@ -1678,18 +1612,16 @@ static void __tracer_setup_tracing_unverified(struct snap_device *dev, unsigned 
 }
 
 /**
- * __tracer_setup_tracing() - Adds @minor to the range of included tracked
- *                            minors, saves the original io submit function ptr
- *                            and replaces it with the tracing_fn function ptr for
- *                            the block device associated with our &struct snap_device.
+ * __tracer_setup_tracing() - 将 @minor 纳入跟踪范围，保存原 I/O 提交函数指针，
+ *                            并用 tracing_fn 替换与本 &struct snap_device 关联的块设备的该指针。
  *
- * @dev: The &struct snap_device object pointer.
- * @minor: the device's minor number.
- * @snap_devices: the array of snap devices.
+ * @dev: &struct snap_device 对象指针。
+ * @minor: 设备次设备号。
+ * @snap_devices: 快照设备数组。
  *
  * Return:
- * * 0 - success
- * * !0 - errno indicating the error
+ * * 0 - 成功
+ * * !0 - 表示错误的 errno
  */
 static int __tracer_setup_tracing(struct snap_device *dev, unsigned int minor,
                                   snap_device_array_mut snap_devices)
@@ -1699,7 +1631,7 @@ static int __tracer_setup_tracing(struct snap_device *dev, unsigned int minor,
     dev->sd_minor = minor;
     minor_range_include(minor);
 
-    // get the base block device's make_request_fn
+    // 获取基块设备的 make_request_fn
     LOG_DEBUG("getting the base block device's make_request_fn");
 
 #ifndef USE_BDOPS_SUBMIT_BIO
@@ -1745,19 +1677,19 @@ error:
 }
 
 /**
- * __tracer_setup_unverified() - Sets up tracing for an unverified device.
+ * __tracer_setup_unverified() - 为未验证设备建立跟踪。
  *
- * @dev: The &struct snap_device object pointer.
- * @minor: the device's minor number.
- * @bdev_path: The block device path, e.g., '/dev/loop0'.
- * @cow_path: The path to the COW backing file.
- * @cache_size: Limits the size of the COW section cache (in bytes).
- * @is_snap: snapshot or incremental.
- * @snap_devices: the array of snap devices.
+ * @dev: &struct snap_device 对象指针。
+ * @minor: 设备次设备号。
+ * @bdev_path: 块设备路径，如 '/dev/loop0'。
+ * @cow_path: COW 后备文件路径。
+ * @cache_size: COW 区段缓存大小上限（字节）。
+ * @is_snap: 快照或增量（1 为快照，0 为增量）。
+ * @snap_devices: 快照设备数组。
  *
  * Return:
- * * 0 - success
- * * !0 - errno indicating the error
+ * * 0 - 成功
+ * * !0 - 表示错误的 errno
  */
 int __tracer_setup_unverified(struct snap_device *dev, unsigned int minor, const char *bdev_path,
                               const char *cow_path, unsigned long cache_size, int is_snap,
@@ -1782,7 +1714,7 @@ int __tracer_setup_unverified(struct snap_device *dev, unsigned int minor, const
     if (!dev->sd_cow_path)
         goto error;
 
-    // add the tracer to the array of devices
+    // 将 tracer 加入设备数组
     __tracer_setup_tracing_unverified(dev, minor, snap_devices);
 
     return 0;
@@ -1796,11 +1728,10 @@ error:
 /************************SETUP / DESTROY FUNCTIONS************************/
 
 /**
- * tracer_destroy() - Tears down tracing of the snap device freeing necessary
- *                    fields in the process.
+ * tracer_destroy() - 拆除快照设备的跟踪并释放相关字段。
  *
- * @dev: The &struct snap_device object pointer.
- * @snap_devices: the array of snap devices.
+ * @dev: &struct snap_device 对象指针。
+ * @snap_devices: 快照设备数组。
  */
 void tracer_destroy(struct snap_device *dev, snap_device_array_mut snap_devices)
 {
@@ -1813,23 +1744,21 @@ void tracer_destroy(struct snap_device *dev, snap_device_array_mut snap_devices)
 }
 
 /**
- * tracer_setup_active_snap() - Sets up for a snapshot.
+ * tracer_setup_active_snap() - 建立快照模式。
  *
- * @dev: The &struct snap_device object pointer.
- * @minor: the device's minor number.
- * @bdev_path: The block device path, e.g., '/dev/loop0'.
- * @cow_path: The path to the COW backing file.
- * @fallocated_space: A value of zero defaults the size.
- * @cache_size: Limits the size of the COW section cache (in bytes).
- * @snap_devices: the array of snap devices.
+ * @dev: &struct snap_device 对象指针。
+ * @minor: 设备次设备号。
+ * @bdev_path: 块设备路径，如 '/dev/loop0'。
+ * @cow_path: COW 后备文件路径。
+ * @fallocated_space: 0 表示使用默认预分配大小。
+ * @cache_size: COW 区段缓存大小上限（字节）。
+ * @snap_devices: 快照设备数组。
  *
- * This call sets up the snapshot device, creates the COW file including the
- * data region, determines the COW path, sets up the COW thread, and finally
- * initiates tracing.
+ * 本调用会设置快照设备、创建含数据区的 COW 文件、确定 COW 路径、建立 COW 线程并启动跟踪。
  *
  * Return:
- * * 0 - success
- * * !0 - errno indicating the error
+ * * 0 - 成功
+ * * !0 - 表示错误的 errno
  */
 int tracer_setup_active_snap(struct snap_device *dev, unsigned int minor, const char *bdev_path,
                              const char *cow_path, unsigned long fallocated_space,
@@ -1842,43 +1771,43 @@ int tracer_setup_active_snap(struct snap_device *dev, unsigned int minor, const 
     set_bit(ACTIVE, &dev->sd_state);
     clear_bit(UNVERIFIED, &dev->sd_state);
 
-    // setup base device
+    // 设置基设备
     ret = __tracer_setup_base_dev(dev, bdev_path, snap_devices);
     if (ret)
         goto error;
 
-    // setup the cow manager
+    // 设置 cow manager
     ret = __tracer_setup_cow_new(dev, dev->sd_base_dev->bdev, cow_path, dev->sd_size,
                                  fallocated_space, cache_size, NULL, 1);
     if (ret)
         goto error;
 
-    // setup the cow path
+    // 设置 COW 路径
     ret = __tracer_setup_cow_path(dev, dev->sd_cow->dfilp);
     if (ret)
         goto error;
 
 #ifndef USE_BDOPS_SUBMIT_BIO
-    // retain an association between the original mrf and the block device
+    // 保留原 mrf 与块设备的关联
     ret = mrf_get(dev->sd_base_dev->bdev->bd_disk,
                   GET_BIO_REQUEST_TRACKING_PTR(dev->sd_base_dev->bdev));
     if (ret)
         goto error;
 #endif
 
-    // setup the snapshot values
+    // 设置快照相关字段
     ret = __tracer_setup_snap(dev, minor, dev->sd_base_dev->bdev, dev->sd_size);
     if (ret)
         goto error;
 
-    // setup the cow thread and run it
+    // 创建并运行 COW 线程
     ret = __tracer_setup_snap_cow_thread(dev, minor);
     if (ret)
         goto error;
 
     wake_up_process(dev->sd_cow_thread);
 
-    // inject the tracing function
+    // 注入跟踪函数
     ret = __tracer_setup_tracing(dev, minor, snap_devices);
     if (ret)
         goto error;
@@ -1894,14 +1823,13 @@ error:
 /************************NETLINK TRANSITION FUNCTIONS************************/
 
 /**
- * tracer_active_snap_to_inc() - Transitions from snapshot mode to incremental
- * tracking.
- * @old_dev: The &struct snap_device being replaced by this call.
- * @snap_devices: the array of snap devices.
+ * tracer_active_snap_to_inc() - 从快照模式切换为增量跟踪。
+ * @old_dev: 将被本调用替换的 &struct snap_device。
+ * @snap_devices: 快照设备数组。
  *
  * Return:
- * * 0 - success
- * * !0 - errno indicating the error
+ * * 0 - 成功
+ * * !0 - 表示错误的 errno
  */
 int tracer_active_snap_to_inc(struct snap_device *old_dev, snap_device_array_mut snap_devices)
 {
@@ -1910,7 +1838,7 @@ int tracer_active_snap_to_inc(struct snap_device *old_dev, snap_device_array_mut
     char *abs_path = NULL;
     int abs_path_len;
 
-    // allocate new tracer
+    // 分配新 tracer
     ret = tracer_alloc(&dev);
     if (ret)
         return ret;
@@ -1919,63 +1847,57 @@ int tracer_active_snap_to_inc(struct snap_device *old_dev, snap_device_array_mut
     set_bit(ACTIVE, &dev->sd_state);
     clear_bit(UNVERIFIED, &dev->sd_state);
 
-    // copy / set fields we need
+    // 拷贝/设置所需字段
     __tracer_copy_base_dev(old_dev, dev);
     __tracer_copy_cow_path(old_dev, dev);
 
-    // copy cow manager to new device. Care must be taken to make sure it
-    // isn't used by multiple threads at once.
+    // 将 cow manager 拷贝到新设备；须确保不被多线程同时使用
     __tracer_copy_cow(old_dev, dev);
 
-    // setup the cow thread
+    // 设置 COW 线程
     ret = __tracer_setup_inc_cow_thread(dev, old_dev->sd_minor);
     if (ret)
         goto error;
 
-    // inject the tracing function
+    // 注入跟踪函数
     dev->sd_orig_request_fn = old_dev->sd_orig_request_fn;
     ret = __tracer_setup_tracing(dev, old_dev->sd_minor, snap_devices);
     if (ret)
         goto error;
 
-    // Below this point, we are commited to the new device, so we must make
-    // sure it is in a good state.
+    // 此后已绑定新设备，须确保其处于良好状态
 
-    // stop the old cow thread. Must be done before starting the new cow
-    // thread to prevent concurrent access.
+    // 停止旧 COW 线程；须在启动新 COW 线程前完成以防并发访问
     __tracer_destroy_cow_thread(old_dev);
 
-    // disable auto-expand
+    // 关闭自动扩展
     cow_auto_expand_manager_free(old_dev->sd_cow->auto_expand);
     old_dev->sd_cow->auto_expand = NULL;
 
-    // sanity check to ensure no errors have occurred while cleaning up the
-    // old cow thread
+    // 确认清理旧 COW 线程时未发生错误
     ret = tracer_read_fail_state(old_dev);
     if (ret) {
         LOG_ERROR(ret, "errors occurred while cleaning up cow thread, putting "
                        "incremental into error state");
         tracer_set_fail_state(dev, ret);
 
-        // must make up the new thread regardless of errors so that any
-        // queued ssets are cleaned up
+        // 无论是否出错都要建好新线程以便清理已入队的 ssets
         wake_up_process(dev->sd_cow_thread);
 
-        // clean up the old device no matter what
+        // 无论如何都清理旧设备
         __tracer_destroy_snap(old_dev);
         kfree(old_dev);
 
         return ret;
     }
 
-    // wake up new cow thread. Must happen regardless of errors syncing the
-    // old cow thread in order to ensure no IO's are leaked.
+    // 唤醒新 COW 线程；无论同步旧 COW 线程是否出错都要执行以免泄漏 I/O
     wake_up_process(dev->sd_cow_thread);
 
-    // truncate the cow file
+    // 截断 COW 文件
     ret = cow_truncate_to_index(dev->sd_cow);
     if (ret) {
-        // not a critical error, we can just print a warning
+        // 非致命错误，仅打警告
         file_get_absolute_pathname(dev->sd_cow->dfilp, &abs_path, &abs_path_len);
         if (!abs_path) {
             LOG_WARN(
@@ -1988,7 +1910,7 @@ int tracer_active_snap_to_inc(struct snap_device *old_dev, snap_device_array_mut
         }
     }
 
-    // destroy the unneeded fields of the old_dev and the old_dev itself
+    // 销毁 old_dev 中不需要的字段及 old_dev 本身
     __tracer_destroy_snap(old_dev);
     kfree(old_dev);
 
@@ -2003,17 +1925,16 @@ error:
 }
 
 /**
- * tracer_active_inc_to_snap() - Transitions from incremental mode to
- * snapshot mode.
+ * tracer_active_inc_to_snap() - 从增量模式切换回快照模式。
  *
- * @old_dev: The &struct snap_device tracing in incremental mode.
- * @cow_path: The path to the COW backing file.
- * @fallocated_space: A value of zero carries over the current setting.
- * @snap_devices: the array of snap devices.
+ * @old_dev: 当前以增量模式跟踪的 &struct snap_device。
+ * @cow_path: COW 后备文件路径。
+ * @fallocated_space: 0 表示沿用当前预分配设置。
+ * @snap_devices: 快照设备数组。
  *
  * Return:
- * * 0 - success
- * * !0 - error
+ * * 0 - 成功
+ * * !0 - 错误
  */
 int tracer_active_inc_to_snap(struct snap_device *old_dev, const char *cow_path,
                               unsigned long fallocated_space, snap_device_array_mut snap_devices)
@@ -2023,7 +1944,7 @@ int tracer_active_inc_to_snap(struct snap_device *old_dev, const char *cow_path,
 
     LOG_DEBUG("ENTER tracer_active_inc_to_snap");
 
-    // allocate new tracer
+    // 分配新 tracer
     ret = tracer_alloc(&dev);
     if (ret)
         return ret;
@@ -2034,42 +1955,42 @@ int tracer_active_inc_to_snap(struct snap_device *old_dev, const char *cow_path,
 
     fallocated_space = (fallocated_space) ? fallocated_space : old_dev->sd_falloc_size;
 
-    // copy / set fields we need
+    // 拷贝/设置所需字段
     __tracer_copy_base_dev(old_dev, dev);
 
-    // setup the cow manager
+    // 设置 cow manager
     ret = __tracer_setup_cow_new(dev, dev->sd_base_dev->bdev, cow_path, dev->sd_size,
                                  fallocated_space, dev->sd_cache_size, old_dev->sd_cow->uuid,
                                  old_dev->sd_cow->seqid + 1);
     if (ret)
         goto error;
 
-    // setup the cow path
+    // 设置 COW 路径
     ret = __tracer_setup_cow_path(dev, dev->sd_cow->dfilp);
     if (ret)
         goto error;
 
-    // setup the snapshot values
+    // 设置快照相关字段
     ret = __tracer_setup_snap(dev, old_dev->sd_minor, dev->sd_base_dev->bdev, dev->sd_size);
     if (ret)
         goto error;
 
-    // setup the cow thread
+    // 设置 COW 线程
     ret = __tracer_setup_snap_cow_thread(dev, old_dev->sd_minor);
     if (ret)
         goto error;
 
-    // start tracing (overwrites old_dev's tracing)
+    // 开始跟踪（覆盖 old_dev 的跟踪）
     dev->sd_orig_request_fn = old_dev->sd_orig_request_fn;
     ret = __tracer_setup_tracing(dev, old_dev->sd_minor, snap_devices);
     if (ret)
         goto error;
 
-    // stop the old cow thread and start the new one
+    // 停止旧 COW 线程并启动新线程
     __tracer_destroy_cow_thread(old_dev);
     wake_up_process(dev->sd_cow_thread);
 
-    // destroy the unneeded fields of the old_dev and the old_dev itself
+    // 销毁 old_dev 中不需要的字段及 old_dev 本身
     __tracer_destroy_cow_path(old_dev);
     __tracer_destroy_cow_sync_and_free(old_dev);
     kfree(old_dev);
@@ -2088,10 +2009,10 @@ error:
 }
 
 /**
- * tracer_reconfigure() - Reconfigures the cache size associated with @dev.
+ * tracer_reconfigure() - 重新配置与 @dev 关联的缓存大小。
  *
- * @dev: The &struct snap_device object pointer.
- * @cache_size: Limits the size of the COW section cache (in bytes).
+ * @dev: &struct snap_device 对象指针。
+ * @cache_size: COW 区段缓存大小上限（字节）。
  */
 void tracer_reconfigure(struct snap_device *dev, unsigned long cache_size)
 {
@@ -2103,11 +2024,10 @@ void tracer_reconfigure(struct snap_device *dev, unsigned long cache_size)
 }
 
 /**
- * tracer_dattobd_info() - Copies relevant, current information in @dev to
- *                         @info.
+ * tracer_dattobd_info() - 将 @dev 中当前相关信息拷贝到 @info。
  *
- * @dev: The source &struct snap_device tracking block device state.
- * @info: A destination &struct dattobd_info object pointer.
+ * @dev: 跟踪块设备状态的源 &struct snap_device。
+ * @info: 目标 &struct dattobd_info 对象指针。
  */
 void tracer_dattobd_info(const struct snap_device *dev, struct dattobd_info *info)
 {
@@ -2134,26 +2054,24 @@ void tracer_dattobd_info(const struct snap_device *dev, struct dattobd_info *inf
 /************************AUTOMATIC TRANSITION FUNCTIONS************************/
 
 /**
- * __tracer_active_to_dormant() - Transitions from ACTIVE to DORMANT.  This
- *                                happens, for example, when the underlying
- *                                block device becomes unwritable.
+ * __tracer_active_to_dormant() - 从 ACTIVE 转为 DORMANT；例如底层块设备变为只读时调用。
  *
- * @dev: The &struct snap_device object pointer.
+ * @dev: &struct snap_device 对象指针。
  */
 void __tracer_active_to_dormant(struct snap_device *dev)
 {
     int ret;
 
     LOG_DEBUG("ENTER __tracer_active_to_dormant");
-    // stop the cow thread
+    // 停止 COW 线程
     __tracer_destroy_cow_thread(dev);
 
-    // close the cow manager
+    // 关闭 cow manager
     ret = __tracer_destroy_cow_sync_and_close(dev);
     if (ret)
         goto error;
 
-    // mark as dormant
+    // 标记为休眠
     smp_wmb();
     clear_bit(ACTIVE, &dev->sd_state);
 
@@ -2165,13 +2083,11 @@ error:
 }
 
 /**
- * __tracer_unverified_snap_to_active() - Initiates tracking from a device
- *                                        that was unverified and makes it
- *                                        active.
+ * __tracer_unverified_snap_to_active() - 对原为未验证的设备启动跟踪并设为活动。
  *
- * @dev: The &struct snap_device object pointer.
- * @user_mount_path: A userspace supplied path used to build the COW file path.
- * @snap_devices: the array of snap devices.
+ * @dev: &struct snap_device 对象指针。
+ * @user_mount_path: 用户空间提供的路径，用于拼出 COW 文件路径。
+ * @snap_devices: 快照设备数组。
  */
 void __tracer_unverified_snap_to_active(struct snap_device *dev, const char __user *user_mount_path,
                                         snap_device_array_mut snap_devices)
@@ -2182,22 +2098,22 @@ void __tracer_unverified_snap_to_active(struct snap_device *dev, const char __us
     unsigned long cache_size = dev->sd_cache_size;
 
     LOG_DEBUG("ENTER __tracer_unverified_snap_to_active");
-    // remove tracing while we setup the struct
+    // 设置结构体期间先移除跟踪
     __tracer_destroy_tracing(dev, snap_devices);
 
-    // mark as active
+    // 标记为活动
     set_bit(ACTIVE, &dev->sd_state);
     clear_bit(UNVERIFIED, &dev->sd_state);
 
     dev->sd_bdev_path = NULL;
     dev->sd_cow_path = NULL;
 
-    // setup base device
+    // 设置基设备
     ret = __tracer_setup_base_dev(dev, bdev_path, snap_devices);
     if (ret)
         goto error;
 
-        // generate the full pathname
+        // 生成完整路径
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 5, 0)
     ret = pathname_concat(user_mount_path, rel_path, &cow_path);
 #else
@@ -2206,38 +2122,38 @@ void __tracer_unverified_snap_to_active(struct snap_device *dev, const char __us
     if (ret)
         goto error;
 
-    // setup the cow manager
+    // 设置 cow manager
     ret = __tracer_setup_cow_reload_snap(dev, dev->sd_base_dev->bdev, cow_path, dev->sd_size,
                                          dev->sd_cache_size);
     if (ret)
         goto error;
 
-    // setup the cow path
+    // 设置 COW 路径
     ret = __tracer_setup_cow_path(dev, dev->sd_cow->dfilp);
     if (ret)
         goto error;
 
 #ifndef USE_BDOPS_SUBMIT_BIO
-    // retain an association between the original mrf and the block device
+    // 保留原 mrf 与块设备的关联
     ret = mrf_get(dev->sd_base_dev->bdev->bd_disk,
                   GET_BIO_REQUEST_TRACKING_PTR(dev->sd_base_dev->bdev));
     if (ret)
         goto error;
 #endif
 
-    // setup the snapshot values
+    // 设置快照相关字段
     ret = __tracer_setup_snap(dev, minor, dev->sd_base_dev->bdev, dev->sd_size);
     if (ret)
         goto error;
 
-    // setup the cow thread and run it
+    // 创建并运行 COW 线程
     ret = __tracer_setup_snap_cow_thread(dev, minor);
     if (ret)
         goto error;
 
     wake_up_process(dev->sd_cow_thread);
 
-    // inject the tracing function
+    // 注入跟踪函数
     ret = __tracer_setup_tracing(dev, minor, snap_devices);
     if (ret)
         goto error;
@@ -2260,13 +2176,12 @@ error:
 }
 
 /**
- * __tracer_unverified_inc_to_active() - Moves from an unverified state to
- *                                       and active state.
- * @dev: The &struct snap_device object pointer.
- * @user_mount_path: A userspace supplied path used to build the COW file path.
- * @snap_devices: the array of snap devices.
+ * __tracer_unverified_inc_to_active() - 从未验证状态转为活动状态。
+ * @dev: &struct snap_device 对象指针。
+ * @user_mount_path: 用户空间提供的路径，用于拼出 COW 文件路径。
+ * @snap_devices: 快照设备数组。
  *
- * Tracing is configured for the block device after this call completes.
+ * 本调用完成后即完成对块设备的跟踪配置。
  */
 void __tracer_unverified_inc_to_active(struct snap_device *dev, const char __user *user_mount_path,
                                        snap_device_array_mut snap_devices)
@@ -2278,22 +2193,22 @@ void __tracer_unverified_inc_to_active(struct snap_device *dev, const char __use
 
     LOG_DEBUG("ENTER %s", __func__);
 
-    // remove tracing while we setup the struct
+    // 设置结构体期间先移除跟踪
     __tracer_destroy_tracing(dev, snap_devices);
 
-    // mark as active
+    // 标记为活动
     set_bit(ACTIVE, &dev->sd_state);
     clear_bit(UNVERIFIED, &dev->sd_state);
 
     dev->sd_bdev_path = NULL;
     dev->sd_cow_path = NULL;
 
-    // setup base device
+    // 设置基设备
     ret = __tracer_setup_base_dev(dev, bdev_path, snap_devices);
     if (ret)
         goto error;
 
-        // generate the full pathname
+        // 生成完整路径
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 5, 0)
     ret = pathname_concat(user_mount_path, rel_path, &cow_path);
 #else
@@ -2302,33 +2217,33 @@ void __tracer_unverified_inc_to_active(struct snap_device *dev, const char __use
     if (ret)
         goto error;
 
-    // setup the cow manager
+    // 设置 cow manager
     ret = __tracer_setup_cow_reload_inc(dev, dev->sd_base_dev->bdev, cow_path, dev->sd_size,
                                         dev->sd_cache_size);
     if (ret)
         goto error;
 
-    // setup the cow path
+    // 设置 COW 路径
     ret = __tracer_setup_cow_path(dev, dev->sd_cow->dfilp);
     if (ret)
         goto error;
 
 #ifndef USE_BDOPS_SUBMIT_BIO
-    // retain an association between the original mrf and the block device
+    // 保留原 mrf 与块设备的关联
     ret = mrf_get(dev->sd_base_dev->bdev->bd_disk,
                   GET_BIO_REQUEST_TRACKING_PTR(dev->sd_base_dev->bdev));
     if (ret)
         goto error;
 #endif
 
-    // setup the cow thread and run it
+    // 创建并运行 COW 线程
     ret = __tracer_setup_inc_cow_thread(dev, minor);
     if (ret)
         goto error;
 
     wake_up_process(dev->sd_cow_thread);
 
-    // inject the tracing function
+    // 注入跟踪函数
     ret = __tracer_setup_tracing(dev, minor, snap_devices);
     if (ret)
         goto error;
@@ -2351,12 +2266,11 @@ error:
 }
 
 /**
- * __tracer_dormant_to_active() - Starts tracing on a previously traced
- *                                device.
- * @dev: The &struct snap_device object pointer.
- * @user_mount_path: A userspace supplied path used to build the COW file path.
+ * __tracer_dormant_to_active() - 在曾跟踪过的设备上重新启动跟踪。
+ * @dev: &struct snap_device 对象指针。
+ * @user_mount_path: 用户空间提供的路径，用于拼出 COW 文件路径。
  *
- * Will continue tracing in the previous mode, i.e., snapshot or incremental.
+ * 按先前模式（快照或增量）继续跟踪。
  */
 void __tracer_dormant_to_active(struct snap_device *dev, const char __user *user_mount_path)
 {
@@ -2365,7 +2279,7 @@ void __tracer_dormant_to_active(struct snap_device *dev, const char __user *user
 
     LOG_DEBUG("ENTER __tracer_dormant_to_active");
 
-    // generate the full pathname
+    // 生成完整路径
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 5, 0)
     ret = pathname_concat(user_mount_path, dev->sd_cow_path, &cow_path);
@@ -2375,12 +2289,12 @@ void __tracer_dormant_to_active(struct snap_device *dev, const char __user *user
     if (ret)
         goto error;
 
-    // setup the cow manager
+    // 设置 cow manager
     ret = __tracer_setup_cow_reopen(dev, dev->sd_base_dev->bdev, cow_path);
     if (ret)
         goto error;
 
-    // restart the cow thread
+    // 重启 COW 线程
     if (test_bit(SNAPSHOT, &dev->sd_state))
         ret = __tracer_setup_snap_cow_thread(dev, dev->sd_minor);
     else
@@ -2391,7 +2305,7 @@ void __tracer_dormant_to_active(struct snap_device *dev, const char __user *user
 
     wake_up_process(dev->sd_cow_thread);
 
-    // set the state to active
+    // 将状态设为活动
     smp_wmb();
     set_bit(ACTIVE, &dev->sd_state);
     clear_bit(UNVERIFIED, &dev->sd_state);
@@ -2422,7 +2336,7 @@ int tracer_expand_cow_file_no_check(struct snap_device *dev, uint64_t by_size_by
         LOG_ERROR(ret, "error expanding cow file");
         tracer_set_fail_state(dev, ret);
         // __tracer_destroy_cow_thread(dev); -- we can't ask for thread destroy, as this function may be called from cow thread
-        // cow_thread must fail in a few moments
+        // cow_thread 很快会失败
     }
 
     return ret;

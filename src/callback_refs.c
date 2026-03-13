@@ -15,7 +15,7 @@ struct mrf_tracking_data {
     struct hlist_node node;
 };
 
-#define MAX_BUCKETS_BITS 2 // 2^2 == 4
+#define MAX_BUCKETS_BITS 2 // 2^2 = 4 个桶
 DEFINE_HASHTABLE(mrf_tracking_map, MAX_BUCKETS_BITS);
 
 void mrf_tracking_init(void)
@@ -45,7 +45,7 @@ int mrf_get(const struct gendisk *disk, BIO_REQUEST_CALLBACK_FN *fn)
         }
         mtd->mtd_disk = disk;
         mtd->mtd_orig = (BIO_REQUEST_CALLBACK_FN *)fn;
-        // kzalloc guarantees mtd->mtd_count = { 0 };
+        // kzalloc 保证 mtd->mtd_count 已为零
         hash_add(mrf_tracking_map, &mtd->node, (unsigned long)disk);
     }
 
@@ -59,17 +59,17 @@ const BIO_REQUEST_CALLBACK_FN *mrf_put(struct gendisk *disk)
     BIO_REQUEST_CALLBACK_FN *fn = NULL;
     struct mrf_tracking_data *mtd = get_a_node(disk);
     if (!mtd) {
-        return NULL; // error here instead? essentially a double free
+        return NULL; // 此处可改为返回错误，相当于双重释放
     }
 
     fn = mtd->mtd_orig;
-    if (atomic_dec_and_test(&mtd->mtd_count)) { // if mtd_count IS zero
+    if (atomic_dec_and_test(&mtd->mtd_count)) { // mtd_count 减到零时
         hash_del(&mtd->node);
         kfree(mtd);
-        return (const BIO_REQUEST_CALLBACK_FN *)fn; // return the orig if this is our last ref
+        return (const BIO_REQUEST_CALLBACK_FN *)fn; // 最后一次引用时返回原函数指针
     }
 
-    // return the current mrf to make swap logic easier
+    // 返回当前 mrf，便于交换逻辑处理
     return (const BIO_REQUEST_CALLBACK_FN *)GET_BIO_REQUEST_TRACKING_PTR_GD(disk);
 }
 

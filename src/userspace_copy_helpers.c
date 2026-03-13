@@ -10,18 +10,16 @@
 #include "userspace_copy_helpers.h"
 
 /**
- * copy_string_from_user() - Copies string data from a user space address to
- * kernel space.
+ * copy_string_from_user() - 从用户空间地址将字符串拷贝到内核空间。
  *
- * @data: A user space address pointing to a string.
- * @out_ptr: The string in a kernel allocated buffer.  The caller owns the
- *           buffer.
+ * @data: 指向字符串的用户空间地址。
+ * @out_ptr: 内核分配缓冲区中的字符串，调用方负责释放。
  *
- * Will copy no more than a PAGE_SIZE from user space.
+ * 最多从用户空间拷贝 PAGE_SIZE 字节。
  *
  * Return:
- * * 0 - success
- * * !0 - errno indicating the error.
+ * * 0 - 成功
+ * * !0 - 表示错误的 errno。
  */
 int copy_string_from_user(const char __user *data, char **out_ptr)
 {
@@ -49,18 +47,18 @@ error:
 }
 
 /**
- * get_setup_params() - Copies &struct setup_params from user space.
+ * get_setup_params() - 从用户空间拷贝 &struct setup_params。
  *
- * @in: The &struct setup_params object pointer from user space.
- * @minor: The minor number.
- * @bdev_name: Uses @copy_string_from_user to transfer the block device name.
- * @cow_path: Uses @copy_string_from_user to transfer the cow file path.
- * @fallocated_space: A number of bytes for fallocated_space.
- * @cache_size: A number of bytes for section cache.
+ * @in: 用户空间的 &struct setup_params 指针。
+ * @minor: 次设备号。
+ * @bdev_name: 通过 copy_string_from_user 传入的块设备名。
+ * @cow_path: 通过 copy_string_from_user 传入的 COW 文件路径。
+ * @fallocated_space: 预分配空间字节数。
+ * @cache_size: 区段缓存字节数。
  *
  * Return:
- * * 0 - success
- * * !0 - errno indicating the error.
+ * * 0 - 成功
+ * * !0 - 表示错误的 errno。
  */
 int get_setup_params(const struct setup_params __user *in, unsigned int *minor, char **bdev_name,
                      char **cow_path, unsigned long *fallocated_space, unsigned long *cache_size)
@@ -68,7 +66,7 @@ int get_setup_params(const struct setup_params __user *in, unsigned int *minor, 
     int ret;
     struct setup_params params;
 
-    // copy the params struct
+    // 从用户空间拷贝参数结构体
     ret = copy_from_user(&params, in, sizeof(struct setup_params));
     if (ret) {
         ret = -EFAULT;
@@ -117,21 +115,21 @@ error:
 }
 
 /**
- * get_destroy_params() - Copies &struct destroy_params from user space.
+ * get_destroy_params() - 从用户空间拷贝 &struct destroy_params。
  *
- * @in: The &struct destroy_params object pointer from user space.
- * @minor: The minor number.
+ * @in: 用户空间的 &struct destroy_params 指针。
+ * @minor: 次设备号。
  *
  * Return:
- * * 0 - success
- * * !0 - errno indicating the error.
+ * * 0 - 成功
+ * * !0 - 表示错误的 errno。
  */
 int get_destroy_params(const struct destroy_params __user *in, unsigned int *minor)
 {
     int ret;
     struct destroy_params params;
 
-    // copy the params struct
+    // 从用户空间拷贝参数结构体
     ret = copy_from_user(&params, in, sizeof(struct destroy_params));
     if (ret) {
         ret = -EFAULT;
@@ -149,21 +147,21 @@ error:
 }
 
 /**
- * get_transition_inc_params() - Copies &struct transition_inc_params from user space.
+ * get_transition_inc_params() - 从用户空间拷贝 &struct transition_inc_params。
  *
- * @in: The &struct transition_inc_params object pointer from user space.
- * @minor: The minor number.
+ * @in: 用户空间的 &struct transition_inc_params 指针。
+ * @minor: 次设备号。
  *
  * Return:
- * * 0 - success
- * * !0 - errno indicating the error.
+ * * 0 - 成功
+ * * !0 - 表示错误的 errno。
  */
 int get_transition_inc_params(const struct transition_inc_params __user *in, unsigned int *minor)
 {
     int ret;
     struct transition_inc_params params;
 
-    // copy the params struct
+    // 从用户空间拷贝参数结构体
     ret = copy_from_user(&params, in, sizeof(struct transition_inc_params));
     if (ret) {
         ret = -EFAULT;
@@ -181,16 +179,16 @@ error:
 }
 
 /**
- * get_reload_params() - Copies &struct reload_params from user space.
- * @in: The &struct reload_params object pointer from user space.
- * @minor: The minor number.
- * @bdev_name: Uses @copy_string_from_user to transfer the block device name.
- * @cow_path: Uses @copy_string_from_user to transfer the cow file path.
- * @cache_size: A number of bytes for section cache.
+ * get_reload_params() - 从用户空间拷贝 &struct reload_params。
+ * @in: 用户空间的 &struct reload_params 指针。
+ * @minor: 次设备号。
+ * @bdev_name: 通过 copy_string_from_user 传入的块设备名。
+ * @cow_path: 通过 copy_string_from_user 传入的 COW 文件路径。
+ * @cache_size: 区段缓存字节数。
  *
  * Return:
- * * 0 - success
- * * !0 - errno indicating the error.
+ * * 0 - 成功
+ * * !0 - 表示错误的 errno。
  */
 int get_reload_params(const struct reload_params __user *in, unsigned int *minor, char **bdev_name,
                       char **cow_path, unsigned long *cache_size)
@@ -198,7 +196,7 @@ int get_reload_params(const struct reload_params __user *in, unsigned int *minor
     int ret;
     struct reload_params params;
 
-    // copy the params struct
+    // 从用户空间拷贝参数结构体
     ret = copy_from_user(&params, in, sizeof(struct reload_params));
     if (ret) {
         ret = -EFAULT;
@@ -245,16 +243,16 @@ error:
 }
 
 /**
- * get_transition_snap_params() - Copies &struct transition_snap_params from user space.
+ * get_transition_snap_params() - 从用户空间拷贝 &struct transition_snap_params。
  *
- * @in: The &struct transition_snap_params object pointer from user space.
- * @minor: The minor number.
- * @cow_path: Uses @copy_string_from_user to transfer the cow file path.
- * @fallocated_space: A number of bytes for fallocated_space.
+ * @in: 用户空间的 &struct transition_snap_params 指针。
+ * @minor: 次设备号。
+ * @cow_path: 通过 copy_string_from_user 传入的 COW 文件路径。
+ * @fallocated_space: 预分配空间字节数。
  *
  * Return:
- * * 0 - success.
- * * !0 - errno indicating the error.
+ * * 0 - 成功。
+ * * !0 - 表示错误的 errno。
  */
 int get_transition_snap_params(const struct transition_snap_params __user *in, unsigned int *minor,
                                char **cow_path, unsigned long *fallocated_space)
@@ -262,7 +260,7 @@ int get_transition_snap_params(const struct transition_snap_params __user *in, u
     int ret;
     struct transition_snap_params params;
 
-    // copy the params struct
+    // 从用户空间拷贝参数结构体
     ret = copy_from_user(&params, in, sizeof(struct transition_snap_params));
     if (ret) {
         ret = -EFAULT;
@@ -296,14 +294,14 @@ error:
 }
 
 /**
- * get_reconfigure_params() - Copies &struct reconfigure_params from user space.
- * @in: The &struct reconfigure_params object pointer from user space.
- * @minor: The minor number.
- * @cache_size: A number of bytes for section cache.
+ * get_reconfigure_params() - 从用户空间拷贝 &struct reconfigure_params。
+ * @in: 用户空间的 &struct reconfigure_params 指针。
+ * @minor: 次设备号。
+ * @cache_size: 区段缓存字节数。
  *
  * Return:
- * * 0 - success.
- * * !0 - errno indicating the error.
+ * * 0 - 成功。
+ * * !0 - 表示错误的 errno。
  */
 int get_reconfigure_params(const struct reconfigure_params __user *in, unsigned int *minor,
                            unsigned long *cache_size)
@@ -311,7 +309,7 @@ int get_reconfigure_params(const struct reconfigure_params __user *in, unsigned 
     int ret;
     struct reconfigure_params params;
 
-    // copy the params struct
+    // 从用户空间拷贝参数结构体
     ret = copy_from_user(&params, in, sizeof(struct reconfigure_params));
     if (ret) {
         ret = -EFAULT;
@@ -332,14 +330,14 @@ error:
 }
 
 /**
- * get_expand_cow_file_params() - Copies &struct expand_cow_file_params from user space.
- * @in: The &struct expand_cow_file_params object pointer from user space.
- * @minor: The minor number.
- * @size: A number of bytes for cow file size.
+ * get_expand_cow_file_params() - 从用户空间拷贝 &struct expand_cow_file_params。
+ * @in: 用户空间的 &struct expand_cow_file_params 指针。
+ * @minor: 次设备号。
+ * @size: COW 文件扩展大小（字节）。
  *
  * Return:
- * * 0 - success.
- * * !0 - errno indicating the error.
+ * * 0 - 成功。
+ * * !0 - 表示错误的 errno。
  */
 int get_expand_cow_file_params(const struct expand_cow_file_params __user *in, unsigned int *minor,
                                uint64_t *size)
@@ -347,7 +345,7 @@ int get_expand_cow_file_params(const struct expand_cow_file_params __user *in, u
     int ret;
     struct expand_cow_file_params params;
 
-    // copy the params struct
+    // 从用户空间拷贝参数结构体
     ret = copy_from_user(&params, in, sizeof(struct expand_cow_file_params));
     if (ret) {
         ret = -EFAULT;
@@ -368,16 +366,16 @@ error:
 }
 
 /**
- * get_reconfigure_auto_expand_params() - Copies &struct reconfigure_auto_expand_params from user space.
+ * get_reconfigure_auto_expand_params() - 从用户空间拷贝 &struct reconfigure_auto_expand_params。
  *
- * @in: The &struct reconfigure_auto_expand_params object pointer from user space.
- * @minor: The minor number.
- * @step_size: A number of bytes for step size.
- * @reserved_space: A number of bytes for reserved space.
+ * @in: 用户空间的 &struct reconfigure_auto_expand_params 指针。
+ * @minor: 次设备号。
+ * @step_size: 自动扩展步长（字节）。
+ * @reserved_space: 保留空间（字节）。
  *
  * Return:
- * * 0 - success
- * * !0 - errno indicating the error.
+ * * 0 - 成功
+ * * !0 - 表示错误的 errno。
  */
 int get_reconfigure_auto_expand_params(const struct reconfigure_auto_expand_params __user *in,
                                        unsigned int *minor, uint64_t *step_size,
@@ -386,7 +384,7 @@ int get_reconfigure_auto_expand_params(const struct reconfigure_auto_expand_para
     int ret;
     struct reconfigure_auto_expand_params params;
 
-    // copy the params struct
+    // 从用户空间拷贝参数结构体
     ret = copy_from_user(&params, in, sizeof(struct reconfigure_auto_expand_params));
     if (ret) {
         ret = -EFAULT;

@@ -21,13 +21,12 @@ dattobd/
 │   ├── configure-tests/    # 内核特性检测
 │   ├── genconfig.sh        # 配置生成脚本
 │   └── Makefile            # 内核模块构建
-├── app/                    # 用户空间 CLI 工具
-│   └── dbdctl.c            # dbdctl 命令行工具
+├── app/                    # 用户空间 CLI 与工具
+│   ├── dbdctl.c            # dbdctl 命令行工具
+│   └── update-img.c        # 增量镜像更新工具
 ├── lib/                    # 用户空间共享库
 │   ├── libdattobd.c        # 库实现
 │   └── libdattobd.h        # 公共 API 头文件
-├── utils/                  # 辅助工具
-│   └── update-img.c        # 增量镜像更新工具
 ├── tests/                  # Python 测试套件
 ├── dist/                   # 打包配置 (RPM/DEB)
 ├── doc/                    # 文档
@@ -144,6 +143,17 @@ void *ptr = kmalloc(size, GFP_KERNEL);
 void *ptr = vzalloc(size);  // 大块内存
 kfree(ptr);
 ```
+
+### 新增功能与注册规范
+
+**新增功能必须带有完备的注册与注销，且风格与现有实现保持一致。**
+
+- **模块级资源**：凡在 `agent_init()` 中注册的（如 blkdev、proc、netlink、内核钩子），必须在 `agent_exit()` 中以**相反顺序**对称注销；新增资源时在 `module_control.c` 的 init/exit 中成对添加，失败时按已注册顺序回滚并调用 `agent_exit()`。
+- **钩子类功能**：若新增一类内核钩子或可插拔组件，应提供：
+  - `register_*_hooks()` / `unregister_*_hooks()` 的成对接口（风格参考 `ftrace_hooking.c`、`kretprobe_hooking.c`）；
+  - 单钩子的 `register_hook()` / `unregister_hook()`，带 kernel-doc 注释（`/** ... @hook ... Return: ... */`）、返回值检查、失败时 `LOG_ERROR`、成功时 `LOG_DEBUG("registered ... for %s", ...)`；
+  - 通过 `kernel_hooking.h` 等统一宏（如 `REGISTER_HOOKS` / `UNREGISTER_HOOKS`）接入模块 init/exit，保持一处切换（ftrace vs kretprobe）即可生效。
+- **其他可注册资源**：proc 文件、netlink 命令、设备号、字符设备等，均需在对应模块内提供 `register_*` / `unregister_*`（或 init/cleanup），并在 `agent_init()` / `agent_exit()` 中按依赖顺序注册、逆序注销；注释与错误处理风格与现有 `register_sequential_file_in_proc`、`setup_netlink_handler` 等保持一致。
 
 ## 构建系统
 
@@ -351,6 +361,7 @@ cat /proc/datto-info
 3. **锁**: 注意锁的获取顺序，避免死锁
 4. **错误处理**: 所有内核函数调用都应检查返回值
 5. **不要使用浮点数**: 内核空间不支持浮点运算
+6. **新增功能的注册**: 新增功能必须带完备的注册/注销，风格与现有一致（见「新增功能与注册规范」）
 
 ## 相关文档
 

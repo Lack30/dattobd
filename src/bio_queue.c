@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only
 
 /*
- * Contains code related to manipulating a bio_queue structure.
+ * 与 bio_queue 结构操作相关的代码。
  *
  * Copyright (C) 2022 Datto Inc.
  */
@@ -10,8 +10,8 @@
 #include "bio_helper.h"
 
 /**
- * bio_queue_init() - Prepares a queue for use.
- * @bq: The queue.
+ * bio_queue_init() - 初始化队列以供使用。
+ * @bq: 队列。
  */
 void bio_queue_init(struct bio_queue *bq)
 {
@@ -21,12 +21,10 @@ void bio_queue_init(struct bio_queue *bq)
 }
 
 /**
- * bio_queue_empty() - Checks if the supplied queue is empty.
- * @bq: The queue.
+ * bio_queue_empty() - 检查队列是否为空。
+ * @bq: 队列。
  *
- * Return:
- * * 0  - not empty
- * * !0 - empty
+ * Return: 0 表示非空，非 0 表示空。
  */
 int bio_queue_empty(const struct bio_queue *bq)
 {
@@ -34,11 +32,9 @@ int bio_queue_empty(const struct bio_queue *bq)
 }
 
 /**
- * bio_queue_add() - Adds an element.
- * @bq: The queue.
- * @bio: The element to be added to the queue.
- *
- * Adds the supplied element @bio to the queue @bq.
+ * bio_queue_add() - 将元素加入队列末尾。
+ * @bq: 队列。
+ * @bio: 要加入队列的元素。
  */
 void bio_queue_add(struct bio_queue *bq, struct bio *bio)
 {
@@ -51,13 +47,12 @@ void bio_queue_add(struct bio_queue *bq, struct bio *bio)
 }
 
 /**
- * bio_queue_dequeue() - Retrieves an element.
- * @bq: The queue.
+ * bio_queue_dequeue() - 从队列头部取出一个元素。
+ * @bq: 队列。
  *
- * This removes an element from the queue @bq and returns it to the caller.
- * Queued elements from @bq are removed in first-in-first-out order.
+ * 从 @bq 中按先进先出顺序移除并返回一个元素。
  *
- * Return: The removed element.
+ * Return: 被移除的元素。
  */
 struct bio *bio_queue_dequeue(struct bio_queue *bq)
 {
@@ -72,13 +67,11 @@ struct bio *bio_queue_dequeue(struct bio_queue *bq)
 }
 
 /**
- * bio_overlap() - Checks for overlap between two block I/O operations.
- * @bio1: A first block I/O operation.
- * @bio2: A second block I/O operation.
+ * bio_overlap() - 检查两次块 I/O 操作是否重叠。
+ * @bio1: 第一次块 I/O 操作。
+ * @bio2: 第二次块 I/O 操作。
  *
- * Return:
- * * 0  - no overlap between operations exists
- * * !0 - overlap exists
+ * Return: 0 表示不重叠，非 0 表示重叠。
  */
 static int bio_overlap(const struct bio *bio1, const struct bio *bio2)
 {
@@ -88,20 +81,14 @@ static int bio_overlap(const struct bio *bio1, const struct bio *bio2)
 }
 
 /**
- * bio_queue_dequeue_delay_read() - Dequeues the next &struct bio to be
- * processed with special consideration given for read operations that
- * have overlapping write operations yet to be processed.
+ * bio_queue_dequeue_delay_read() - 取出下一个待处理的 &struct bio；若队首为读操作且存在
+ *                                  尚未处理的重叠写操作，则先返回该写操作，将读操作重新插入队尾延后处理。
  *
- * @bq: The &struct bio_queue object pointer.
+ * @bq: &struct bio_queue 对象指针。
  *
- * If the bio at the head of the @bq is a read operation and there is an
- * overlapping write operation pending then return the pending write
- * operation and delay the read operation by reinserting it at the tail of @bq.
+ * Context: 调用时队列 @bq 必须非空。
  *
- * Context:
- * This call requires that the queue @bq be non-empty.
- *
- * Return: The block I/O operation scheduled for reading.
+ * Return: 本次取出的块 I/O 操作。
  */
 struct bio *bio_queue_dequeue_delay_read(struct bio_queue *bq)
 {

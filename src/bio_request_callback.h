@@ -2,16 +2,13 @@
 // Copyright (C) 2022 Datto Inc.
 
 /**
+ * DOC: bio_request_callback 头文件
  *
- * DOC: bio_request_callback header.
+ * 定义提交 I/O 请求所需的各类机制与类型。
  *
- * Defines the various mechanisms and types needed to submit IO requests.
+ * 不同 Linux 版本使用不同的类型与回调向内核提交进行中的 I/O。
  *
- * Different types and callbacks are used between different versions of
- * Linux in order to submit in-flight IO to the kernel.
- *
- * The purpose of this header is to provide a unified interface to making this
- * happen.
+ * 本头文件提供统一的接口以完成上述行为。
  */
 
 #ifndef BIO_REQUEST_CALLBACK_H_INCLUDE
@@ -25,12 +22,10 @@
 #ifdef USE_BDOPS_SUBMIT_BIO
 
 #ifdef CONFIG_X86
-// length of `% call __fentry__` on x86_64 - uses a 1 byte op and 4 byte
-// relative address
+/* x86_64 上 `call __fentry__` 指令长度：1 字节 op + 4 字节相对地址 */
 #define FENTRY_CALL_INSTR_BYTES 5
 #elif defined(CONFIG_ARM) || defined(CONFIG_ARM64)
-// length of `bl __fentry__` on ARM - uses a 4 byte op and 4 byte
-// relative address
+/* ARM 上 `bl __fentry__` 指令长度：4 字节 op + 4 字节相对地址 */
 #define FENTRY_CALL_INSTR_BYTES 4
 #else
 #pragma error "Unsupported architecture"

@@ -38,9 +38,9 @@ int dattobd_reconfigure_auto_expand(unsigned int minor, uint64_t step_size,
                                     uint64_t reserved_space);
 
 /**
- * Get the first available minor.
+ * 获取第一个可用的次设备号。
  *
- * @returns non-negative number if minor is available, otherwise -1
+ * @returns 有可用 minor 时返回非负整数，否则 -1
  */
 int dattobd_get_free_minor(void);
 

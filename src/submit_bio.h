@@ -16,21 +16,17 @@ struct snap_device;
 #ifdef USE_BDOPS_SUBMIT_BIO
 
 /**
- * submit_bio_fn() - Prototype for the submit_bio function, which will be our
- * hook to intercept IO on kernels >= 5.9 
+ * submit_bio_fn() - submit_bio 函数原型，在 5.9+ 内核上用作拦截 I/O 的钩子。
  */
 typedef MRF_RETURN_TYPE(submit_bio_fn)(struct bio *bio);
 
 /**
- * dattobd_submit_bio_real() - Submit's given bio to the real device 
- *                            (as opposed to our driver).
+ * dattobd_submit_bio_real() - 将给定 bio 提交到真实设备（而非本驱动）。
  *
- * @dev: Pointer to the snap_device that keeps device state.
- * @bio: Pointer to the bio struct which describes the in-flight I/O.
+ * @dev: 保存设备状态的 snap_device 指针。
+ * @bio: 描述进行中 I/O 的 bio 指针。
  *
- * Return:
- * * 0 - success
- * * !0 - error
+ * Return: 0 表示成功，非 0 表示错误。
  */
 int dattobd_submit_bio_real(struct snap_device *dev, struct bio *bio);
 

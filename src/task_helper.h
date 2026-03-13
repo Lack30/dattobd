@@ -9,8 +9,7 @@
 
 /*****************************TASK WORK FUNCTIONS****************************/
 
-// reimplementation of task_work_run() to force fput() and mntput() to perform
-// their work synchronously
+/* task_work_run() 的重实现，用于强制 fput() 和 mntput() 同步执行其工作。 */
 #ifdef HAVE_TASK_STRUCT_TASK_WORKS_HLIST
 void task_work_flush(void);
 #elif defined HAVE_TASK_STRUCT_TASK_WORKS_CB_HEAD

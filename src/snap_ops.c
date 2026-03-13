@@ -12,14 +12,14 @@
 #include "tracer_helper.h"
 
 /**
- * __tracer_add_ref() - Adds a reference to &snap_device->sd_refs.
+ * __tracer_add_ref() - 增加 &snap_device->sd_refs 的引用计数。
  *
- * @dev: The &struct snap_device object pointer.
- * @ref_cnt: The number of references to be added.
+ * @dev: &struct snap_device 对象指针。
+ * @ref_cnt: 要增加的引用数（可为负表示减少）。
  *
  * Return:
- * 0 - success
- * !0 - an errno indicating the error
+ * 0 - 成功
+ * !0 - 表示错误的 errno
  */
 static int __tracer_add_ref(struct snap_device *dev, int ref_cnt)
 {
@@ -88,17 +88,17 @@ static void snap_release(struct gendisk *gd, fmode_t mode)
 #endif
 
 #ifndef USE_BDOPS_SUBMIT_BIO
-// Linux version < 5.9
+/* 内核版本 < 5.9 */
 MRF_RETURN_TYPE snap_mrf(struct request_queue *q, struct bio *bio)
 {
     struct snap_device *dev = q->queuedata;
 #else
-// Linux version >= 5.9
+/* 内核版本 >= 5.9 */
 MRF_RETURN_TYPE snap_mrf(struct bio *bio)
 {
     struct snap_device *dev = dattobd_bio_bi_disk(bio)->queue->queuedata;
 #endif
-    // if a write request somehow gets sent in, discard it
+    // 若有写请求误入则丢弃
     if (bio_data_dir(bio)) {
         dattobd_bio_endio(bio, -EOPNOTSUPP);
         MRF_RETURN(0);
@@ -110,7 +110,7 @@ MRF_RETURN_TYPE snap_mrf(struct bio *bio)
         MRF_RETURN(0);
     }
 
-    // queue bio for processing by kernel thread
+    // 将 bio 入队由内核线程处理
     bio_queue_add(&dev->sd_cow_bios, bio);
 
     MRF_RETURN(0);

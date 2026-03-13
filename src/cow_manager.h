@@ -20,29 +20,17 @@
 extern const unsigned long dattobd_cow_ext_buf_size;
 
 /**
- * struct cow_section - maintains data and usage statistics for a cow section.
+ * struct cow_section - COW 区段的数据与使用统计。
  *
- * A &struct cow_section manages the basic unit of data the COW manager works
- * with and represents a section which is 4K sectors.
+ * &struct cow_section 是 COW 管理器的基本数据单元，一个区段对应 4K 扇区。
  */
 struct cow_section {
-    /**
-     * @has_data: zero if this section has mappings (on file or in memory)
-     */
-    char has_data;
-
-    /**
-     * @usage: counter that keeps track of how often this section is used
-     */
-    unsigned long usage;
-
-    /** 
-	 *@mappings: array of block addresses 
-	 */
-    uint64_t *mappings;
+    char has_data;           // 本区段有映射（文件或内存）时非零
+    unsigned long usage;     // 本区段使用次数计数
+    uint64_t *mappings;      // 块地址数组
 };
 
-// for now, auto expand settings are not preserved during reloads
+/* 当前重载时不保留自动扩展设置 */
 struct cow_auto_expand_manager {
     struct mutex lock;
 
@@ -51,24 +39,24 @@ struct cow_auto_expand_manager {
 };
 
 struct cow_manager {
-    struct dattobd_mutable_file *dfilp; // the file the cow manager is writing to
-    uint32_t flags; // flags representing current state of cow manager
-    uint64_t curr_pos; // current write head position
-    uint64_t data_offset; // starting offset of data
-    uint64_t file_size; // current size of the file, max size before an error is thrown or file is expanded
-    uint64_t seqid; // sequence id, increments on each transition to snapshot mode
-    uint64_t version; // version of cow file format
-    uint64_t nr_changed_blocks; // number of changed blocks since last snapshot
-    uint8_t uuid[COW_UUID_SIZE]; // uuid for this series of snaphots
-    unsigned int log_sect_pages; // log2 of the number of pages needed to store a section
-    unsigned long sect_size; // size of a section in number of elements it can contain
-    unsigned long allocated_sects; // number of currently allocated sections
-    unsigned long total_sects; // total sections the cm log represents
-    unsigned long allowed_sects; // the maximum number of sections that may be allocated at once
-    struct cow_section *sects; // pointer to the array of sections of mappings
-    struct snap_device *dev; // pointer to snapshot device
+    struct dattobd_mutable_file *dfilp; // cow manager 写入的目标文件
+    uint32_t flags;                      // cow manager 当前状态标志
+    uint64_t curr_pos;                  // 当前写头位置
+    uint64_t data_offset;               // 数据区起始偏移
+    uint64_t file_size;                 // 当前文件大小；超限前报错或触发扩展
+    uint64_t seqid;                    // 序列 id，每次切回快照模式时递增
+    uint64_t version;                  // COW 文件格式版本
+    uint64_t nr_changed_blocks;        // 自上次快照以来变更块数
+    uint8_t uuid[COW_UUID_SIZE];       // 本系列快照的 uuid
+    unsigned int log_sect_pages;       // 存储一区段所需页数的 log2
+    unsigned long sect_size;           // 区段可容纳元素个数
+    unsigned long allocated_sects;    // 当前已分配区段数
+    unsigned long total_sects;         // cm 日志对应的区段总数
+    unsigned long allowed_sects;       // 允许同时分配的最大区段数
+    struct cow_section *sects;         // 映射区段数组指针
+    struct snap_device *dev;           // 快照设备指针
 
-    struct cow_auto_expand_manager *auto_expand; // auto expand settings
+    struct cow_auto_expand_manager *auto_expand; // 自动扩展设置
 };
 
 /***************************COW MANAGER FUNCTIONS**************************/

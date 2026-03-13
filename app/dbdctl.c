@@ -41,19 +41,19 @@ static int parse_ul(const char *str, unsigned long *out)
     long long tmp;
     const char *c = str;
 
-    //check that string is an integer number and has a length
+    // 检查字符串为整数且非空
     do {
         if (!isdigit(*c))
             goto error;
         c++;
     } while (*c);
 
-    //convert to long long
+    // 转换为 long long
     tmp = strtoll(str, NULL, 0);
     if (errno)
         goto error;
 
-    //check boundaries
+    // 检查范围
     if (tmp < 0 || tmp == LLONG_MAX) {
         errno = ERANGE;
         goto error;
@@ -72,19 +72,19 @@ static int parse_ui(const char *str, unsigned int *out)
     long tmp;
     const char *c = str;
 
-    //check that string is an integer number and has a length
+    // 检查字符串为整数且非空
     do {
         if (!isdigit(*c))
             goto error;
         c++;
     } while (*c);
 
-    //convert to long
+    // 转换为 long
     tmp = strtol(str, NULL, 0);
     if (errno)
         goto error;
 
-    //check boundaries
+    // 检查范围
     if (tmp < 0 || tmp == LONG_MAX) {
         errno = ERANGE;
         goto error;
@@ -108,14 +108,14 @@ static int parse_ui64(const char *str, uint64_t *out)
     unsigned long long tmp;
     const char *c = str;
 
-    //check that string is an integer number and has a length
+    // 检查字符串为整数且非空
     do {
         if (!isdigit(*c))
             goto error;
         c++;
     } while (*c);
 
-    //convert to unsigned long long
+    // 转换为 unsigned long long
     tmp = strtoull(str, NULL, 0);
     if (errno)
         goto error;
@@ -135,7 +135,7 @@ static int handle_setup_snap(int argc, char **argv)
     unsigned long cache_size = 0, fallocated_space = 0;
     char *bdev, *cow;
 
-    //get cache size and fallocated space params, if given
+    // 若提供则解析缓存大小与预分配空间参数
     while ((c = getopt(argc, argv, "c:f:")) != -1) {
         switch (c) {
         case 'c':
@@ -181,7 +181,7 @@ static int handle_reload_snap(int argc, char **argv)
     unsigned long cache_size = 0;
     char *bdev, *cow;
 
-    //get cache size and fallocated space params, if given
+    // 若提供则解析缓存大小与预分配空间参数
     while ((c = getopt(argc, argv, "c:")) != -1) {
         switch (c) {
         case 'c':
@@ -222,7 +222,7 @@ static int handle_reload_inc(int argc, char **argv)
     unsigned long cache_size = 0;
     char *bdev, *cow;
 
-    //get cache size and fallocated space params, if given
+    // 若提供则解析缓存大小与预分配空间参数
     while ((c = getopt(argc, argv, "c:")) != -1) {
         switch (c) {
         case 'c':
@@ -307,7 +307,7 @@ static int handle_transition_snap(int argc, char **argv)
     unsigned long fallocated_space = 0;
     char *cow;
 
-    //get cache size and fallocated space params, if given
+    // 若提供则解析缓存大小与预分配空间参数
     while ((c = getopt(argc, argv, "f:")) != -1) {
         switch (c) {
         case 'f':
@@ -346,7 +346,7 @@ static int handle_reconfigure(int argc, char **argv)
     unsigned int minor;
     unsigned long cache_size = 0;
 
-    //get cache size and fallocated space params, if given
+    // 若提供则解析缓存大小与预分配空间参数
     while ((c = getopt(argc, argv, "c:")) != -1) {
         switch (c) {
         case 'c':
@@ -411,7 +411,7 @@ static int handle_reconfigure_auto_expand(int argc, char **argv)
     uint64_t step_size;
     uint64_t reserved_space = 0;
 
-    //get cache size and fallocated space params, if given
+    // 若提供则解析缓存大小与预分配空间参数
     while ((c = getopt(argc, argv, "r:")) != -1) {
         switch (c) {
         case 'r':
@@ -482,7 +482,7 @@ int main(int argc, char **argv)
 {
     int ret = 0;
 
-    //check argc
+    // 检查参数个数
     if (argc < 2)
         print_help(-1);
 
@@ -493,7 +493,7 @@ int main(int argc, char **argv)
         return -1;
     }
 
-    //route to appropriate handler or print help
+    // 按子命令分发到对应处理或打印帮助
     if (!strcmp(argv[1], "setup-snapshot"))
         ret = handle_setup_snap(argc - 1, argv + 1);
     else if (!strcmp(argv[1], "reload-snapshot"))

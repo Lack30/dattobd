@@ -9,7 +9,7 @@
 
 #include "includes.h"
 
-unsigned long dattobd_get_unmapped_area(struct file *file, unsigned long addr, unsigned long len, unsigned long pgoff, unsigned long flags);
+unsigned long dattobd_get_unmapped_area(struct file *file, unsigned long addr, unsigned long len,
+                                        unsigned long pgoff, unsigned long flags);
 
 #endif /* MEMORY_H_ */
- 

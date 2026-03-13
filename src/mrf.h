@@ -57,18 +57,15 @@ int dattobd_call_mrf(make_request_fn *fn, struct request_queue *q, struct bio *b
 make_request_fn *dattobd_get_gd_mrf(struct gendisk *gd);
 
 /**
- * dattobd_call_mrf_real() - Submits i/o to the real/original device.
+ * dattobd_call_mrf_real() - 将 I/O 提交到真实/原始设备。
  *
- * This function submits i/o to the real/original make_request_fn (as opposed
- * to the one we replaced for intercepting i/o) - we look up the mrf ptr from
- * the snap_device which we saved when setting up tracking, and call it with
- * our bio.
+ * 调用真实/原始的 make_request_fn（而非我们用于拦截的替换函数），从建立跟踪时
+ * 保存在 snap_device 中的 mrf 指针查找并传入我们的 bio 调用。
  *
- * @dev: the snap_device struct we set up with all of our state.
- * @bio: the in-flight i/o to be submitted to the mrf.
+ * @dev: 保存我们状态的 snap_device。
+ * @bio: 要提交给 mrf 的进行中 I/O。
  *
- * Returns:
- * * Returns the result of the mrf function call as returned by dattobd_call_mrf
+ * Return: 与 dattobd_call_mrf 相同，返回 mrf 函数调用的结果。
  */
 int dattobd_call_mrf_real(struct snap_device *dev, struct bio *bio);
 #endif

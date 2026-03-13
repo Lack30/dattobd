@@ -9,27 +9,27 @@
 
 #include "logging.h"
 
-// dattobd_bdev_stack_limits(request_queue, bdev, sector_t) -- our wrapper
+// dattobd_bdev_stack_limits(request_queue, bdev, sector_t) — 本模块封装
 
-// queue_limits_stack_bdev(queue_limits, bdev, sector_t, pfx) -- from 6.9
-// bdev_stack_limits(queue_limits, bdev, sector_t) -- from 2.6.33 up to 5.8
-// blk_stack_limits(queue_limits, queue_limits, sector_t) -- from 2.6.31
+// queue_limits_stack_bdev — 自 6.9 起
+// bdev_stack_limits — 自 2.6.33 至 5.8
+// blk_stack_limits — 自 2.6.31 起
 
-// dattobd_blk_set_stacking_limits(queue_limits) -- our wrapper
+// dattobd_blk_set_stacking_limits — 本模块封装
 
-// blk_set_stacking_limits(queue_limits) -- from 3.3
-// blk_set_default_limits(queue_limits) -- from 2.6.31 to 6.1
+// blk_set_stacking_limits — 自 3.3 起
+// blk_set_default_limits — 自 2.6.31 至 6.1
 
 
 #if defined(HAVE_QUEUE_LIMITS_STACK_BDEV)
 
-// queue_limits_stack_bdev is our top priority, if it is available -- we use it
+// 若可用则优先使用 queue_limits_stack_bdev
 
-#define dattobd_bdev_stack_limits(rq, bd, sec) queue_limits_stack_bdev(&(rq)->limits, bdev, sec, DATTO_TAG)
+#define dattobd_bdev_stack_limits(rq, bd, sec) queue_limits_stack_bdev(&(rq)->limits, bd, sec, DATTO_TAG)
 
 #else
 
-// if queue_limits_stack_bdev is not available, we use bdev_stack_limits, if it is also not available, we emulate it
+// 若无 queue_limits_stack_bdev 则用 bdev_stack_limits，再无可用时自行模拟
 
 #if !defined(HAVE_BDEV_STACK_LIMITS)
 
@@ -41,7 +41,7 @@ static int bdev_stack_limits(struct queue_limits *t, struct block_device *bdev, 
 
 #endif
 
-#define dattobd_bdev_stack_limits(rq, bd, sec) bdev_stack_limits(&(rq)->limits, bdev, sec)
+#define dattobd_bdev_stack_limits(rq, bd, sec) bdev_stack_limits(&(rq)->limits, bd, sec)
 
 #endif
 

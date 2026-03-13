@@ -7,7 +7,7 @@
 #ifndef MODULE_CONTROL_H_
 #define MODULE_CONTROL_H_
 
-// name macros
+// 名称相关宏
 #define INFO_PROC_FILE "datto-info"
 #define DRIVER_NAME "datto"
 #define CONTROL_DEVICE_NAME "datto-ctl"
@@ -16,7 +16,7 @@
 #define SNAP_MRF_THREAD_NAME_FMT "datto_snap_mrf%d"
 #define INC_THREAD_NAME_FMT "datto_inc%d"
 
-// global module parameters
+// 模块全局参数
 extern int dattobd_may_hook_syscalls;
 extern unsigned long dattobd_cow_max_memory_default;
 extern unsigned int dattobd_cow_fallocate_percentage_default;

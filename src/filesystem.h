@@ -23,8 +23,8 @@
 // #define file_unlock(filp) file_switch_lock(filp, false, false)
 // #define file_unlock_mark_dirty(filp) file_switch_lock(filp, false, true)
 
-// replaced with dattobd_mutable_file lock/unlock mechanism
-// INODE Attribute Locking is based on the S_IMMUTABLE flag
+// 已由 dattobd_mutable_file 的 lock/unlock 机制替代
+// INODE 属性锁基于 S_IMMUTABLE 标志
 // #define inode_attr_is_locked(inode) ( (inode->i_flags) & S_IMMUTABLE )
 // #define inode_attr_lock(inode) do{ inode->i_flags |= S_IMMUTABLE; } while(0)
 // #define inode_attr_unlock(inode) do{ inode->i_flags &= ~S_IMMUTABLE; } while(0)
@@ -49,7 +49,7 @@
 #define dattobd_get_nd_mnt(nd) (nd).path.mnt
 #endif
 
-// takes a value and the log of the value it should be rounded up to
+// 传入数值及向上取整的 log2 粒度
 #define NUM_SEGMENTS(x, log_size) (((x) + (1 << (log_size)) - 1) >> (log_size))
 #define SECTOR_INVALID ~(u64)0
 

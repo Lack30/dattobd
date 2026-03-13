@@ -12,7 +12,7 @@
 #include "logging.h"
 #include "snap_device.h"
 
-// macros for snapshot bio modes of operation.
+/* 快照 bio 操作模式宏 */
 #define READ_MODE_COW_FILE 1
 #define READ_MODE_BASE_DEVICE 2
 #define READ_MODE_MIXED 3
@@ -22,19 +22,17 @@
 #endif
 
 /**
- * snap_read_bio_get_mode() - Determine how to handle reading this @bio.
- * @dev: The &struct snap_device object pointer.
- * @bio: The &struct bio which describes the I/O.
- * @mode: An output indicating the computed read mode.
+ * snap_read_bio_get_mode() - 确定如何读取该 @bio。
+ * @dev: &struct snap_device 对象指针。
+ * @bio: 描述此次 I/O 的 &struct bio。
+ * @mode: 输出计算得到的读模式。
  *
- * The BIO is contained in either three cases:
- * * it is entirely in cache, READ_MODE_COW_FILE,
- * * it is entirely on the block device, READ_MODE_BASE_DEVICE,
- * * or it is a mixture of the two location, READ_MODE_MIXED.
+ * BIO 数据来源有三种：全部在 COW 缓存（READ_MODE_COW_FILE）、全部在块设备（READ_MODE_BASE_DEVICE）、
+ * 或两者混合（READ_MODE_MIXED）。
  *
  * Return:
- * * 0 - success.
- * * !0 - errno indicating the error.
+ * * 0 - 成功。
+ * * !0 - 表示错误的 errno。
  */
 static int snap_read_bio_get_mode(const struct snap_device *dev, struct bio *bio, int *mode)
 {
@@ -45,17 +43,16 @@ static int snap_read_bio_get_mode(const struct snap_device *dev, struct bio *bio
     uint64_t block_mapping, curr_byte, curr_end_byte = bio_sector(bio) * SECTOR_SIZE;
 
     bio_for_each_segment (bvec, bio, iter) {
-        // reset the number of bytes we have traversed for this bio_vec
+        // 重置本 bio_vec 已遍历的字节数
         bytes = 0;
 
-        // while we still have data left to be written into the page
         while (bytes < bio_iter_len(bio, iter)) {
-            // find the start and stop byte for our next write
+            // 确定下一段写的起止字节
             curr_byte = curr_end_byte;
             curr_end_byte += min(COW_BLOCK_SIZE - (curr_byte % COW_BLOCK_SIZE),
                                  ((uint64_t)bio_iter_len(bio, iter) - bytes));
 
-            // check if the mapping exists
+            // 检查映射是否存在
             ret = cow_read_mapping(dev->sd_cow, curr_byte / COW_BLOCK_SIZE, &block_mapping);
             if (ret)
                 goto error;
@@ -70,7 +67,6 @@ static int snap_read_bio_get_mode(const struct snap_device *dev, struct bio *bio
                 return 0;
             }
 
-            // increment the number of bytes we have written
             bytes += curr_end_byte - curr_byte;
         }
     }
@@ -84,15 +80,13 @@ error:
 }
 
 /**
- * snap_handle_read_bio() - Reads all data contained in the @bio.  The data
- *                          is either all in cache, on the block device or
- *                          a mixture of the two locations.
- * @dev: The &struct snap_device containing snap device state.
- * @bio: The &struct bio which describes the I/O.
+ * snap_handle_read_bio() - 读取 @bio 中的全部数据；数据可能全在 COW 缓存、全在块设备或两者混合。
+ * @dev: 保存快照设备状态的 &struct snap_device。
+ * @bio: 描述此次 I/O 的 &struct bio。
  *
  * Return:
- * * 0 - success.
- * * !0 - errno indicating the error.
+ * * 0 - 成功。
+ * * !0 - 表示错误的 errno。
  */
 int snap_handle_read_bio(const struct snap_device *dev, struct bio *bio)
 {
@@ -111,7 +105,7 @@ int snap_handle_read_bio(const struct snap_device *dev, struct bio *bio)
     int i = 0;
 #endif
 
-    // save the original state of the bio
+    // 保存 bio 的原始状态
     orig_private = bio->bi_private;
     orig_end_io = bio->bi_end_io;
     bio_orig_idx = bio_idx(bio);
@@ -121,13 +115,12 @@ int snap_handle_read_bio(const struct snap_device *dev, struct bio *bio)
     dattobd_bio_set_dev(bio, dev->sd_base_dev->bdev);
     dattobd_set_bio_ops(bio, REQ_OP_READ, READ_SYNC);
 
-    // detect fastpath for bios completely contained within either the cow
-    // file or the base device
+    // 检测完全落在 COW 文件或基设备内的快速路径
     ret = snap_read_bio_get_mode(dev, bio, &mode);
     if (ret)
         goto out;
 
-    // submit the bio to the base device and wait for completion
+    // 将 bio 提交到基设备并等待完成
     if (mode != READ_MODE_COW_FILE) {
         ret = dattobd_submit_bio_wait(bio);
         if (ret) {
@@ -141,21 +134,20 @@ int snap_handle_read_bio(const struct snap_device *dev, struct bio *bio)
 #endif
     }
 
-    // read the bio from the cow file
+    // 从 COW 文件读取 bio 数据
     if (mode != READ_MODE_BASE_DEVICE) {
-        // reset the bio
+        // 恢复 bio 迭代状态
         bio_idx(bio) = bio_orig_idx;
         bio_size(bio) = bio_orig_size;
         bio_sector(bio) = bio_orig_sect;
         cur_sect = bio_sector(bio);
 
-        // iteration which guarantes that we will have ownership of bvecs internals
 #ifdef HAVE_BVEC_ITER_ALL
         bio_for_each_segment_all (bvec, bio, iter) {
 #else
         bio_for_each_segment_all (bvec, bio, i) {
 #endif
-            // map the page into kernel space
+            // 将页映射到内核空间
             data = kmap(bvec->bv_page);
 
             cur_block = (cur_sect * SECTOR_SIZE) / COW_BLOCK_SIZE;
@@ -165,15 +157,14 @@ int snap_handle_read_bio(const struct snap_device *dev, struct bio *bio)
             while (bvec_off < bvec->bv_offset + bvec->bv_len) {
                 bytes_to_copy =
                         min(bvec->bv_offset + bvec->bv_len - bvec_off, COW_BLOCK_SIZE - block_off);
-                // check if the mapping exists
+                // 检查映射是否存在
                 ret = cow_read_mapping(dev->sd_cow, cur_block, &block_mapping);
                 if (ret) {
                     kunmap(bvec->bv_page);
                     goto out;
                 }
 
-                // if the mapping exists, read it into the page,
-                // overwriting the live data
+                // 若映射存在则读入页并覆盖现场数据
                 if (block_mapping) {
                     ret = cow_read_data(dev->sd_cow, data + bvec_off, block_mapping, block_off,
                                         bytes_to_copy);
@@ -189,7 +180,7 @@ int snap_handle_read_bio(const struct snap_device *dev, struct bio *bio)
                 bvec_off += bytes_to_copy;
             }
 
-            // unmap the page from kernel space
+            // 解除页的内核映射
             kunmap(bvec->bv_page);
         }
     }
@@ -202,7 +193,7 @@ out:
         bio_sector(bio) = bio_orig_sect;
     }
 
-    // revert bio's original data
+    // 恢复 bio 的原始字段
     bio->bi_private = orig_private;
     bio->bi_end_io = orig_end_io;
 
@@ -210,18 +201,14 @@ out:
 }
 
 /**
- * snap_handle_write_bio() - This writes all data in the BIO.
- * @dev: The &struct snap_device containing snap device state.
- * @bio: The &struct bio which describes the I/O.
- *
- * It will ultimately either cache/store what's already on the block device
- * before allowing new data to be written or it will just transfer the new
- * data to the block device in the event that the original data has already
- * been stored.
+ * snap_handle_write_bio() - 将 BIO 中全部数据写入；在允许新数据写入前会先缓存/保存块设备上原有数据，
+ *                           若原数据已保存则仅将新数据写入块设备。
+ * @dev: 保存快照设备状态的 &struct snap_device。
+ * @bio: 描述此次 I/O 的 &struct bio。
  *
  * Return:
- * * 0 - successful.
- * * !0 - errno indicating the error.
+ * * 0 - 成功。
+ * * !0 - 表示错误的 errno。
  */
 int snap_handle_write_bio(const struct snap_device *dev, struct bio *bio)
 {
@@ -235,8 +222,7 @@ int snap_handle_write_bio(const struct snap_device *dev, struct bio *bio)
     int i = 0;
 #endif
 
-    // iterate through the bio and handle each segment (which is guaranteed
-    // to be block aligned)
+    // 遍历 bio 并处理每段（保证按块对齐）
     const unsigned long long number_of_blocks = bio_size(bio);
     unsigned long long saved_blocks = 0;
 
@@ -246,16 +232,15 @@ int snap_handle_write_bio(const struct snap_device *dev, struct bio *bio)
     bio_for_each_segment_all (bvec, bio, i) {
 #endif
 
-        // find the start and end block
+        // 确定起止块
         start_block = end_block;
         end_block = start_block + bvec->bv_len / COW_BLOCK_SIZE;
 
-        // map the page into kernel space
+        // 将页映射到内核空间
         data = kmap(bvec->bv_page);
 
-        // loop through the blocks in the page
         for (; start_block < end_block; start_block++) {
-            // pass the block to the cow manager to be handled
+            // 将块交给 cow manager 处理
             ret = cow_write_current(dev->sd_cow, start_block, data);
             if (ret) {
                 LOG_ERROR(ret, "memory demands %llu, memory saved before crash %llu",
@@ -266,7 +251,7 @@ int snap_handle_write_bio(const struct snap_device *dev, struct bio *bio)
             saved_blocks++;
         }
 
-        // unmap the page
+        // 解除页映射
         kunmap(bvec->bv_page);
     }
 
@@ -278,14 +263,13 @@ error:
 }
 
 /**
- * inc_handle_sset() - Adds a placeholder to the mapping state maintained for
- *                     each COW block spanning the range of sectors.
- * @dev: The &struct snap_device containing snap device state.
- * @sset: The &struct sector_set which describes the I/O spaning sectors.
+ * inc_handle_sset() - 为覆盖该扇区范围的每个 COW 块在映射状态中加入占位。
+ * @dev: 保存快照设备状态的 &struct snap_device。
+ * @sset: 描述此次跨越扇区的 I/O 的 &struct sector_set。
  *
  * Return:
- * * 0 - successful
- * * !0 - errno indicating the error
+ * * 0 - 成功
+ * * !0 - 表示错误的 errno
  */
 int inc_handle_sset(const struct snap_device *dev, struct sector_set *sset)
 {

@@ -42,10 +42,10 @@ static const struct seq_operations dattobd_seq_proc_ops = {
 #ifndef HAVE_PROC_OPS
 
 /**
- * get_proc_fops() - Retrieves a file operations struct pointer
+ * get_proc_fops() - 获取文件操作结构体指针
  *
  * Return:
- * The &struct file_operations object pointer.
+ * &struct file_operations 对象指针。
  */
 const struct file_operations *get_proc_fops(void)
 {
@@ -55,10 +55,10 @@ const struct file_operations *get_proc_fops(void)
 #else // HAVE_PROC_OPS
 
 /**
- * get_proc_fops() - Retrieves a file operations struct pointer
+ * get_proc_fops() - 获取文件操作结构体指针
  *
  * Return:
- * The &struct file_operations object pointer.
+ * &struct proc_ops 对象指针。
  */
 const struct proc_ops *get_proc_fops(void)
 {
@@ -70,12 +70,12 @@ const struct proc_ops *get_proc_fops(void)
 static snap_device_array current_snap_devices = NULL;
 
 /**
- * dattobd_proc_get_idx() - Turns offset into pointer into @snap_devices array.
- * @pos: An offset into the array of @snap_devices.
+ * dattobd_proc_get_idx() - 将偏移转换为 @snap_devices 数组中的指针。
+ * @pos: 在 @snap_devices 数组中的偏移。
  *
  * Return:
- * * NULL - invalid @pos supplied, indicates "past end of file."
- * * !NULL - a void* pointer into the @snap_devices array.
+ * * NULL - @pos 无效，表示已越过文件末尾。
+ * * !NULL - 指向 @snap_devices 数组中元素的 void* 指针。
  */
 static void *dattobd_proc_get_idx(loff_t pos)
 {
@@ -85,24 +85,20 @@ static void *dattobd_proc_get_idx(loff_t pos)
 }
 
 /**
- * dattobd_proc_start() - Prepares to iterate through the @snap_devices array.
+ * dattobd_proc_start() - 准备遍历 @snap_devices 数组。
  *
- * @m: Pointer to a seq_file structure.
- * @pos: the previous offset from the last iteration session.
+ * @m: seq_file 结构体指针。
+ * @pos: 上一轮迭代的偏移。
  *
  * Return:
- * * NULL - @pos does not translate to a valid @snap_devices entry.
- * * SEQ_START_TOKEN - A new iteration from the start so print a header first.
- * * otherwise - Pointer into @snap_devices at offset @pos.
+ * * NULL - @pos 对应不到有效的 @snap_devices 项。
+ * * SEQ_START_TOKEN - 从头开始新一轮迭代，需先输出表头。
+ * * 其他 - 指向 @snap_devices 在偏移 @pos 处的指针。
  */
 static void *dattobd_proc_start(struct seq_file *m, loff_t *pos)
 {
-    /*
-         * Depending on how much we've printed thus far our *_stop() might
-         * be called followed by an invocation of this function with a non-
-         * zero @pos with the expectation that we continue from where we
-         * left off.
-         */
+    // 根据目前已输出的量，可能会先调用 *_stop()，再以非零 @pos 调用本函数，
+    // 期望从上次中断处继续。
     current_snap_devices = get_snap_device_array();
     if (*pos == 0)
         return SEQ_START_TOKEN;
@@ -110,17 +106,16 @@ static void *dattobd_proc_start(struct seq_file *m, loff_t *pos)
 }
 
 /**
- * dattobd_proc_next() - Return the next entry to *_show() and advance @pos.
+ * dattobd_proc_next() - 返回下一次要交给 *_show() 的项并推进 @pos。
  *
- * @m: The sequence file structure.
- * @v: The value last returned from *_start() or *_next()
- * @pos: The value passed in represents the position of the next item in
- *       the snap_devices array.  The value returned holds the position that
- *       start() could use to find the next snap_device.
+ * @m: 序列文件结构体。
+ * @v: *_start() 或 *_next() 上次返回的值。
+ * @pos: 传入值表示 snap_devices 中下一项的位置；返回后 *pos 为 start() 可用于
+ *       查找下一个 snap_device 的位置。
  *
  * Return:
- * * NULL - @pos does not represent a valid entry in @snap_devices.
- * * otherwise - A pointer to the entry to *_show().
+ * * NULL - @pos 不是 @snap_devices 中的有效项。
+ * * 其他 - 要交给 *_show() 的项指针。
  */
 static void *dattobd_proc_next(struct seq_file *m, void *v, loff_t *pos)
 {
@@ -129,13 +124,12 @@ static void *dattobd_proc_next(struct seq_file *m, void *v, loff_t *pos)
     return dev;
 }
 
-/** dattobd_proc_stop() - Always called at the end of iterating through the
- *                        @snap_devices array.
- * @m: The sequence file structure.
- * @v: The value last returned from *_start() or *_next()
+/**
+ * dattobd_proc_stop() - 遍历 @snap_devices 数组结束时总会调用。
+ * @m: 序列文件结构体。
+ * @v: *_start() 或 *_next() 上次返回的值。
  *
- * The end of iterating through the array is identified by a NULL return
- * value from either *_start() or *_next().
+ * 当 *_start() 或 *_next() 返回 NULL 时表示遍历结束。
  */
 static void dattobd_proc_stop(struct seq_file *m, void *v)
 {
@@ -143,13 +137,13 @@ static void dattobd_proc_stop(struct seq_file *m, void *v)
     current_snap_devices = NULL;
 }
 
-/** dattobd_proc_show() - Outputs information about a @snap_device.  Optionally
- *                        adds header and/or footer.
- * @m: The seq_file structure.
- * @v: The entry supplied from the last call to either *_start() or *_next().
+/**
+ * dattobd_proc_show() - 输出 @snap_device 的信息，可选地输出表头或表尾。
+ * @m: seq_file 结构体。
+ * @v: *_start() 或 *_next() 上次调用提供的项。
  *
  * Return:
- * Always indicates success with a zero value.
+ * 成功时恒为 0。
  */
 static int dattobd_proc_show(struct seq_file *m, void *v)
 {

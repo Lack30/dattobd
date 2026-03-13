@@ -12,12 +12,9 @@
 #ifdef HAVE_TASK_STRUCT_TASK_WORKS_HLIST
 
 /**
- * task_work_flush() - Each entry in the &task_struct->task_works field for the
- *                     current process has its func() called.  The list is
- *                     processed in reverse order.  This is a reimplementation
- *                     of task_work_run(), called before returning to user
- *                     space, to force fput() and mntput() to perform their
- *                     work synchronously.
+ * task_work_flush() - 对当前进程的 &task_struct->task_works 中每一项调用其 func()。
+ *                     按逆序处理。本函数是 task_work_run() 的重实现，在返回用户空间前
+ *                     调用，以强制 fput() 和 mntput() 同步执行其工作。
  */
 void task_work_flush(void)
 {
@@ -48,12 +45,9 @@ void task_work_flush(void)
 #elif defined HAVE_TASK_STRUCT_TASK_WORKS_CB_HEAD
 
 /**
- * task_work_flush() - Each entry in the &task_struct->task_works field for the
- *                     current process has its func() called.  The list is
- *                     processed in reverse order.  This is a reimplementation
- *                     of task_work_run(), called before returning to user
- *                     space, to force fput() and mntput() to perform their
- *                     work synchronously.
+ * task_work_flush() - 对当前进程的 &task_struct->task_works 中每一项调用其 func()。
+ *                     按逆序处理。本函数是 task_work_run() 的重实现，在返回用户空间前
+ *                     调用，以强制 fput() 和 mntput() 同步执行其工作。
  */
 void task_work_flush(void)
 {

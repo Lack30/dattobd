@@ -173,8 +173,7 @@ static int entry_mount_handler(struct kretprobe_instance *ri, struct pt_regs *re
         real_flags &= ~MS_MGC_MSK;
 
     if ((real_flags & MS_RDONLY) && (real_flags & MS_REMOUNT)) {
-        // we are remounting read-only, same as umounting as far as the
-        // driver is concerned
+        // 以只读方式重新挂载，对驱动而言等同于卸载
         ret = handle_bdev_mount_nowrite(params->dir_name, 0, &idx);
         params->ret = ret;
     }
@@ -211,11 +210,10 @@ static int ret_mount_handler(struct kretprobe_instance *ri, struct pt_regs *regs
 
     real_flags = params->flags;
     if ((real_flags & MS_RDONLY) && (real_flags & MS_REMOUNT)) {
-        // we are remounting read-only, same as umounting as far as the
-        // driver is concerned
+        // 以只读方式重新挂载，对驱动而言等同于卸载
         post_umount_check(params->ret, sys_ret, params->idx, params->dir_name);
     } else {
-        // new read-write mount
+        // 新的可读写挂载
         if (!sys_ret)
             handle_bdev_mounted_writable(params->dir_name, &params->idx);
     }
@@ -242,7 +240,7 @@ static int entry_umount_handler(struct kretprobe_instance *ri, struct pt_regs *r
             PATH_MAX);
     real_flags = pt_regs_params(regs, 1);
 
-    // get rid of the magic value if its present
+    // 若存在魔数则去掉
     if ((real_flags & MS_MGC_MSK) == MS_MGC_VAL)
         real_flags &= ~MS_MGC_MSK;
 
@@ -327,12 +325,12 @@ static struct kretprobe kretprobe_hooks[] = {
 };
 
 /**
- * register_hook() - registers and enables a single hook
- * @hook: a hook to install
- * 
+ * register_hook() - 注册并启用单个钩子。
+ * @hook: 要安装的钩子。
+ *
  * Return:
- * 0 - success
- * !0 - an errno indicating the error
+ * * 0 - 成功
+ * * !0 - 表示错误的 errno
  */
 static int register_hook(struct kretprobe *hook)
 {
@@ -350,12 +348,12 @@ static int register_hook(struct kretprobe *hook)
 }
 
 /**
- * unregister_hook() - disable and unregister a single hook
- * @hook: a hook to remove
- * 
+ * unregister_hook() - 禁用并注销单个钩子。
+ * @hook: 要移除的钩子。
+ *
  * Return:
- * 0 - success
- * !0 - an errno indicating the error
+ * * 0 - 成功
+ * * !0 - 表示错误的 errno
  */
 static int unregister_hook(struct kretprobe *hook)
 {

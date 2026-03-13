@@ -13,7 +13,7 @@
 #include "module_control.h"
 #include "blkdev.h"
 
-// macro for iterating over snap_devices (requires a null check on dev)
+/* 遍历 snap_devices 的宏（使用前需对 dev 做空指针检查） */
 #define tracer_for_each(dev, i)                                                                    \
     for (i = ACCESS_ONCE(lowest_minor), dev = ACCESS_ONCE(snap_devices[i]);                        \
          i <= ACCESS_ONCE(highest_minor); i++, dev = ACCESS_ONCE(snap_devices[i]))
@@ -21,67 +21,62 @@
     for (i = 0, dev = ACCESS_ONCE(snap_devices[i]); i < dattobd_max_snap_devices;                  \
          i++, dev = ACCESS_ONCE(snap_devices[i]))
 
-// returns true if tracing struct's base device queue matches that of bio
+/* 跟踪结构的底层设备队列与 bio 的队列一致时为 true */
 #define tracer_queue_matches_bio(dev, bio)                                                         \
     (bdev_get_queue((dev)->sd_base_dev->bdev) == dattobd_bio_get_queue(bio))
 
-// returns true if tracing struct's sector range matches the sector of the bio
+/* 跟踪结构的扇区范围包含该 bio 的扇区时为 true */
 #define tracer_sector_matches_bio(dev, bio)                                                        \
     (bio_sector(bio) >= (dev)->sd_sect_off && bio_sector(bio) < (dev)->sd_sect_off + (dev)->sd_size)
 
 /**
- * tracer_is_bio_for_dev() - Check if bio is intended for given snap_device.
+ * tracer_is_bio_for_dev() - 判断 bio 是否针对给定 snap_device。
  *
- * returns true if bio's queue matches the devices' queue and partition, and if
- * bio has a size, tracing struct is in non-fail state, and the
- * device's sector range matches the bio.
+ * 当 bio 的队列与设备队列及分区一致、bio 有大小、跟踪结构处于非失败状态、
+ * 且设备扇区范围包含该 bio 时返回 true。
  *
- * @dev: The snap_device to check the bio against.
- * @bio: The bio to check the snap device against.
+ * @dev: 要与之比较的 snap_device。
+ * @bio: 要与之比较的 bio。
  *
- * Return: True if bio is for dev (+ conditions described above). 
- *         False otherwise.
+ * Return: 满足上述条件且 bio 针对 dev 时为 true，否则 false。
  */
 bool tracer_is_bio_for_dev(struct snap_device *dev, struct bio *bio);
 
 /**
- * tracer_is_bio_for_dev_only_queue() - Check if bio is intended for given snap_device.
+ * tracer_is_bio_for_dev_only_queue() - 仅按队列判断 bio 是否针对给定 snap_device。
  *
- * returns true if bio's queue matches the devices' queue
+ * bio 的队列与设备队列一致时返回 true。
  *
- * @dev: The snap_device to check the bio against.
- * @bio: The bio to check the snap device against.
+ * @dev: 要与之比较的 snap_device。
+ * @bio: 要与之比较的 bio。
  *
- * Return: True if bio is for devs queue originally. 
- *         False otherwise.
+ * Return: bio 原本属于 dev 的队列时为 true，否则 false。
  */
 bool tracer_is_bio_for_dev_only_queue(struct snap_device *dev, struct bio *bio);
 
 /**
- * tracer_should_trace_bio() - Check if given bio should be traced.
+ * tracer_should_trace_bio() - 判断给定 bio 是否应被跟踪。
  *
- * Return: Returns true if dev is not null
- *         and if bio has a size, is a write, and it's tracing struct is in a
- *         non-fail state, and the device's sector range matches the bio.
+ * Return: dev 非空且 bio 有大小、为写请求、跟踪结构处于非失败状态、
+ *         设备扇区范围包含该 bio 时返回 true。
  */
 bool tracer_should_trace_bio(struct snap_device *dev, struct bio *bio);
 
 struct snap_device;
 
 /**
- * tracer_read_fail_state() - Returns the error code currently set for the
- *                            &struct snap_device.
- * @dev: The &struct snap_device object pointer.
+ * tracer_read_fail_state() - 返回当前为 &struct snap_device 设置的错误码。
+ * @dev: &struct snap_device 对象指针。
  *
- * Return: the error code, zero indicates no error set.
+ * Return: 错误码，0 表示未设置错误。
  */
 int tracer_read_fail_state(const struct snap_device *dev);
 
 /**
- * tracer_set_fail_state() - Sets an error code for the &struct snap_device.
+ * tracer_set_fail_state() - 为 &struct snap_device 设置错误码。
  *
- * @dev: The &struct snap_device object pointer.
- * @error: The error to set.
+ * @dev: &struct snap_device 对象指针。
+ * @error: 要设置的错误码。
  */
 void tracer_set_fail_state(struct snap_device *dev, int error);
 

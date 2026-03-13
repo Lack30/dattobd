@@ -17,13 +17,11 @@
 #endif
 
 /**
- * dattobd_bio_get_queue() - Gets the request queue for the given block
- * I/O operation.
+ * dattobd_bio_get_queue() - 获取给定块 I/O 操作对应的请求队列。
  *
- * @bio: The &struct bio which describes the I/O
+ * @bio: 描述此次 I/O 的 &struct bio。
  *
- * Return:
- * The @request_queue containing the @bio.
+ * Return: 包含该 @bio 的 request_queue。
  */
 struct request_queue *dattobd_bio_get_queue(struct bio *bio)
 {
@@ -36,11 +34,10 @@ struct request_queue *dattobd_bio_get_queue(struct bio *bio)
 }
 
 /**
- * dattobd_bio_set_dev() - Sets the block device associated with the
- * block I/O operation.
+ * dattobd_bio_set_dev() - 设置与该块 I/O 操作关联的块设备。
  *
- * @bio: The &struct bio which describes the I/O
- * @bdev: The associated block device.
+ * @bio: 描述此次 I/O 的 &struct bio。
+ * @bdev: 关联的块设备。
  */
 void dattobd_bio_set_dev(struct bio *bio, struct block_device *bdev)
 {
@@ -53,9 +50,9 @@ void dattobd_bio_set_dev(struct bio *bio, struct block_device *bdev)
 }
 
 /**
- * dattobd_bio_copy_dev() - copies the block I/O operation from @src to @dst
- * @src: the source bio
- * @dst: the destination bio
+ * dattobd_bio_copy_dev() - 将块 I/O 的块设备从 @src 复制到 @dst。
+ * @src: 源 bio。
+ * @dst: 目标 bio。
  */
 void dattobd_bio_copy_dev(struct bio *dst, struct bio *src)
 {
@@ -75,7 +72,7 @@ void dattobd_bio_copy_dev(struct bio *dst, struct bio *src)
 #define REQ_FLUSH (1 << BIO_RW_BARRIER)
 #endif
 
-// if these don't exist they are not supported
+/* 若未定义则表示内核不支持 */
 #ifndef REQ_SECURE
 #define REQ_SECURE 0
 #endif
@@ -89,12 +86,11 @@ void dattobd_bio_copy_dev(struct bio *dst, struct bio *src)
 
 #ifndef HAVE_ENUM_REQ_OP
 /**
- * dattobd_set_bio_ops() - Sets the I/O operation and additional flags in the
- * @bio.
+ * dattobd_set_bio_ops() - 设置 @bio 的 I/O 操作类型及附加标志。
  *
- * @bio: The &struct bio which describes the I/O
- * @op: The operation to be performed.
- * @op_flags: Additional flags.
+ * @bio: 描述此次 I/O 的 &struct bio。
+ * @op: 要执行的操作。
+ * @op_flags: 附加标志。
  */
 void dattobd_set_bio_ops(struct bio *bio, req_op_t op, unsigned op_flags)
 {
@@ -132,14 +128,12 @@ void dattobd_set_bio_ops(struct bio *bio, req_op_t op, unsigned op_flags)
 }
 #endif
 /**
- * dattobd_bio_op_flagged() - Checks the bio for a given flag.
+ * dattobd_bio_op_flagged() - 检查 bio 是否包含指定标志。
  *
- * @bio: The &struct bio which describes the I/O
- * @flag: The operation flag to test.
+ * @bio: 描述此次 I/O 的 &struct bio。
+ * @flag: 要检查的操作标志。
  *
- * Return:
- * * 0 - not set
- * * !0 - set
+ * Return: 0 表示未设置，非 0 表示已设置。
  */
 int dattobd_bio_op_flagged(struct bio *bio, unsigned int flag)
 {
@@ -147,11 +141,10 @@ int dattobd_bio_op_flagged(struct bio *bio, unsigned int flag)
 }
 
 /**
- * dattobd_bio_op_set_flag() - Sets the given flag in the bio I/O
- * operation flags field.
+ * dattobd_bio_op_set_flag() - 在 bio I/O 操作标志字段中设置指定标志。
  *
- * @bio: The &struct bio which describes the I/O
- * @flag: The operation flag to set.
+ * @bio: 描述此次 I/O 的 &struct bio。
+ * @flag: 要设置的标志。
  */
 void dattobd_bio_op_set_flag(struct bio *bio, unsigned int flag)
 {
@@ -159,11 +152,10 @@ void dattobd_bio_op_set_flag(struct bio *bio, unsigned int flag)
 }
 
 /**
- * dattobd_bio_op_clear_flag() - Clears the given flag in the bio I/O
- * operation flags field.
+ * dattobd_bio_op_clear_flag() - 清除 bio I/O 操作标志字段中的指定标志。
  *
- * @bio: The &struct bio which describes the I/O
- * @flag: The operation flag to clear.
+ * @bio: 描述此次 I/O 的 &struct bio。
+ * @flag: 要清除的标志。
  */
 void dattobd_bio_op_clear_flag(struct bio *bio, unsigned int flag)
 {
@@ -179,11 +171,11 @@ typedef enum req_opf req_op_t;
 #endif
 
 /**
- * dattobd_set_bio_ops() - Sets the op and its flags.
+ * dattobd_set_bio_ops() - 设置 bio 的操作类型及标志。
  *
- * @bio: The &struct bio which describes the I/O
- * @op: The operation to be performed.
- * @op_flags: Additional flags.
+ * @bio: 描述此次 I/O 的 &struct bio。
+ * @op: 要执行的操作。
+ * @op_flags: 附加标志。
  */
 void dattobd_set_bio_ops(struct bio *bio, req_op_t op, unsigned op_flags)
 {
@@ -192,14 +184,12 @@ void dattobd_set_bio_ops(struct bio *bio, req_op_t op, unsigned op_flags)
 }
 
 /**
- * dattobd_bio_op_flagged() - Checks the bio for a given flag.
+ * dattobd_bio_op_flagged() - 检查 bio 是否包含指定标志。
  *
- * @bio: The &struct bio which describes the I/O
- * @flag: The operation flag to test.
+ * @bio: 描述此次 I/O 的 &struct bio。
+ * @flag: 要检查的操作标志。
  *
- * Return:
- * * 0 - not set
- * * !0 - set
+ * Return: 0 表示未设置，非 0 表示已设置。
  */
 int dattobd_bio_op_flagged(struct bio *bio, unsigned int flag)
 {
@@ -207,11 +197,10 @@ int dattobd_bio_op_flagged(struct bio *bio, unsigned int flag)
 }
 
 /**
- * dattobd_bio_op_set_flag() - Sets the given flag in the bio I/O
- * operation flags field.
+ * dattobd_bio_op_set_flag() - 在 bio I/O 操作标志字段中设置指定标志。
  *
- * @bio: The &struct bio which describes the I/O
- * @flag: The operation flag to set.
+ * @bio: 描述此次 I/O 的 &struct bio。
+ * @flag: 要设置的标志。
  */
 void dattobd_bio_op_set_flag(struct bio *bio, unsigned int flag)
 {
@@ -219,11 +208,10 @@ void dattobd_bio_op_set_flag(struct bio *bio, unsigned int flag)
 }
 
 /**
- * dattobd_bio_op_clear_flag() - Clears the given flag in the bio I/O
- * operation flags field.
+ * dattobd_bio_op_clear_flag() - 清除 bio I/O 操作标志字段中的指定标志。
  *
- * @bio: The &struct bio which describes the I/O
- * @flag: The operation flag to clear.
+ * @bio: 描述此次 I/O 的 &struct bio。
+ * @flag: 要清除的标志。
  */
 void dattobd_bio_op_clear_flag(struct bio *bio, unsigned int flag)
 {
@@ -240,12 +228,10 @@ struct submit_bio_ret {
 };
 
 /**
- * __submit_bio_wait_endio() - Common endio completion routine used across
- * various versions of OS.
- * see http://canali.hopto.org/linux/source/kernel/sched/completion.c?v=4.14.14
+ * __submit_bio_wait_endio() - 各内核版本共用的 endio 完成例程。
  *
- * @bio: The &struct bio which describes the I/O
- * @error: an errno
+ * @bio: 描述此次 I/O 的 &struct bio。
+ * @error: 错误码（errno）。
  */
 static void __submit_bio_wait_endio(struct bio *bio, int error)
 {
@@ -257,16 +243,13 @@ static void __submit_bio_wait_endio(struct bio *bio, int error)
 #ifdef HAVE_BIO_ENDIO_INT
 
 /**
- * submit_bio_wait_endio() - Intended to be used as the end I/O routine for a
- * @struct bio
+ * submit_bio_wait_endio() - 用作 &struct bio 的 I/O 结束例程。
  *
- * @bio: The &struct bio which describes the I/O
- * @bytes: unused
- * @error: an errno
+ * @bio: 描述此次 I/O 的 &struct bio。
+ * @bytes: 未使用。
+ * @error: 错误码（errno）。
  *
- * Return:
- * * 0 - I/O has ended on this whole bio.
- * * 1 - The &struct bio has bytes remaining
+ * Return: 0 表示整个 bio 的 I/O 已结束，1 表示该 bio 还有剩余字节。
  */
 static int submit_bio_wait_endio(struct bio *bio, unsigned int bytes, int error)
 {
@@ -280,11 +263,10 @@ static int submit_bio_wait_endio(struct bio *bio, unsigned int bytes, int error)
 #else
 
 /**
- * submit_bio_wait_endio() - Intended to be used as the end I/O routine for a
- * @struct bio
+ * submit_bio_wait_endio() - 用作 &struct bio 的 I/O 结束例程。
  *
- * @bio: The &struct bio which describes the I/O
- * @error: an errno
+ * @bio: 描述此次 I/O 的 &struct bio。
+ * @error: 错误码（errno）。
  */
 static void submit_bio_wait_endio(struct bio *bio, int error)
 {
@@ -294,21 +276,18 @@ static void submit_bio_wait_endio(struct bio *bio, int error)
 #endif
 
 /**
- * submit_bio_wait() - submit a bio and wait until it completes
+ * submit_bio_wait() - 提交 bio 并等待其完成。
  *
- * @rw: flags, i.e., whether to READ or WRITE, or maybe to READA (read ahead).
- * @bio: The &struct bio which describes the I/O.
+ * @rw: 标志（如 READ、WRITE 或 READA 预读）。
+ * @bio: 描述此次 I/O 的 &struct bio。
  *
- * Return:
- * * 0 - success.
- * * !0 - errno indicating the error.
+ * Return: 0 表示成功，非 0 为表示错误的 errno。
  */
 int submit_bio_wait(int rw, struct bio *bio)
 {
     struct submit_bio_ret ret;
 
-    // kernel implementation has the line below, but all our calls will have
-    // this already and it changes across kernel versions rw |= REQ_SYNC;
+    // 内核实现中有 rw |= REQ_SYNC，但我们所有调用处已设置且该写法随内核版本变化
 
     init_completion(&ret.event);
     bio->bi_private = &ret;
@@ -324,10 +303,10 @@ int submit_bio_wait(int rw, struct bio *bio)
 #ifdef HAVE_BIO_ENDIO_INT
 
 /**
- * dattobd_bio_endio() - end I/O on a bio
+ * dattobd_bio_endio() - 结束 bio 的 I/O。
  *
- * @bio: The &struct bio which describes the I/O
- * @err: an errno
+ * @bio: 描述此次 I/O 的 &struct bio。
+ * @err: 错误码（errno）。
  */
 void dattobd_bio_endio(struct bio *bio, int err)
 {
@@ -337,10 +316,10 @@ void dattobd_bio_endio(struct bio *bio, int err)
 #elif !defined HAVE_BIO_ENDIO_1
 
 /**
- * dattobd_bio_endio - end I/O on a bio
+ * dattobd_bio_endio() - 结束 bio 的 I/O。
  *
- * @bio: The &struct bio which describes the I/O
- * @err: an errno
+ * @bio: 描述此次 I/O 的 &struct bio。
+ * @err: 错误码（errno）。
  */
 void dattobd_bio_endio(struct bio *bio, int err)
 {
@@ -350,10 +329,10 @@ void dattobd_bio_endio(struct bio *bio, int err)
 #elif defined HAVE_BLK_STATUS_T
 
 /**
- * dattobd_bio_endio - end I/O on a bio
+ * dattobd_bio_endio() - 结束 bio 的 I/O。
  *
- * @bio: The &struct bio which describes the I/O
- * @err: an errno
+ * @bio: 描述此次 I/O 的 &struct bio。
+ * @err: 错误码（errno）。
  */
 void dattobd_bio_endio(struct bio *bio, int err)
 {
@@ -364,10 +343,10 @@ void dattobd_bio_endio(struct bio *bio, int err)
 #else
 
 /**
- * dattobd_bio_endio - end I/O on a bio
+ * dattobd_bio_endio() - 结束 bio 的 I/O。
  *
- * @bio: The &struct bio which describes the I/O
- * @err: an errno
+ * @bio: 描述此次 I/O 的 &struct bio。
+ * @err: 错误码（errno）。
  */
 void dattobd_bio_endio(struct bio *bio, int err)
 {
@@ -378,16 +357,12 @@ void dattobd_bio_endio(struct bio *bio, int err)
 #endif
 
 /**
- * __on_bio_read_complete() - A private shared implemention of the completion
- *                            procedure executed whenever the I/O operation on
- *                            the &struct bio is complete.
- * @bio: The &struct bio which describes the I/O
- * @err: an errno
+ * __on_bio_read_complete() - &struct bio 的 I/O 完成时执行的私有完成例程。
+ * @bio: 描述此次 I/O 的 &struct bio。
+ * @err: 错误码（errno）。
  *
- * This completion routine is used when a write operation BIO is received and
- * a COW operation is required.  The write BIO is first cloned as a read BIO
- * and this is used by the cloned BIO as a completion routine.  This BIO is
- * handed off to the COW thread for further processing.
+ * 当收到写请求且需要 COW 时，先将写 BIO 克隆为读 BIO，本函数作为克隆 BIO 的完成例程；
+ * 完成后将该 BIO 交给 COW 线程继续处理。
  */
 static void __on_bio_read_complete(struct bio *bio, int err)
 {
@@ -399,18 +374,18 @@ static void __on_bio_read_complete(struct bio *bio, int err)
     unsigned short i = 0;
 #endif
 
-    // check for read errors
+    // 检查读错误
     if (err) {
         ret = err;
         LOG_ERROR(ret, "error reading from base device for copy on write");
         goto error;
     }
 
-    // change the bio into a write bio
+    // 将 bio 改为写 bio
     dattobd_set_bio_ops(bio, REQ_OP_WRITE, 0);
     bio->bi_end_io = NULL;
 
-    // reset the bio iterator to its original state
+    // 将 bio 迭代器恢复为原始状态
     for (map = tp->bio_sects.head; map != NULL && map->bio != NULL; map = map->next) {
         if (bio == map->bio) {
             bio_sector(bio) = map->sect - dev->sd_sect_off;
@@ -420,10 +395,8 @@ static void __on_bio_read_complete(struct bio *bio, int err)
         }
     }
 
-    /*
-     * Reset the position in each bvec. Unnecessary with bvec iterators.
-     * Will cause multipage bvec capable kernels to lock up.
-     */
+    // Reset the position in each bvec. Unnecessary with bvec iterators.
+    // Will cause multipage bvec capable kernels to lock up.
 #ifndef HAVE_BVEC_ITER
     //#if LINUX_VERSION_CODE < KERNEL_VERSION(3,14,0)
     for (i = 0; i < bio->bi_vcnt; i++) {
@@ -432,18 +405,16 @@ static void __on_bio_read_complete(struct bio *bio, int err)
     }
 #endif
 
-    /*
-     * drop our reference to the tp (will queue the orig_bio if nobody else
-     * is using it) at this point we set bi_private to the snap_device and
-     * change the destructor to use that instead. This only matters on older
-     * kernels
-     */
+    // drop our reference to the tp (will queue the orig_bio if nobody else
+    // is using it) at this point we set bi_private to the snap_device and
+    // change the destructor to use that instead. This only matters on older
+    // kernels
     bio->bi_private = dev;
 #ifndef HAVE_BIO_BI_POOL
     bio->bi_destructor = bio_destructor_snap_dev;
 #endif
 
-    // queue cow bio for processing by kernel thread
+    // 将 COW bio 入队由内核线程处理
     bio_queue_add(&dev->sd_cow_bios, bio);
     atomic64_inc(&dev->sd_received_cnt);
     smp_wmb();
@@ -462,17 +433,13 @@ error:
 #ifdef HAVE_BIO_ENDIO_INT
 
 /**
- * on_bio_read_complete() - The completion procedure executed whenever
- * the I/O operation on the &struct bio is complete.  It's meant to be
- * assigned to the bi_end_io field of a &struct bio.
+ * on_bio_read_complete() - &struct bio 的 I/O 完成时执行，可赋给 bi_end_io。
  *
- * @bio: The &struct bio which describes the I/O
- * @bytes: unused
- * @err: an errno
+ * @bio: 描述此次 I/O 的 &struct bio。
+ * @bytes: 未使用。
+ * @err: 错误码（errno）。
  *
- * Return:
- * * 0 - I/O has ended on this whole bio.
- * * 1 - The &struct bio has bytes remaining
+ * Return: 0 表示整个 bio 的 I/O 已结束，1 表示该 bio 还有剩余字节。
  */
 static int on_bio_read_complete(struct bio *bio, unsigned int bytes, int err)
 {
@@ -485,16 +452,12 @@ static int on_bio_read_complete(struct bio *bio, unsigned int bytes, int err)
 #elif !defined HAVE_BIO_ENDIO_1
 
 /**
- * on_bio_read_complete() - The completion procedure executed whenever
- * the I/O operation on the &struct bio is complete.  It's meant to be
- * assigned to the bi_end_io field of a &struct bio.
+ * on_bio_read_complete() - &struct bio 的 I/O 完成时执行，可赋给 bi_end_io。
  *
- * @bio: The &struct bio which describes the I/O
- * @err: an errno
+ * @bio: 描述此次 I/O 的 &struct bio。
+ * @err: 错误码（errno）。
  *
- * Return:
- * * 0 - I/O has ended on this whole bio.
- * * 1 - The &struct bio has bytes remaining
+ * Return: 0 表示整个 bio 的 I/O 已结束，1 表示该 bio 还有剩余字节。
  */
 static void on_bio_read_complete(struct bio *bio, int err)
 {
@@ -506,15 +469,11 @@ static void on_bio_read_complete(struct bio *bio, int err)
 #elif defined HAVE_BLK_STATUS_T
 
 /**
- * on_bio_read_complete() - The completion procedure executed whenever
- * the I/O operation on the &struct bio is complete.  It's meant to be
- * assigned to the bi_end_io field of a &struct bio.
+ * on_bio_read_complete() - &struct bio 的 I/O 完成时执行，可赋给 bi_end_io。
  *
- * @bio: The &struct bio which describes the I/O
+ * @bio: 描述此次 I/O 的 &struct bio。
  *
- * Return:
- * * 0: I/O has ended on this whole bio.
- * * 1: The &struct bio has bytes remaining
+ * Return: 0 表示整个 bio 的 I/O 已结束，1 表示该 bio 还有剩余字节。
  */
 static void on_bio_read_complete(struct bio *bio)
 {
@@ -524,15 +483,11 @@ static void on_bio_read_complete(struct bio *bio)
 #else
 
 /**
- * on_bio_read_complete() - The completion procedure executed whenever
- * the I/O operation on the &struct bio is complete.  It's meant to be
- * assigned to the bi_end_io field of a &struct bio.
+ * on_bio_read_complete() - &struct bio 的 I/O 完成时执行，可赋给 bi_end_io。
  *
- * @bio: The &struct bio which describes the I/O
+ * @bio: 描述此次 I/O 的 &struct bio。
  *
- * Return:
- * * 0 - I/O has ended on this whole bio.
- * * 1 - The &struct bio has bytes remaining
+ * Return: 0 表示整个 bio 的 I/O 已结束，1 表示该 bio 还有剩余字节。
  */
 static void on_bio_read_complete(struct bio *bio)
 {
@@ -541,13 +496,11 @@ static void on_bio_read_complete(struct bio *bio)
 #endif
 
 /**
- * page_get_inode() - Get the inode hosting the page, if there is one
+ * page_get_inode() - 获取承载该页的 inode（若存在）。
  *
- * @pg: the &struct page
+ * @pg: &struct page 指针。
  *
- * Return:
- * * The &struct inode if there is one
- * * NULL otherwise
+ * Return: 存在则返回 &struct inode，否则 NULL。
  */
 struct inode *page_get_inode(struct page *pg)
 {
@@ -555,8 +508,7 @@ struct inode *page_get_inode(struct page *pg)
         return NULL;
     }
 
-    // page_mapping() was not exported until 4.8, use
-    // compound_head() instead
+    // 4.8 之前 page_mapping() 未导出，改用 compound_head()
 #ifdef HAVE_COMPOUND_HEAD
     //#if LINUX_VERSION_CODE >= KERNEL_VERSION(2.6.22)
     pg = compound_head(pg);
@@ -571,15 +523,12 @@ struct inode *page_get_inode(struct page *pg)
 }
 
 /**
- * bio_needs_cow() - Test to see if the &struct bio contains a write request
- * or if the bio inodes don't match our cow file.
+ * bio_needs_cow() - 判断 &struct bio 是否为写请求或页面对应 inode 与 COW 文件不一致。
  *
- * @bio: The &struct bio which describes the I/O.
- * @inode: The inode of the directory containing the cow file.
+ * @bio: 描述此次 I/O 的 &struct bio。
+ * @inode: 包含 COW 文件的目录的 inode。
  *
- * Return:
- * * 0 - does not need to be copied.
- * * !0 - does need to be copied.
+ * Return: 0 表示不需要复制，非 0 表示需要复制。
  */
 int bio_needs_cow(struct bio *bio, struct inode *inode)
 {
@@ -593,7 +542,7 @@ int bio_needs_cow(struct bio *bio, struct inode *inode)
         return 1;
 #endif
 
-    // check the inode of each page return true if it does not match our cow file
+    // 检查每页 inode，与 COW 文件不一致则返回 true
     bio_for_each_segment (bvec, bio, iter) {
         if (page_get_inode(bio_iter_page(bio, iter)) != inode)
             return 1;
@@ -604,9 +553,9 @@ int bio_needs_cow(struct bio *bio, struct inode *inode)
 
 #ifndef HAVE_BIO_BI_POOL
 /**
- * bio_destructor_tp - A destructor method invoked when a bio is being freed.
+ * bio_destructor_tp - bio 释放时调用的析构方法。
  *
- * @bio: The &struct bio which describes the I/O
+ * @bio: 描述此次 I/O 的 &struct bio。
  */
 static void bio_destructor_tp(struct bio *bio)
 {
@@ -615,11 +564,9 @@ static void bio_destructor_tp(struct bio *bio)
 }
 
 /**
- * bio_destructor_snap_dev() - Used as completion routine to free the
- * &struct bio and return it to the bioset contained in the
- * &struct snap_device
+ * bio_destructor_snap_dev() - 释放 &struct bio 并将其归还 &struct snap_device 内的 bioset。
  *
- * @bio: The &struct bio which describes the I/O
+ * @bio: 描述此次 I/O 的 &struct bio。
  */
 static void bio_destructor_snap_dev(struct bio *bio)
 {
@@ -630,11 +577,9 @@ static void bio_destructor_snap_dev(struct bio *bio)
 
 #ifndef HAVE_BIO_FREE_PAGES
 /**
- * bio_free_pages - Frees up bio pages
+ * bio_free_pages() - 释放 bio 占用的页。
  *
- * @bio: The &struct bio which describes the I/O
- * 
- * See https://github.com/torvalds/linux/blob/v6.3/block/bio.c#L1434
+ * @bio: 描述此次 I/O 的 &struct bio。
  */
 static void bio_free_pages(struct bio *bio)
 {
@@ -655,12 +600,11 @@ static void bio_free_pages(struct bio *bio)
 #endif
 
 /**
- * bio_free_clone() - Cleans up a bio allocated with bio_make_read_clone().
+ * bio_free_clone() - 释放由 bio_make_read_clone() 分配的 bio。
  *
- * @bio: The &struct bio which describes the I/O
+ * @bio: 描述此次 I/O 的 &struct bio。
  *
- * This is used indirectly by the endio completion routine set for the
- * cloned &struct bio.
+ * 由克隆 bio 的 endio 完成例程间接调用。
  */
 void bio_free_clone(struct bio *bio)
 {
@@ -669,26 +613,19 @@ void bio_free_clone(struct bio *bio)
 }
 
 /**
- * bio_make_read_clone() - Creates a new &struct bio to read all data
- * contained in an existing bio.
+ * bio_make_read_clone() - 创建新的 &struct bio，用于读取现有 bio 中的全部数据。
  *
- * @bs: the allocation pool used to allocate the new &struct bio
- * @tp: The &struct tracing_params carried along with the output @struct bio
- * @orig_bio: The @struct bio to be constructed to read all data from the
- * original bio
- * @sect: The starting sector within the input &struct bio
- * @pages: The number of pages contained in the input &struct bio
- * @bio_out: The bio created for READing the pages contained in the input
- * @orig_bio
- * @bytes_added: The number of bytes contained in @bio_out
+ * @bs: 分配新 bio 使用的池。
+ * @tp: 与输出 bio 一起传递的 &struct tracing_params。
+ * @orig_bio: 要从其读取数据的原始 bio。
+ * @sect: 输入 bio 内的起始扇区。
+ * @pages: 输入 bio 包含的页数。
+ * @bio_out: 为读取 orig_bio 中页而创建的 bio。
+ * @bytes_added: @bio_out 包含的字节数。
  *
- * It is possible that all of the data contained in the original bio
- * will not be contained in the new which requires that additional calls
- * be made to completely read the original bio.
+ * 新 bio 可能无法包含原 bio 的全部数据，需多次调用才能读完原 bio。
  *
- * Return:
- * * 0 - success
- * * !0 - failure
+ * Return: 0 表示成功，非 0 表示失败。
  */
 int bio_make_read_clone(struct bio_set *bs, struct tracing_params *tp, struct bio *orig_bio,
                         sector_t sect, unsigned int pages, struct bio **bio_out,
@@ -706,9 +643,7 @@ int bio_make_read_clone(struct bio_set *bs, struct tracing_params *tp, struct bi
     unsigned int actual_pages = (pages > BIO_MAX_VECS) ? BIO_MAX_VECS : pages;
 #endif
 
-    // allocate bio clone, instruct the allocator to not make I/O requests
-    // while trying to allocate memory to prevent any possible lock
-    // contention.
+    // 分配 bio 克隆；分配时禁止发起 I/O 以免锁竞争
 #ifdef HAVE_BIO_ALLOC_BIOSET_5
     new_bio = bio_alloc_bioset(orig_bio->bi_bdev, actual_pages, REQ_OP_READ, GFP_NOIO, bs);
 #else
@@ -724,7 +659,7 @@ int bio_make_read_clone(struct bio_set *bs, struct tracing_params *tp, struct bi
     new_bio->bi_destructor = bio_destructor_tp;
 #endif
 
-    // populate read bio
+    // 填充读 bio
     new_bio->bi_private = tp;
     new_bio->bi_end_io = on_bio_read_complete;
     dattobd_bio_copy_dev(new_bio, orig_bio);
@@ -741,9 +676,9 @@ int bio_make_read_clone(struct bio_set *bs, struct tracing_params *tp, struct bi
     bio_set_flag(new_bio, BIO_REMAPPED);
 #endif
 
-    // fill the bio with pages
+    // 用页填充 bio
     for (i = 0; i < actual_pages; i++) {
-        // allocate a page and add it to our bio
+        // 分配一页并加入 bio
         pg = alloc_page(GFP_NOIO);
         if (!pg) {
             ret = -ENOMEM;
@@ -751,7 +686,7 @@ int bio_make_read_clone(struct bio_set *bs, struct tracing_params *tp, struct bi
             goto error;
         }
 
-        // add the page to the bio
+        // 将页加入 bio
         bytes = bio_add_page(new_bio, pg, PAGE_SIZE, 0);
         if (bytes != PAGE_SIZE) {
             __free_page(pg);
@@ -764,7 +699,7 @@ int bio_make_read_clone(struct bio_set *bs, struct tracing_params *tp, struct bi
     *bytes_added = total;
     *bio_out = new_bio;
 
-    // increase ref when everything is fine
+    // 一切正常时增加引用
     tp_get(tp);
     return 0;
 

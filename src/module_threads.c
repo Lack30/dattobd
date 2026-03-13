@@ -16,20 +16,18 @@
 #include "submit_bio.h"
 #include "tracer_helper.h"
 
-// this is defined in 3.16 and up
+/* MIN_NICE 在 3.16 及以上内核中定义 */
 #ifndef MIN_NICE
 #define MIN_NICE -20
 #endif
 
 /**
- * inc_sset_thread() - The thread entry that dequeues sector sets
- *                     and hands them off for processing.
- * @data: the &struct snap_device object pointer.
+ * inc_sset_thread() - 线程入口：从队列取出 sector set 并交给处理逻辑。
+ * @data: &struct snap_device 对象指针。
  *
- * If there is an error the queue is cleaned up and all ssets remaining are
- * freed without further processing.
+ * 若发生错误则清空队列，剩余 sset 直接释放不再处理。
  *
- * Return: always zero.
+ * Return: 恒为 0。
  */
 int inc_sset_thread(void *data)
 {
@@ -38,11 +36,11 @@ int inc_sset_thread(void *data)
     struct sset_queue *sq = &dev->sd_pending_ssets;
     struct sector_set *sset;
 
-    // give this thread the highest priority we are allowed
+    // 将本线程设为允许的最高优先级
     set_user_nice(current, MIN_NICE);
 
     while (!kthread_should_stop() || !sset_queue_empty(sq)) {
-        // wait for a sset to process or a kthread_stop call
+        // 等待待处理 sset 或 kthread_stop 调用
         wait_event_interruptible(sq->event, kthread_should_stop() || !sset_queue_empty(sq));
 
         if (!is_failed && tracer_read_fail_state(dev)) {
@@ -56,24 +54,23 @@ int inc_sset_thread(void *data)
         if (sset_queue_empty(sq))
             continue;
 
-        // safely dequeue a sset
+        // 安全出队一个 sset
         sset = sset_queue_dequeue(sq);
 
-        // if there has been a problem don't process any more, just free
-        // the ones we have
+        // 若已出错则不再处理，仅释放已有项
         if (is_failed) {
             kfree(sset);
             continue;
         }
 
-        // pass the sset to the handler
+        // 将 sset 交给处理函数
         ret = inc_handle_sset(dev, sset);
         if (ret) {
             LOG_ERROR(ret, "error handling sector set in kernel thread");
             tracer_set_fail_state(dev, ret);
         }
 
-        // free the sector set
+        // 释放 sector set
         kfree(sset);
     }
 
@@ -81,12 +78,11 @@ int inc_sset_thread(void *data)
 }
 
 /**
- * snap_cow_thread() - Processes BIOs by passing each to an appropriate
- * read or write handler.
+ * snap_cow_thread() - 依次将 BIO 交给相应的读/写处理函数处理。
  *
- * @data: The &struct snap_device object pointer.
+ * @data: &struct snap_device 对象指针。
  *
- * Return: always zero.
+ * Return: 恒为 0。
  */
 int snap_cow_thread(void *data)
 {
@@ -95,12 +91,12 @@ int snap_cow_thread(void *data)
     struct bio_queue *bq = &dev->sd_cow_bios;
     struct bio *bio;
 
-    // give this thread the highest priority we are allowed
+    // 将本线程设为允许的最高优先级
     set_user_nice(current, MIN_NICE);
 
     while (!kthread_should_stop() || !bio_queue_empty(bq) ||
            atomic64_read(&dev->sd_submitted_cnt) != atomic64_read(&dev->sd_received_cnt)) {
-        // wait for a bio to process or a kthread_stop call
+        // 等待待处理 bio 或 kthread_stop 调用
         wait_event_interruptible(bq->event, kthread_should_stop() || !bio_queue_empty(bq));
 
         if (!is_failed && tracer_read_fail_state(dev)) {
@@ -114,15 +110,13 @@ int snap_cow_thread(void *data)
         if (bio_queue_empty(bq))
             continue;
 
-        // safely dequeue a bio
+        // 安全出队一个 bio
         bio = bio_queue_dequeue_delay_read(bq);
 
-        // pass bio to handler
+        // 将 bio 交给处理函数
         if (!bio_data_dir(bio)) {
-            // if we're in the fail state just send back an IO error
-            // and free the bio
+            // 若处于失败状态则返回 I/O 错误并释放 bio
             if (is_failed) {
-                // end the bio with an IO error
                 dattobd_bio_endio(bio, -EIO);
                 continue;
             }
@@ -154,12 +148,11 @@ int snap_cow_thread(void *data)
 }
 
 /**
- * snap_mrf_thread() - Dispatches the original BIOs to the block IO layer
- * one-by-one.
+ * snap_mrf_thread() - 将原始 BIO 逐个提交到块 I/O 层。
  *
- * @data: The &struct snap_device object pointer.
+ * @data: &struct snap_device 对象指针。
  *
- * Return: always zero.
+ * Return: 恒为 0。
  */
 int snap_mrf_thread(void *data)
 {
@@ -170,23 +163,21 @@ int snap_mrf_thread(void *data)
 
     MAYBE_UNUSED(ret);
 
-    // give this thread the highest priority we are allowed
+    // 将本线程设为允许的最高优先级
     set_user_nice(current, MIN_NICE);
 
     while (!kthread_should_stop() || !bio_queue_empty(bq)) {
-        // wait for a bio to process or a kthread_stop call
+        // 等待待处理 bio 或 kthread_stop 调用
         wait_event_interruptible(bq->event, kthread_should_stop() || !bio_queue_empty(bq));
         if (bio_queue_empty(bq))
             continue;
 
-        // safely dequeue a bio
+        // 安全出队一个 bio
         bio = bio_queue_dequeue(bq);
 
-        // submit the original bio to the block IO layer
+        // 将原始 bio 提交到块 I/O 层
         dattobd_bio_op_set_flag(bio, DATTOBD_PASSTHROUGH);
 
-        // blk_qc_t (*)(struct request_queue *, struct bio *)’
-        // {aka ‘unsigned int (*)(struct request_queue *, struct bio *)’} but argument is of type ‘struct snap_device *’
         SUBMIT_BIO_REAL(dev, bio);
 #ifdef HAVE_MAKE_REQUEST_FN_INT
         if (ret)

@@ -20,23 +20,23 @@ static const struct {
     unsigned long *addr;
     bool required;
 } symbol_table[] = {
-    /* 必需符号 */
+    // 必需符号
     { "kfree", &dattobd_symbols.kfree, true },
 
-    /* 可选符号 - 用于块设备 I/O */
+    // 可选符号 - 用于块设备 I/O
     { "blk_mq_submit_bio", &dattobd_symbols.blk_mq_submit_bio, false },
 
-    /* 可选符号 - 用于 VMA 操作 */
+    // 可选符号 - 用于 VMA 操作
     { "vm_area_alloc", &dattobd_symbols.vm_area_alloc, false },
     { "vm_area_free", &dattobd_symbols.vm_area_free, false },
     { "insert_vm_struct", &dattobd_symbols.insert_vm_struct, false },
     { "vm_area_cachep", &dattobd_symbols.vm_area_cachep, false },
     { "vma_lock_cachep", &dattobd_symbols.vma_lock_cachep, false },
 
-    /* 可选符号 - 用于超级块操作 */
+    // 可选符号 - 用于超级块操作
     { "get_active_super", &dattobd_symbols.get_active_super, false },
 
-    /* 可选符号 - 用于系统调用钩子 */
+    // 可选符号 - 用于系统调用钩子
     { "sys_mount", &dattobd_symbols.sys_mount, false },
     { "sys_umount", &dattobd_symbols.sys_umount, false },
     { "sys_oldumount", &dattobd_symbols.sys_oldumount, false },

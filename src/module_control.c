@@ -18,9 +18,9 @@
 #include "netlink_handlers.h"
 #include "symbol_helper.h"
 
-// current lowest supported kernel = 2.6.18
+/* 当前支持的最低内核版本 = 2.6.18 */
 
-// basic information
+/* 基本信息 */
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Tom Caputi");
 MODULE_DESCRIPTION("Kernel module for supporting block device snapshots and incremental backups.");
@@ -70,14 +70,13 @@ static struct proc_dir_entry *info_proc;
 //#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,25)
 
 /**
- * proc_create() - Creates the datto info file in /proc.
- * @name: The name of the /proc file.
- * @mode: The mode of the /proc file.
- * @parent: The parent directory, NULL for default.
- * @proc_fops: The file ops structure.
+ * proc_create() - 在 /proc 下创建 datto 信息文件。
+ * @name: /proc 下文件名。
+ * @mode: 文件模式。
+ * @parent: 父目录，NULL 表示默认。
+ * @proc_fops: 文件操作结构体。
  *
- * Return:
- * The proc dir entry.
+ * Return: proc 目录项指针，失败为 NULL。
  */
 static struct proc_dir_entry *proc_create(const char *name, mode_t mode,
                                           struct proc_dir_entry *parent,
@@ -99,7 +98,7 @@ error:
 #endif
 
 /**
- * unregister_sequential_file_in_proc - Tears down the sequential file in /proc.
+ * unregister_sequential_file_in_proc - 注销 /proc 中的顺序文件。
  */
 static void unregister_sequential_file_in_proc(void)
 {
@@ -108,8 +107,7 @@ static void unregister_sequential_file_in_proc(void)
 }
 
 /**
- * unregister_blkdev_from_kernel() - The dattobd device driver will be
- * unregistered with the kernel
+ * unregister_blkdev_from_kernel() - 向内核注销 dattobd 块设备驱动。
  */
 static void unregister_blkdev_from_kernel(void)
 {
@@ -118,7 +116,7 @@ static void unregister_blkdev_from_kernel(void)
 }
 
 /**
- * agent_exit() - The function used to destroy the dattobd module.
+ * agent_exit() - 模块退出时用于销毁 dattobd 模块。
  */
 static void agent_exit(void)
 {
@@ -138,12 +136,11 @@ static void agent_exit(void)
 module_exit(agent_exit);
 
 /**
- * calc_max_snap_devices_and_init_minor_range() - Determines the maximum allowed
- * snap devices and initializes the minor range.
+ * calc_max_snap_devices_and_init_minor_range() - 确定允许的最大快照设备数并初始化次设备号范围。
  */
 static void calc_max_snap_devices_and_init_minor_range(void)
 {
-    // init minor range
+    // 初始化次设备号范围
     if (dattobd_max_snap_devices == 0 || dattobd_max_snap_devices > DATTOBD_MAX_SNAP_DEVICES) {
         const unsigned int nr_devices = dattobd_max_snap_devices == 0 ?
                                                 DATTOBD_DEFAULT_SNAP_DEVICES :
@@ -158,16 +155,15 @@ static void calc_max_snap_devices_and_init_minor_range(void)
 }
 
 /**
- * register_blkdev_and_get_major_number() - The dattobd device driver will be
- * registered with the kernel and ready for business after this call.
+ * register_blkdev_and_get_major_number() - 向内核注册 dattobd 块设备驱动并获取主设备号。
  *
  * Return:
- * * 0 - success
- * * !0 - Not successful, the value gives some indication of what went wrong.
+ * * 0 - 成功
+ * * !0 - 失败，返回值表示错误类型。
  */
 static int register_blkdev_and_get_major_number(void)
 {
-    // dynamically get a major number for the driver
+    // 动态获取驱动主设备号
     LOG_DEBUG("get major number");
     major = register_blkdev(0, DRIVER_NAME);
     if (major <= 0) {
@@ -178,13 +174,11 @@ static int register_blkdev_and_get_major_number(void)
 }
 
 /**
- * register_sequential_file_in_proc - Sets up the sequential file in /proc.
- * The sequential file is used to provide access to information about snap
- * devices managed by this driver.
+ * register_sequential_file_in_proc - 在 /proc 下注册顺序文件，用于提供本驱动管理的快照设备信息。
  *
  * Return:
- * * 0 - success
- * * !0 - Not successful, the value gives some indication of what went wrong.
+ * * 0 - 成功
+ * * !0 - 失败，返回值表示错误类型。
  */
 static int register_sequential_file_in_proc(void)
 {
@@ -198,11 +192,11 @@ static int register_sequential_file_in_proc(void)
 }
 
 /**
- * agent_init() - The function to setup the dattobd module.
+ * agent_init() - 初始化并设置 dattobd 模块。
  *
  * Return:
- * * 0  - The module was successfully initialized.
- * * !0 - Not successful, the value gives some indication of what went wrong.
+ * * 0  - 模块初始化成功。
+ * * !0 - 失败，返回值表示错误类型。
  */
 static int __init agent_init(void)
 {
@@ -213,7 +207,7 @@ static int __init agent_init(void)
     mutex_init(&netlink_mutex);
 
 #ifndef USE_BDOPS_SUBMIT_BIO
-    // mrf ref hashtable init
+    // mrf 引用哈希表初始化
     mrf_tracking_init();
 #endif
 

@@ -317,7 +317,6 @@ automatically build and install for each kernel.
 %build
 export CFLAGS="%{optflags}"
 make application
-make utils
 
 %install
 # Install library
@@ -356,7 +355,7 @@ mkdir -p %{buildroot}%{_bashcompletionpath}
 install -p -m 0644 app/bash_completion.d/dbdctl %{buildroot}%{_bashcompletionpath}/
 mkdir -p %{buildroot}%{_mandir}/man8
 install -p -m 0644 doc/dbdctl.8 %{buildroot}%{_mandir}/man8/dbdctl.8
-install -p -m 0755 utils/update-img %{buildroot}%{_bindir}/update-img
+install -p -m 0755 app/update-img %{buildroot}%{_bindir}/update-img
 install -p -m 0644 doc/update-img.8 %{buildroot}%{_mandir}/man8/update-img.8
 
 # Install kmod sources
