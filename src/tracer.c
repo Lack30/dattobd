@@ -378,21 +378,21 @@ static int bdev_is_already_traced(const struct block_device *bdev, snap_device_a
  * * 0 - @dfilp 不在 @bdev 上
  * * !0 - @dfilp 在 @bdev 上
  */
-static int file_is_on_bdev(const struct dattobd_mutable_file *dfilp, struct block_device *bdev)
-{
-    struct super_block *sb = dattobd_get_super(bdev);
-    struct super_block *sb_file = dfilp->mnt->mnt_sb;
-    int ret = 0;
+// static int file_is_on_bdev(const struct dattobd_mutable_file *dfilp, struct block_device *bdev)
+// {
+//     struct super_block *sb = dattobd_get_super(bdev);
+//     struct super_block *sb_file = dfilp->mnt->mnt_sb;
+//     int ret = 0;
 
-    if (sb) {
-        LOG_DEBUG("file_is_on_bdev() if(sb)");
-        LOG_DEBUG("sb name:%s, file->sb name:%s", sb->s_root->d_name.name,
-                  sb_file->s_root->d_name.name);
-        ret = (dfilp->mnt->mnt_sb == sb);
-        dattobd_drop_super(sb);
-    }
-    return ret;
-}
+//     if (sb) {
+//         LOG_DEBUG("file_is_on_bdev() if(sb)");
+//         LOG_DEBUG("sb name:%s, file->sb name:%s", sb->s_root->d_name.name,
+//                   sb_file->s_root->d_name.name);
+//         ret = (dfilp->mnt->mnt_sb == sb);
+//         dattobd_drop_super(sb);
+//     }
+//     return ret;
+// }
 
 /**
  * minor_range_recalculate() - 更新本驱动跟踪的次设备号范围，在某个 minor 不再使用时调用。
@@ -2094,7 +2094,7 @@ void __tracer_unverified_snap_to_active(struct snap_device *dev, const char __us
 {
     int ret;
     unsigned int minor = dev->sd_minor;
-    char *cow_path, *bdev_path = dev->sd_bdev_path, *rel_path = dev->sd_cow_path;
+    char *cow_path = NULL, *bdev_path = dev->sd_bdev_path, *rel_path = dev->sd_cow_path;
     unsigned long cache_size = dev->sd_cache_size;
 
     LOG_DEBUG("ENTER __tracer_unverified_snap_to_active");
@@ -2188,7 +2188,7 @@ void __tracer_unverified_inc_to_active(struct snap_device *dev, const char __use
 {
     int ret;
     unsigned int minor = dev->sd_minor;
-    char *cow_path, *bdev_path = dev->sd_bdev_path, *rel_path = dev->sd_cow_path;
+    char *cow_path = NULL, *bdev_path = dev->sd_bdev_path, *rel_path = dev->sd_cow_path;
     unsigned long cache_size = dev->sd_cache_size;
 
     LOG_DEBUG("ENTER %s", __func__);

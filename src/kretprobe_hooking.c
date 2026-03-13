@@ -129,7 +129,6 @@ char *get_absolute_path(struct dentry *d)
 static int entry_mount_handler(struct kretprobe_instance *ri, struct pt_regs *regs)
 {
     int ret;
-    int sys_ret;
     unsigned int idx = 0;
     unsigned long real_flags;
     struct mount_params *params;
@@ -146,23 +145,33 @@ static int entry_mount_handler(struct kretprobe_instance *ri, struct pt_regs *re
     strncpy(params->fs_type, (const char *)pt_regs_params(regs, 2), 64);
     real_flags = pt_regs_params(regs, 3);
 #elif LINUX_VERSION_CODE >= KERNEL_VERSION(5, 5, 0)
-    strncpy(params->dev_name, (const char *)pt_regs_params(regs, 0), PATH_MAX);
-    sys_ret = copy_from_user(params->dir_name, (const char __user *)pt_regs_params(regs, 1),
-                             PATH_MAX);
-    if (sys_ret)
-        goto error;
-    strncpy(params->fs_type, (const char *)pt_regs_params(regs, 2), 64);
+    {
+        int sys_ret;
+
+        strncpy(params->dev_name, (const char *)pt_regs_params(regs, 0), PATH_MAX);
+        sys_ret = copy_from_user(params->dir_name, (const char __user *)pt_regs_params(regs, 1),
+                                 PATH_MAX);
+        if (sys_ret)
+            goto error;
+        strncpy(params->fs_type, (const char *)pt_regs_params(regs, 2), 64);
+    }
     real_flags = pt_regs_params(regs, 3);
 #else
-    sys_ret = copy_from_user(params->dev_name, (char __user *)pt_regs_params(regs, 0), PATH_MAX);
-    if (sys_ret)
-        goto error;
-    sys_ret = copy_from_user(params->dir_name, (char __user *)pt_regs_params(regs, 1), PATH_MAX);
-    if (sys_ret)
-        goto error;
-    sys_ret = copy_from_user(params->fs_type, (char __user *)pt_regs_params(regs, 2), 64);
-    if (sys_ret)
-        goto error;
+    {
+        int sys_ret;
+
+        sys_ret = copy_from_user(params->dev_name, (char __user *)pt_regs_params(regs, 0),
+                                PATH_MAX);
+        if (sys_ret)
+            goto error;
+        sys_ret = copy_from_user(params->dir_name, (char __user *)pt_regs_params(regs, 1),
+                                PATH_MAX);
+        if (sys_ret)
+            goto error;
+        sys_ret = copy_from_user(params->fs_type, (char __user *)pt_regs_params(regs, 2), 64);
+        if (sys_ret)
+            goto error;
+    }
     real_flags = pt_regs_params(regs, 3);
 #endif
 
@@ -225,7 +234,6 @@ static int ret_mount_handler(struct kretprobe_instance *ri, struct pt_regs *regs
 static int entry_umount_handler(struct kretprobe_instance *ri, struct pt_regs *regs)
 {
     int ret;
-    int sys_ret;
     struct umount_params *params;
     unsigned int idx = 0;
     unsigned int real_flags;
@@ -245,20 +253,29 @@ static int entry_umount_handler(struct kretprobe_instance *ri, struct pt_regs *r
         real_flags &= ~MS_MGC_MSK;
 
 #elif LINUX_VERSION_CODE >= KERNEL_VERSION(5, 5, 0)
-    sys_ret = copy_from_user(params->dir_name, (char __user *)pt_regs_params(regs, 0), PATH_MAX);
-    if (sys_ret)
-        goto error;
+    {
+        int sys_ret = copy_from_user(params->dir_name, (char __user *)pt_regs_params(regs, 0),
+                                    PATH_MAX);
+        if (sys_ret)
+            goto error;
+    }
     real_flags = pt_regs_params(regs, 1);
 #elif LINUX_VERSION_CODE >= KERNEL_VERSION(4, 17, 0)
-    sys_ret = copy_from_user(params->dir_name, (char __user *)pt_regs_params(regs, 0), PATH_MAX);
-    if (sys_ret)
-        goto error;
+    {
+        int sys_ret = copy_from_user(params->dir_name, (char __user *)pt_regs_params(regs, 0),
+                                    PATH_MAX);
+        if (sys_ret)
+            goto error;
+    }
     real_flags = pt_regs_params(regs, 1);
 #else
 #ifdef HAVE_SYS_OLDUMOUNT
-    sys_ret = copy_from_user(params->dir_name, (char __user *)pt_regs_params(regs, 0), PATH_MAX);
-    if (sys_ret)
-        goto error;
+    {
+        int sys_ret = copy_from_user(params->dir_name, (char __user *)pt_regs_params(regs, 0),
+                                    PATH_MAX);
+        if (sys_ret)
+            goto error;
+    }
 #endif
 #endif
 

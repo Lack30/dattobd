@@ -162,13 +162,7 @@ void dattobd_bio_op_clear_flag(struct bio *bio, unsigned int flag)
     bio->bi_rw &= ~flag;
 }
 #else
-
-#ifndef HAVE_ENUM_REQ_OPF
-//#if LINUX_VERSION_CODE < KERNEL_VERSION(4,10,0)
-typedef enum req_op req_op_t;
-#else
-typedef enum req_opf req_op_t;
-#endif
+/* req_op_t 已由 bio_helper.h 根据 HAVE_ENUM_REQ_OPF 定义 */
 
 /**
  * dattobd_set_bio_ops() - 设置 bio 的操作类型及标志。
