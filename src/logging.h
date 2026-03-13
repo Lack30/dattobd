@@ -9,6 +9,8 @@
 
 #include "includes.h"
 
+#define DATTO_TAG "datto"
+
 // printing macros
 #define LOG_DEBUG(fmt, args...)                                                                    \
     do {                                                                                           \

@@ -9,6 +9,7 @@
 #include "logging.h"
 #include "tracer.h"
 #include "blkdev.h"
+#include "memory.h"
 
 #ifdef HAVE_UUID_H
 #include <linux/uuid.h>

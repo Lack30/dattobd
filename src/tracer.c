@@ -24,6 +24,7 @@
 #include "tracing_params.h"
 #include <linux/blk-mq.h>
 #include <linux/version.h>
+#include "stack_limits.h"
 #ifdef HAVE_BLK_ALLOC_QUEUE
 // #if LINUX_VERSION_CODE >= KERNEL_VERSION(5,7,0)
 #include <linux/percpu-refcount.h>
@@ -1563,10 +1564,13 @@ int tracer_alloc_ops(struct snap_device *dev)
  */
 static int __tracer_should_reset_mrf(const struct snap_device *dev, snap_device_array snap_devices)
 {
-    int i;
-    struct snap_device *cur_dev;
-    struct request_queue *q = bdev_get_queue(dev->sd_base_dev->bdev);
-    MAYBE_UNUSED(q);
+        int i;
+        struct snap_device *cur_dev;
+        struct request_queue *q = bdev_get_queue(dev->sd_base_dev->bdev);
+#ifdef USE_BDOPS_SUBMIT_BIO
+        struct block_device_operations *ops;
+#endif
+        MAYBE_UNUSED(q);
 
 #ifndef USE_BDOPS_SUBMIT_BIO
     if (GET_BIO_REQUEST_TRACKING_PTR(dev->sd_base_dev->bdev) != tracing_fn)
@@ -1588,10 +1592,9 @@ static int __tracer_should_reset_mrf(const struct snap_device *dev, snap_device_
             if (ops == dattobd_get_bd_ops(cur_dev->sd_base_dev->bdev))
                 return 0;
 #endif
+                }
         }
-    }
-
-    return 1;
+        return 1;
 }
 
 /**

@@ -7,6 +7,7 @@
 #include "mrf.h"
 #include "includes.h"
 #include "snap_device.h"
+#include "hints.h"
 
 #ifdef HAVE_BLK_ALLOC_QUEUE
 //#if LINUX_VERSION_CODE >= KERNEL_VERSION(5,7,0)
@@ -54,6 +55,8 @@ MRF_RETURN_TYPE(*dattobd_blk_mq_submit_bio)
 MRF_RETURN_TYPE dattobd_snap_null_mrf(struct bio *bio)
 {
     percpu_ref_get(&(dattobd_bio_bi_disk(bio))->queue->q_usage_counter);
+#endif
+
     dattobd_blk_mq_submit_bio(bio);
 #ifdef HAVE_NONVOID_SUBMIT_BIO_1
     MRF_RETURN_TYPE exists_to_align_api_only;

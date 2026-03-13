@@ -61,7 +61,9 @@ static int ftrace_path_mount(const char *dev_name, struct path *path, const char
         kfree(buf);
     return sys_ret;
 }
+#endif //USE_PATH_MOUNT
 
+#ifdef USE_DO_MOUNT
 static long (*orig_do_mount)(const char *dev_name, const char __user *dir_name,
                              const char *type_page, unsigned long flags, void *data_page);
 
@@ -99,7 +101,9 @@ static long ftrace_do_mount(const char *dev_name, const char __user *dir_name,
 
     return sys_ret;
 }
+#endif //USE_DO_MOUNT
 
+#ifdef USE_KSYS_MOUNT
 static int (*orig_ksys_mount)(char __user *dev_name, char __user *dir_name, char __user *type,
                               unsigned long flags, void __user *data);
 
@@ -135,7 +139,9 @@ static int ftrace_ksys_mount(char __user *dev_name, char __user *dir_name, char 
 
     return sys_ret;
 }
+#endif //USE_KSYS_MOUNT
 
+#ifdef USE_SYS_MOUNT
 static asmlinkage long (*orig_sys_mount)(char __user *dev_name, char __user *dir_name,
                                          char __user *type, unsigned long flags, void __user *data);
 
@@ -171,7 +177,9 @@ static asmlinkage long ftrace_sys_mount(char __user *dev_name, char __user *dir_
 
     return sys_ret;
 }
+#endif //USE_SYS_MOUNT
 
+#ifdef USE_PATH_UMOUNT
 static int (*orig_path_umount)(struct path *path, int flags);
 
 static int ftrace_path_umount(struct path *path, int flags)
@@ -205,7 +213,9 @@ static int ftrace_path_umount(struct path *path, int flags)
 
     return sys_ret;
 }
+#endif //USE_PATH_UMOUNT
 
+#ifdef USE_KSYS_UMOUNT
 static int (*orig_ksys_umount)(char __user *name, int flags);
 
 static int ftrace_ksys_umount(char __user *name, int flags)
@@ -221,7 +231,9 @@ static int ftrace_ksys_umount(char __user *name, int flags)
 
     return sys_ret;
 }
+#endif //USE_KSYS_UMOUNT
 
+#ifdef USE_SYS_UMOUNT
 static asmlinkage long (*orig_sys_umount)(char __user *name, int flags);
 
 static asmlinkage long ftrace_sys_umount(char __user *name, int flags)
@@ -236,8 +248,9 @@ static asmlinkage long ftrace_sys_umount(char __user *name, int flags)
 
     return sys_ret;
 }
+#endif //USE_SYS_UMOUNT
 
-#ifdef HAVE_SYS_OLDUMOUNT
+#ifdef USE_SYS_OLDUMOUNT
 asmlinkage long (*orig_sys_oldumount)(char __user *name);
 
 asmlinkage long ftrace_sys_oldumount(char __user *name)
@@ -252,7 +265,7 @@ asmlinkage long ftrace_sys_oldumount(char __user *name)
 
     return sys_ret;
 }
-#endif //HAVE_SYS_OLDUMOUNT
+#endif //USE_SYS_OLDUMOUNT
 
 static struct ftrace_hook ftrace_hooks[] = {
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 9, 0)

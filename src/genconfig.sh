@@ -33,11 +33,12 @@ if [ ! -f "$SYSTEM_MAP_FILE" ]; then
 			SYSTEM_MAP_FILE="/usr/lib/debug/boot/System.map-${KERNEL_VERSION}"
 		fi
 	else
-		SYSTEM_MAP_FILE="/usr/lib/debug/boot/System.map-${KERNEL_VERSION}"
+		echo "System.map file not found for kernel version ${KERNEL_VERSION}"
+		exit 1
 	fi
 fi
 
-
+echo "using System.map file: ${SYSTEM_MAP_FILE}"
 echo "generating configurations for kernel-${KERNEL_VERSION}"
 
 rm -f $OUTPUT_FILE
@@ -52,10 +53,9 @@ make -s -C $FEATURE_TEST_DIR clean KERNELVERSION=$KERNEL_VERSION
 
 run_one_test() {
 	local TEST="$(basename $1 .c)"
-	local OBJ="$TEST.o"
 	local MACRO_NAME="HAVE_$(echo ${TEST} | awk '{print toupper($0)}')"
 	local PREFIX="performing configure test: $MACRO_NAME -"
-	if make -C $FEATURE_TEST_DIR OBJ=$OBJ KERNELVERSION=$KERNEL_VERSION &>/dev/null ; then
+	if make -C $FEATURE_TEST_DIR TEST=$TEST KERNELVERSION=$KERNEL_VERSION &>/dev/null ; then
 		echo "$PREFIX present"
 		echo "#define $MACRO_NAME" >> $OUTPUT_FILE
 	else
@@ -67,7 +67,7 @@ export FEATURE_TEST_DIR
 export KERNEL_VERSION
 export OUTPUT_FILE
 
-ls -1 -q $FEATURE_TEST_FILES | xargs -P "$MAX_THREADS" -d"\n" -n1 -I {} bash -c 'run_one_test {}'
+ls -1 -q $FEATURE_TEST_FILES | xargs -P "$MAX_THREADS" -d"\n" -I {} bash -c 'run_one_test {}'
 
 make -s -C $FEATURE_TEST_DIR clean KERNELVERSION=$KERNEL_VERSION
 
