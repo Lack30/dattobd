@@ -4,6 +4,10 @@
  * Copyright (C) 2022 Datto Inc.
  */
 
+/*
+ * 负责将用户空间传入的控制参数与路径安全复制到内核空间并做基础校验。
+ */
+
 #include "dattobd.h"
 #include "includes.h"
 #include "logging.h"

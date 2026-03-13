@@ -1,3 +1,7 @@
+/*
+ * 管理全局快照设备数组及其加锁访问，为各运行时路径提供设备对象查找与回收入口。
+ */
+
 #include "includes.h"
 #include "snap_device.h"
 #include "module_control.h"

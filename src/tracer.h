@@ -4,6 +4,10 @@
  * Copyright (C) 2022 Datto Inc.
  */
 
+/*
+ * 声明跟踪器生命周期、模式切换、状态转换与信息查询等核心接口。
+ */
+
 #ifndef TRACER_H_
 #define TRACER_H_
 

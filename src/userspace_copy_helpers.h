@@ -4,6 +4,10 @@
  * Copyright (C) 2022 Datto Inc.
  */
 
+/*
+ * 声明从用户空间提取各类 netlink 控制参数和路径的辅助接口。
+ */
+
 #ifndef USERSPACE_COPY_HELPERS_H_
 #define USERSPACE_COPY_HELPERS_H_
 

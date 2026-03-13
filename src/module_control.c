@@ -4,9 +4,15 @@
  * Copyright (C) 2022 Datto Inc.
  */
 
+/*
+ * 负责 dattobd 内核模块的整体初始化与退出，注册块设备、/proc、Netlink 和内核钩子并协调全局资源。
+ */
+
 #include "module_control.h"
 
 #include "dattobd.h"
+#include "block_change_stream.h"
+#include "block_change_stream_chrdev.h"
 #include "includes.h"
 #include "callback_refs.h"
 #include "logging.h"
@@ -126,6 +132,10 @@ static void agent_exit(void)
 
     destroy_netlink_handler();
 
+    unregister_block_change_stream_chrdev();
+
+    block_change_stream_global_exit();
+
     unregister_sequential_file_in_proc();
 
     cleanup_snap_device_array();
@@ -234,6 +244,18 @@ static int __init agent_init(void)
     ret = register_sequential_file_in_proc();
     if (ret) {
         LOG_ERROR(ret, "error registering proc file");
+        goto error;
+    }
+
+    ret = block_change_stream_global_init();
+    if (ret) {
+        LOG_ERROR(ret, "error initializing block change stream");
+        goto error;
+    }
+
+    ret = register_block_change_stream_chrdev();
+    if (ret) {
+        LOG_ERROR(ret, "error registering block change stream chrdev");
         goto error;
     }
 

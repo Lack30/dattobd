@@ -4,6 +4,10 @@
  * Copyright (C) 2022 Datto Inc.
  */
 
+/*
+ * 实现基于 sset_list 的带锁扇区集合队列及其等待唤醒机制。
+ */
+
 #include "sset_queue.h"
 #include "sset_list.h"
 

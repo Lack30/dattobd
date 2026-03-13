@@ -4,6 +4,10 @@
  * Copyright (C) 2025 Datto Inc.
  */
 
+/*
+ * 封装块设备队列 stacking limits 的跨内核兼容宏与回退实现。
+ */
+
 #ifndef STACK_LIMITS_H_
 #define STACK_LIMITS_H_
 
@@ -36,7 +40,7 @@
 static int bdev_stack_limits(struct queue_limits *t, struct block_device *bdev, sector_t start){
     struct request_queue *bq = bdev_get_queue(bdev);
     start += get_start_sect(bdev);
-    return blk_stack_limits(t, &bq->limits, start << 9);
+    return blk_stack_limits(t, &bq->limits, start << SECTOR_SHIFT);
 }
 
 #endif

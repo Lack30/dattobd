@@ -1,3 +1,7 @@
+/*
+ * 按内核能力在 ftrace 与 kretprobe 方案间选择统一的钩子注册与注销入口。
+ */
+
 #ifndef __KERNEL_HOOKING_H
 #define __KERNEL_HOOKING_H
 

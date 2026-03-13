@@ -1,3 +1,7 @@
+/*
+ * 使用 ftrace 拦截 mount/umount 等内核路径，并在挂载状态变化时更新被跟踪块设备状态。
+ */
+
 #include "ftrace_hooking.h"
 #include <linux/kprobes.h>
 #include <linux/version.h>

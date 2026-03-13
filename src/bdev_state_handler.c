@@ -4,6 +4,10 @@
  * Copyright (C) 2023 Datto Inc.
  */
 
+/*
+ * 处理块设备挂载与卸载事件，驱动快照设备在未验证、活动和休眠状态之间自动转换。
+ */
+
 #include "bdev_state_handler.h"
 #include <linux/version.h>
 #include "snap_device.h"

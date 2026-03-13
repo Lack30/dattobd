@@ -4,6 +4,10 @@
  * Copyright (C) 2022 Datto Inc.
  */
 
+/*
+ * 声明线程安全的 bio_queue 结构及其初始化、入队和出队接口。
+ */
+
 #ifndef BIO_QUEUE_H_
 #define BIO_QUEUE_H_
 

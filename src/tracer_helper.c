@@ -4,6 +4,10 @@
  * Copyright (C) 2022 Datto Inc.
  */
 
+/*
+ * 提供跟踪器失败状态管理及 bio 与快照设备匹配判断等辅助逻辑。
+ */
+
 #include "tracer_helper.h"
 
 #include "bio_helper.h"

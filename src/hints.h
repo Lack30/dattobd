@@ -4,6 +4,10 @@
  * Copyright (C) 2022 Datto Inc.
  */
 
+/*
+ * 定义少量编译提示与访问兼容宏，统一低层语义细节。
+ */
+
 #ifndef HINTS_H_
 #define HINTS_H_
 

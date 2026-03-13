@@ -4,6 +4,10 @@
  * Copyright (C) 2022 Datto Inc.
  */
 
+/*
+ * 声明兼容旧内核的 bio_list 结构、遍历宏和基础链表接口。
+ */
+
 #ifndef BIO_LIST_H_
 #define BIO_LIST_H_
 

@@ -4,6 +4,10 @@
  * Copyright (C) 2022 Datto Inc.
  */
 
+/*
+ * 提供将 bio 绕过驱动钩子并直接提交到真实设备的提交通道实现。
+ */
+
 #include "submit_bio.h"
 
 #include "bio_helper.h" /* 用于定义 USE_BDOPS_SUBMIT_BIO */

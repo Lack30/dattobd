@@ -4,6 +4,10 @@
  * Copyright (C) 2022-2023 Datto Inc.
  */
 
+/*
+ * 声明跨版本的请求函数返回类型抽象及请求函数获取与转发接口。
+ */
+
 #ifndef MRF_H_
 #define MRF_H_
 

@@ -4,6 +4,10 @@
  * Copyright (C) 2022 Datto Inc.
  */
 
+/*
+ * 声明 /proc 顺序文件使用的文件操作结构获取接口。
+ */
+
 #ifndef PROC_SEQ_FILE_H_
 #define PROC_SEQ_FILE_H_
 

@@ -4,6 +4,10 @@
  * Copyright (C) 2025 Datto Inc.
  */
 
+/*
+ * 封装 get_unmapped_area 的跨内核兼容调用，用于获得可映射的用户空间地址区间。
+ */
+
 #include "memory.h"
 
 unsigned long dattobd_get_unmapped_area(struct file *file, unsigned long addr, unsigned long len,

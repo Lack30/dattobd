@@ -4,9 +4,14 @@
  * Copyright (C) 2023 Datto Inc.
  */
 
+/*
+ * 实现快照与增量跟踪器的创建、切换、销毁及 I/O 拦截主流程，是运行时设备跟踪逻辑的核心。
+ */
+
 #include "tracer.h"
 
 #include "bio_request_callback.h"
+#include "block_change_stream.h"
 #include "blkdev.h"
 #include "callback_refs.h"
 #include "cow_manager.h"
@@ -299,6 +304,8 @@ static int inc_trace_bio(struct snap_device *dev, struct bio *bio)
     bio_iter_t iter;
     bio_iter_bvec_t bvec;
 
+    block_change_stream_capture_bio(dev, bio);
+
 #ifdef HAVE_ENUM_REQ_OPF
     //#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,10,0)
     if (bio_op(bio) == REQ_OP_WRITE_ZEROES) {
@@ -320,7 +327,7 @@ static int inc_trace_bio(struct snap_device *dev, struct bio *bio)
             }
             is_initialized = 0;
         }
-        end_sect += (bio_iter_len(bio, iter) >> 9);
+        end_sect += (bio_iter_len(bio, iter) >> SECTOR_SHIFT);
     }
 
     if (is_initialized && end_sect - start_sect > 0) {
@@ -888,6 +895,8 @@ static void __tracer_bioset_exit(struct snap_device *dev)
  */
 static void __tracer_destroy_snap(struct snap_device *dev)
 {
+    int free_queue = 1;
+
     LOG_DEBUG("tracer_destroy_snap");
     if (dev->sd_mrf_thread) {
         LOG_DEBUG("stopping mrf thread");
@@ -897,6 +906,14 @@ static void __tracer_destroy_snap(struct snap_device *dev)
 
     if (dev->sd_gd) {
         LOG_DEBUG("freeing gendisk");
+#if defined(HAVE_BLK_ALLOC_DISK) || defined(HAVE_GD_OWNS_QUEUE)
+        /*
+         * blk_alloc_disk() creates a gendisk that already owns its request queue.
+         * put_disk() tears both down together, so calling blk_cleanup_queue() again
+         * later underflows the queue usage refcount and can wedge destroy.
+         */
+        free_queue = 0;
+#endif
 #ifdef GENHD_FL_UP
         if (dev->sd_gd->flags & GENHD_FL_UP)
 #else
@@ -909,6 +926,10 @@ static void __tracer_destroy_snap(struct snap_device *dev)
 
     if (dev->sd_queue) {
         LOG_DEBUG("freeing request queue");
+        if (!free_queue) {
+            dev->sd_queue = NULL;
+            goto out;
+        }
 #ifdef HAVE_BLK_CLEANUP_QUEUE
         blk_cleanup_queue(dev->sd_queue);
 #else
@@ -918,6 +939,8 @@ static void __tracer_destroy_snap(struct snap_device *dev)
 #endif
         dev->sd_queue = NULL;
     }
+
+out:
 
     __tracer_bioset_exit(dev);
 }
@@ -1504,13 +1527,13 @@ int tracer_alloc_ops(struct snap_device *dev)
  */
 static int __tracer_should_reset_mrf(const struct snap_device *dev, snap_device_array snap_devices)
 {
-        int i;
-        struct snap_device *cur_dev;
-        struct request_queue *q = bdev_get_queue(dev->sd_base_dev->bdev);
+    int i;
+    struct snap_device *cur_dev;
+    struct request_queue *q = bdev_get_queue(dev->sd_base_dev->bdev);
 #ifdef USE_BDOPS_SUBMIT_BIO
-        struct block_device_operations *ops = dattobd_get_bd_ops(dev->sd_base_dev->bdev);
+    struct block_device_operations *ops = dattobd_get_bd_ops(dev->sd_base_dev->bdev);
 #endif
-        MAYBE_UNUSED(q);
+    MAYBE_UNUSED(q);
 
 #ifndef USE_BDOPS_SUBMIT_BIO
     if (GET_BIO_REQUEST_TRACKING_PTR(dev->sd_base_dev->bdev) != tracing_fn)
@@ -1530,9 +1553,9 @@ static int __tracer_should_reset_mrf(const struct snap_device *dev, snap_device_
             if (ops == dattobd_get_bd_ops(cur_dev->sd_base_dev->bdev))
                 return 0;
 #endif
-                }
         }
-        return 1;
+    }
+    return 1;
 }
 
 /**
@@ -1737,6 +1760,7 @@ void tracer_destroy(struct snap_device *dev, snap_device_array_mut snap_devices)
 {
     __tracer_destroy_tracing(dev, snap_devices);
     __tracer_destroy_cow_thread(dev);
+    block_change_stream_device_free(dev);
     __tracer_destroy_snap(dev);
     __tracer_destroy_cow_path(dev);
     __tracer_destroy_cow_free(dev);
@@ -1854,6 +1878,10 @@ int tracer_active_snap_to_inc(struct snap_device *old_dev, snap_device_array_mut
     // 将 cow manager 拷贝到新设备；须确保不被多线程同时使用
     __tracer_copy_cow(old_dev, dev);
 
+    ret = block_change_stream_device_init(dev);
+    if (ret)
+        goto error;
+
     // 设置 COW 线程
     ret = __tracer_setup_inc_cow_thread(dev, old_dev->sd_minor);
     if (ret)
@@ -1885,6 +1913,7 @@ int tracer_active_snap_to_inc(struct snap_device *old_dev, snap_device_array_mut
         wake_up_process(dev->sd_cow_thread);
 
         // 无论如何都清理旧设备
+        block_change_stream_device_free(old_dev);
         __tracer_destroy_snap(old_dev);
         kfree(old_dev);
 
@@ -1911,6 +1940,7 @@ int tracer_active_snap_to_inc(struct snap_device *old_dev, snap_device_array_mut
     }
 
     // 销毁 old_dev 中不需要的字段及 old_dev 本身
+    block_change_stream_device_free(old_dev);
     __tracer_destroy_snap(old_dev);
     kfree(old_dev);
 
@@ -1918,6 +1948,7 @@ int tracer_active_snap_to_inc(struct snap_device *old_dev, snap_device_array_mut
 
 error:
     LOG_ERROR(ret, "error transitioning to incremental mode");
+    block_change_stream_device_free(dev);
     __tracer_destroy_cow_thread(dev);
     kfree(dev);
 
@@ -1991,6 +2022,7 @@ int tracer_active_inc_to_snap(struct snap_device *old_dev, const char *cow_path,
     wake_up_process(dev->sd_cow_thread);
 
     // 销毁 old_dev 中不需要的字段及 old_dev 本身
+    block_change_stream_device_free(old_dev);
     __tracer_destroy_cow_path(old_dev);
     __tracer_destroy_cow_sync_and_free(old_dev);
     kfree(old_dev);
@@ -1999,6 +2031,7 @@ int tracer_active_inc_to_snap(struct snap_device *old_dev, const char *cow_path,
 
 error:
     LOG_ERROR(ret, "error transitioning tracer to snapshot mode");
+    block_change_stream_device_free(dev);
     __tracer_destroy_cow_thread(dev);
     __tracer_destroy_snap(dev);
     __tracer_destroy_cow_path(dev);
@@ -2225,6 +2258,10 @@ void __tracer_unverified_inc_to_active(struct snap_device *dev, const char __use
 
     // 设置 COW 路径
     ret = __tracer_setup_cow_path(dev, dev->sd_cow->dfilp);
+    if (ret)
+        goto error;
+
+    ret = block_change_stream_device_init(dev);
     if (ret)
         goto error;
 

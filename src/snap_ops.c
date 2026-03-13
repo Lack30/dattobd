@@ -4,6 +4,10 @@
  * Copyright (C) 2022 Datto Inc.
  */
 
+/*
+ * 实现快照块设备的 block_device_operations 与请求入口，并维护设备打开引用计数。
+ */
+
 #include "snap_ops.h"
 
 #include "includes.h"

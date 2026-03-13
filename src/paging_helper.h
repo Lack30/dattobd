@@ -4,6 +4,10 @@
  * Copyright (C) 2022 Datto Inc.
  */
 
+/*
+ * 声明跨架构的页保护开关接口，用于临时关闭并恢复内核页写保护。
+ */
+
 #ifndef PAGING_HELPER_H_
 #define PAGING_HELPER_H_
 

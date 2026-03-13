@@ -4,6 +4,10 @@
  * Copyright (C) 2022-2023 Datto Inc.
  */
 
+/*
+ * 声明真实设备 submit_bio 适配类型与直通提交通道接口。
+ */
+
 #ifndef SUBMIT_BIO_H_
 #define SUBMIT_BIO_H_
 

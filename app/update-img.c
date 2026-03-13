@@ -4,6 +4,10 @@
  * Copyright (C) 2015 Datto Inc.
  */
 
+/*
+ * 根据快照设备与 COW 文件中的变更映射将数据合并回目标镜像文件。
+ */
+
 #define _FILE_OFFSET_BITS 64 // 启用 64 位文件操作支持
 #define __USE_LARGEFILE64 // 使用大文件支持的库函数
 

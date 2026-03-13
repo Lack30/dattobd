@@ -4,6 +4,10 @@
  * Copyright (C) 2022 Datto Inc.
  */
 
+/*
+ * 声明 task_work_flush() 的兼容接口，用于强制执行延后的任务工作项。
+ */
+
 #ifndef TASK_WORK_HELPER_H_
 #define TASK_WORK_HELPER_H_
 

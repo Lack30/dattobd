@@ -3,6 +3,10 @@
 /*
  * Copyright (C) 2022 Datto Inc.
  */
+/*
+ * 声明快照设备操作表获取函数及快照设备的请求处理入口。
+ */
+
 #ifndef SNAP_OPS_H_
 #define SNAP_OPS_H_
 

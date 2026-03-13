@@ -1,3 +1,7 @@
+/*
+ * 声明 Netlink 控制通道的初始化、销毁、发送接口及全局互斥锁。
+ */
+
 #ifndef NETLINK_HANDLERS_H_
 #define NETLINK_HANDLERS_H_
 

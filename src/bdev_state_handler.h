@@ -4,6 +4,10 @@
  * Copyright (C) 2023 Datto Inc.
  */
 
+/*
+ * 声明块设备挂载与卸载状态处理接口，用于驱动快照设备自动状态转换。
+ */
+
 #ifndef BDEV_STATE_HANDLER_H
 #define BDEV_STATE_HANDLER_H
 

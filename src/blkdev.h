@@ -4,6 +4,10 @@
  * Copyright (C) 2022 Datto Inc.
  */
 
+/*
+ * 声明块设备兼容层的数据结构与辅助接口，统一块设备打开、释放和元数据查询。
+ */
+
 #ifndef BLKDEV_H_
 #define BLKDEV_H_
 

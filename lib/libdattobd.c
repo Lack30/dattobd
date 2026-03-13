@@ -4,6 +4,10 @@
  * Copyright (C) 2015 Datto Inc.
  */
 
+/*
+ * 实现用户态 libdattobd 库，通过 netlink 向内核驱动发送控制请求并返回结果。
+ */
+
 #include <unistd.h>
 #include <fcntl.h>
 #include <errno.h>
@@ -248,6 +252,29 @@ int dattobd_info(unsigned int minor, struct dattobd_info *info)
 
     ret = datto_netlink_submit(&req, &resp);
     // printf("ok\n");
+
+    return ret;
+}
+
+int dattobd_block_change_stream_status(unsigned int minor,
+                                       struct block_change_stream_status *status)
+{
+    int ret;
+    struct netlink_request req;
+    struct netlink_response resp;
+
+    if (!status) {
+        errno = EINVAL;
+        return -1;
+    }
+
+    memset(status, 0, sizeof(*status));
+    status->minor = minor;
+
+    req.type = MSG_BCS_STATUS;
+    req.bcs_status_params = status;
+
+    ret = datto_netlink_submit(&req, &resp);
 
     return ret;
 }

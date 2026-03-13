@@ -4,6 +4,10 @@
  * Copyright (C) 2022 Datto Inc.
  */
 
+/*
+ * 使用 kretprobe 跟踪 mount/umount 调用的入参与返回值，并据此维护块设备挂载状态。
+ */
+
 #include "kretprobe_hooking.h"
 
 #define handle_bdev_mount_nowrite(dir_name, follow_flags, idx_out)                                 \
@@ -13,12 +17,20 @@
 
 static struct probe_pool *probe_pool = NULL;
 
+/**
+ * probe_pool_init() - 初始化探测池的红黑树与自旋锁。
+ * @p: 要初始化的 &struct probe_pool。
+ */
 void probe_pool_init(struct probe_pool *p)
 {
     p->root = RB_ROOT;
     spin_lock_init(&p->lock);
 }
 
+/**
+ * probe_pool_clear() - 清空探测池中所有节点并释放内存。
+ * @p: 要清空的 &struct probe_pool。
+ */
 void probe_pool_clear(struct probe_pool *p)
 {
     unsigned long flags;
@@ -32,6 +44,16 @@ void probe_pool_clear(struct probe_pool *p)
     spin_unlock_irqrestore(&p->lock, flags);
 }
 
+/**
+ * insert_node() - 向红黑树插入键值对。
+ * @root: 红黑树根。
+ * @key: 键。
+ * @data: 与键关联的数据指针。
+ *
+ * Return:
+ * * 0 - 成功
+ * * -EEXIST - 键已存在
+ */
 int insert_node(struct rb_root *root, unsigned long key, void *data)
 {
     struct rb_node **new = &root->rb_node;
@@ -59,6 +81,13 @@ int insert_node(struct rb_root *root, unsigned long key, void *data)
     return 0;
 }
 
+/**
+ * search_node() - 在红黑树中按键查找节点。
+ * @root: 红黑树根。
+ * @key: 要查找的键。
+ *
+ * Return: 找到则返回 &struct probe_entry，否则 NULL。
+ */
 struct probe_entry *search_node(struct rb_root *root, unsigned long key)
 {
     struct rb_node *n = root->rb_node;
@@ -74,6 +103,13 @@ struct probe_entry *search_node(struct rb_root *root, unsigned long key)
     return NULL;
 }
 
+/**
+ * pop_node() - 从红黑树中移除键对应节点并返回其数据。
+ * @root: 红黑树根。
+ * @key: 键。
+ *
+ * Return: 若存在则返回该节点原 data，否则 NULL。
+ */
 void *pop_node(struct rb_root *root, unsigned long key)
 {
     void *data = NULL;
@@ -86,6 +122,14 @@ void *pop_node(struct rb_root *root, unsigned long key)
     return data;
 }
 
+/**
+ * probe_pool_insert() - 向探测池插入键值对（加锁）。
+ * @p: 探测池。
+ * @key: 键。
+ * @data: 数据指针。
+ *
+ * Return: 0。
+ */
 int probe_pool_insert(struct probe_pool *p, unsigned long key, void *data)
 {
     unsigned long flags;
@@ -95,6 +139,13 @@ int probe_pool_insert(struct probe_pool *p, unsigned long key, void *data)
     return 0;
 }
 
+/**
+ * probe_pool_erase() - 从探测池中移除键对应项并返回其数据（加锁）。
+ * @p: 探测池。
+ * @key: 键。
+ *
+ * Return: 若存在则返回原 data，否则 NULL。
+ */
 void *probe_pool_erase(struct probe_pool *p, unsigned long key)
 {
     unsigned long flags;
@@ -105,6 +156,12 @@ void *probe_pool_erase(struct probe_pool *p, unsigned long key)
     return data;
 }
 
+/**
+ * build_path() - 递归将 dentry 路径拼入 buffer。
+ * @dentry: 目录项，从根向下拼接。
+ * @buffer: 输出缓冲区。
+ * @offset: 当前写入偏移，调用后更新。
+ */
 static void build_path(struct dentry *dentry, char *buffer, int *offset)
 {
     if (!dentry || dentry == dentry->d_parent)
@@ -115,6 +172,12 @@ static void build_path(struct dentry *dentry, char *buffer, int *offset)
     *offset += snprintf(buffer + *offset, PATH_MAX - *offset, "/%s", dentry->d_name.name);
 }
 
+/**
+ * get_absolute_path() - 根据 dentry 分配并返回绝对路径字符串。
+ * @d: 目录项。
+ *
+ * Return: 成功为 kmalloc 分配的路径，调用方需 kfree；失败为 NULL。
+ */
 char *get_absolute_path(struct dentry *d)
 {
     int offset = 0;
@@ -126,6 +189,15 @@ char *get_absolute_path(struct dentry *d)
     return buffer;
 }
 
+/**
+ * entry_mount_handler() - mount 系统调用入口的 kretprobe 处理函数。
+ * @ri: kretprobe 实例。
+ * @regs: 寄存器快照，用于取参数。
+ *
+ * 从寄存器中解析 mount 参数，分配 mount_params 并加入 probe_pool，供返回时使用。
+ *
+ * Return: 0。
+ */
 static int entry_mount_handler(struct kretprobe_instance *ri, struct pt_regs *regs)
 {
     int ret;
@@ -199,6 +271,16 @@ error:
     return 0;
 }
 
+/**
+ * ret_mount_handler() - mount 系统调用返回的 kretprobe 处理函数。
+ * @ri: kretprobe 实例。
+ * @regs: 寄存器快照，用于取返回值。
+ *
+ * 从 probe_pool 取出入口时保存的 mount_params，根据挂载结果调用
+ * post_umount_check 或 handle_bdev_mounted_writable。
+ *
+ * Return: 0。
+ */
 static int ret_mount_handler(struct kretprobe_instance *ri, struct pt_regs *regs)
 {
     int sys_ret;
@@ -231,6 +313,15 @@ static int ret_mount_handler(struct kretprobe_instance *ri, struct pt_regs *regs
     return 0;
 }
 
+/**
+ * entry_umount_handler() - umount 系统调用入口的 kretprobe 处理函数。
+ * @ri: kretprobe 实例。
+ * @regs: 寄存器快照，用于取参数。
+ *
+ * 从寄存器解析 umount 参数，分配 umount_params 并加入 probe_pool。
+ *
+ * Return: 0。
+ */
 static int entry_umount_handler(struct kretprobe_instance *ri, struct pt_regs *regs)
 {
     int ret;
@@ -296,6 +387,15 @@ error:
     return 0;
 }
 
+/**
+ * ret_umount_handler() - umount 系统调用返回的 kretprobe 处理函数。
+ * @ri: kretprobe 实例。
+ * @regs: 寄存器快照，用于取返回值。
+ *
+ * 从 probe_pool 取出入口时保存的 umount_params，调用 post_umount_check。
+ *
+ * Return: 0。
+ */
 static int ret_umount_handler(struct kretprobe_instance *ri, struct pt_regs *regs)
 {
     int sys_ret;
@@ -379,6 +479,15 @@ static int unregister_hook(struct kretprobe *hook)
     return ret;
 }
 
+/**
+ * register_kretprobe_hooks() - 注册并启用所有 kretprobe 钩子（mount/umount）。
+ *
+ * 分配全局 probe_pool 并依次注册 kretprobe_hooks 中的钩子。
+ *
+ * Return:
+ * * 0 - 成功
+ * * !0 - 表示错误的 errno
+ */
 int register_kretprobe_hooks(void)
 {
     int ret = 0;
@@ -402,6 +511,11 @@ error:
     return ret;
 }
 
+/**
+ * unregister_kretprobe_hooks() - 禁用并注销所有 kretprobe 钩子，清空探测池。
+ *
+ * Return: 0。
+ */
 int unregister_kretprobe_hooks(void)
 {
     int ret = 0;

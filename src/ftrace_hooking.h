@@ -1,4 +1,8 @@
 // SPDX-License-Identifier: GPL-2.0-only
+/*
+ * 定义 ftrace 钩子描述、兼容宏和注册接口，为挂载相关内核函数拦截提供声明。
+ */
+
 // Copyright (C) 2023 Datto Inc.
 
 #ifndef FTRACE_HOOKING_H_INCLUDE

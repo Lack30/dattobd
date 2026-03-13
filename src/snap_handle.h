@@ -4,6 +4,10 @@
  * Copyright (C) 2022 Datto Inc.
  */
 
+/*
+ * 声明快照读、快照写与增量 sector set 处理接口。
+ */
+
 #ifndef SNAP_HANDLE_H_
 #define SNAP_HANDLE_H_
 

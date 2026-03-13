@@ -4,6 +4,10 @@
  * Copyright (C) 2022 Datto Inc.
  */
 
+/*
+ * 实现快照与增量模式下的内核工作线程，异步消费 bio 和 sector set 队列并驱动处理流程。
+ */
+
 #include "module_threads.h"
 #include "bio_helper.h"
 #include "bio_queue.h"

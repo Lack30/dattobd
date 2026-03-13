@@ -4,6 +4,10 @@
  * Copyright (C) 2015-2023 Datto Inc.
  */
 
+/*
+ * 集中引入模块实现普遍依赖的 Linux 内核头文件。
+ */
+
 #ifndef DATTOBD_INCLUDES_H_
 #define DATTOBD_INCLUDES_H_
 

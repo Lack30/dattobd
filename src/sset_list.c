@@ -4,6 +4,10 @@
  * Copyright (C) 2022 Datto Inc.
  */
 
+/*
+ * 实现 sector_set 链表的初始化、判空、尾插和头弹出操作。
+ */
+
 #include "sset_list.h"
 
 /**

@@ -4,6 +4,10 @@
  * Copyright (C) 2022 Datto Inc.
  */
 
+/*
+ * 声明请求回调引用计数接口，用于共享和回收每个磁盘的原始请求回调。
+ */
+
 #ifndef CALLBACK_REFS_H_
 #define CALLBACK_REFS_H_
 

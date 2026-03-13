@@ -11,7 +11,7 @@
 #include "snap_handle.h"
 
 #include "bio_helper.h"
-#include "binlog_export.h"
+#include "block_change_stream.h"
 #include "cow_manager.h"
 #include "filesystem.h"
 #include "logging.h"
@@ -280,8 +280,7 @@ int inc_handle_sset(const struct snap_device *dev, struct sector_set *sset)
 {
     int ret;
     sector_t block_start = SECTOR_TO_BLOCK(sset->sect);
-    sector_t end_block =
-            NUM_SEGMENTS(sset->sect + sset->len, COW_BLOCK_LOG_SIZE - SECTOR_SHIFT);
+    sector_t end_block = NUM_SEGMENTS(sset->sect + sset->len, COW_BLOCK_LOG_SIZE - SECTOR_SHIFT);
     sector_t start_block;
 
     for (start_block = block_start; start_block < end_block; start_block++) {
@@ -290,8 +289,12 @@ int inc_handle_sset(const struct snap_device *dev, struct sector_set *sset)
             goto error;
     }
 
-    /* Export hook: runs off hot path (async inc_sset_thread). */
-    binlog_export_blocks_changed(dev, block_start, end_block - block_start);
+    /*
+     * Block change stream 的范围统计在异步增量线程中更新，避免把范围确认逻辑放回
+     * 热写路径。后续真正的数据面会在这里驱动 flush/queue 调度。
+     */
+    block_change_stream_blocks_changed((struct snap_device *)dev, block_start,
+                                       end_block - block_start);
 
     return 0;
 

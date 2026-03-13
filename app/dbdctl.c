@@ -4,6 +4,10 @@
  * Copyright (C) 2015 Datto Inc.
  */
 
+/*
+ * 实现 dbdctl 命令行工具的参数解析、帮助输出和各项控制命令分发。
+ */
+
 #include "dattobd.h"
 #include <stdio.h>
 #include <string.h>
@@ -28,6 +32,7 @@ static void print_help(int status)
     printf("\tdbdctl expand-cow-file <size> <minor>\n");
     printf("\tdbdctl reconfigure-auto-expand [-r <reserved space>] <step size> <minor>\n");
     printf("\tdbdctl info <minor>\n");
+    printf("\tdbdctl bcs-status <minor>\n");
     printf("\tdbdctl help\n\n");
     printf("<cow file> should be specified as an absolute path.\n");
     printf("cache size should be provided in bytes, and fallocate should be provided in megabytes.\n");
@@ -478,6 +483,49 @@ error:
     return 0;
 }
 
+static int handle_bcs_status(int argc, char **argv)
+{
+    int ret;
+    unsigned int minor;
+    struct block_change_stream_status status;
+
+    if (argc != 2) {
+        errno = EINVAL;
+        goto error;
+    }
+
+    ret = parse_ui(argv[1], &minor);
+    if (ret)
+        goto error;
+
+    ret = dattobd_block_change_stream_status(minor, &status);
+    if (ret)
+        return ret;
+
+    printf("minor: %u\n", status.minor);
+    printf("captured_writes: %llu\n", status.captured_writes);
+    printf("captured_bytes: %llu\n", status.captured_bytes);
+    printf("changed_ranges: %llu\n", status.changed_ranges);
+    printf("changed_blocks: %llu\n", status.changed_blocks);
+    printf("cached_blocks: %llu\n", status.cached_blocks);
+    printf("complete_blocks: %llu\n", status.complete_blocks);
+    printf("partial_blocks: %llu\n", status.partial_blocks);
+    printf("ring_capacity: %llu\n", status.ring_capacity);
+    printf("ring_used: %llu\n", status.ring_used);
+    printf("ring_dropped_records: %llu\n", status.ring_dropped_records);
+    printf("ring_dropped_bytes: %llu\n", status.ring_dropped_bytes);
+    printf("last_changed_block: %llu\n", status.last_changed_block);
+    printf("last_changed_count: %llu\n", status.last_changed_count);
+    printf("last_recorded_jiffies: %llu\n", status.last_recorded_jiffies);
+
+    return 0;
+
+error:
+    perror("error interpreting block change stream status parameters");
+    print_help(-1);
+    return 0;
+}
+
 int main(int argc, char **argv)
 {
     int ret = 0;
@@ -514,6 +562,8 @@ int main(int argc, char **argv)
         ret = handle_reconfigure_auto_expand(argc - 1, argv + 1);
     else if (!strcmp(argv[1], "info"))
         ret = handle_info(argc - 1, argv + 1);
+    else if (!strcmp(argv[1], "bcs-status"))
+        ret = handle_bcs_status(argc - 1, argv + 1);
     else if (!strcmp(argv[1], "help"))
         print_help(0);
     else

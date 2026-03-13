@@ -4,6 +4,10 @@
  * Copyright (C) 2022 Datto Inc.
  */
 
+/*
+ * 声明文件系统兼容层与 dattobd_mutable_file 抽象，统一文件、路径和块级文件 I/O 接口。
+ */
+
 #ifndef FILESYSTEM_H_
 #define FILESYSTEM_H_
 

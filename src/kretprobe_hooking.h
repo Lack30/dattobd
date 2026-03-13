@@ -4,6 +4,10 @@
  * Copyright (C) 2022 Datto Inc.
  */
 
+/*
+ * 定义 kretprobe 钩子所需的参数结构、探测池与寄存器访问辅助接口。
+ */
+
 #ifndef KRETPROBE_HOOKING_H_
 #define KRETPROBE_HOOKING_H_
 

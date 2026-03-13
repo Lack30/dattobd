@@ -4,6 +4,10 @@
  * Copyright (C) 2022-2023 Datto Inc.
  */
 
+/*
+ * 封装 bio 的设备与操作兼容处理、完成回调和读克隆构造，并判断请求是否需要执行 COW。
+ */
+
 #include "includes.h"
 
 #include "bio_helper.h"

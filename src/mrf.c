@@ -4,6 +4,10 @@
  * Copyright (C) 2022 Datto Inc.
  */
 
+/*
+ * 封装 make_request_fn 与 submit_bio 在不同内核版本下的调用、获取与空转发实现。
+ */
+
 #include "mrf.h"
 #include "includes.h"
 #include "snap_device.h"

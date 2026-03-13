@@ -4,6 +4,10 @@
  * Copyright (C) 2022 Datto Inc.
  */
 
+/*
+ * 声明线程安全的 sset_queue 结构及其基本队列操作接口。
+ */
+
 #ifndef SSET_QUEUE_H_
 #define SSET_QUEUE_H_
 

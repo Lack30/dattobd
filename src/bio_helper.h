@@ -4,6 +4,10 @@
  * Copyright (C) 2022 Datto Inc.
  */
 
+/*
+ * 声明 bio 兼容宏、请求操作抽象以及与 COW 读写路径相关的辅助接口。
+ */
+
 #ifndef BIO_HELPER_H
 
 #define BIO_HELPER_H

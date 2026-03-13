@@ -4,6 +4,10 @@
  * Copyright (C) 2025 Datto Inc.
  */
 
+/*
+ * 声明获取用户空间未映射地址区间的兼容封装接口。
+ */
+
 #ifndef MEMORY_H_
 #define MEMORY_H_
 

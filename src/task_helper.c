@@ -4,6 +4,10 @@
  * Copyright (C) 2022 Datto Inc.
  */
 
+/*
+ * 提供 task_work_run() 的兼容重实现，用于主动冲刷当前任务挂起的 task_work。
+ */
+
 #include "task_helper.h"
 
 #include "hints.h"

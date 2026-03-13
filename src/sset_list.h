@@ -4,6 +4,10 @@
  * Copyright (C) 2022 Datto Inc.
  */
 
+/*
+ * 声明用于表示扇区区间及其链式组织方式的 sector_set 与 sset_list 类型。
+ */
+
 #ifndef SSET_LIST_H_
 #define SSET_LIST_H_
 

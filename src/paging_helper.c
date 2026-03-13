@@ -4,6 +4,10 @@
  * Copyright (C) 2022 Datto Inc.
  */
 
+/*
+ * 封装 ARM64 与 x86 平台的页写保护开关操作，供低层内核补丁路径临时修改只读页。
+ */
+
 #include "includes.h"
 #include "paging_helper.h"
 

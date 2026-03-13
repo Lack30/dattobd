@@ -4,6 +4,10 @@
  * Copyright (C) 2022 Datto Inc.
  */
 
+/*
+ * 声明 COW 管理器的数据结构与接口，用于管理后备文件索引、数据区和缓存策略。
+ */
+
 #ifndef COW_MANAGER_H_
 #define COW_MANAGER_H_
 

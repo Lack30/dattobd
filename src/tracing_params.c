@@ -4,6 +4,10 @@
  * Copyright (C) 2022 Datto Inc.
  */
 
+/*
+ * 管理跨异步 I/O 跟踪流程使用的参数对象、引用计数及 bio 扇区映射链表。
+ */
+
 #include "tracing_params.h"
 #include "bio_helper.h"
 #include "bio_queue.h"

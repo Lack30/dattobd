@@ -6,6 +6,10 @@
  * Copyright (C) 2022 Datto Inc.
  */
 
+/*
+ * 为缺少内核原生 bio_list 的环境实现 bio 单链表的基础操作。
+ */
+
 #include "bio_list.h"
 
 #ifndef HAVE_BIO_LIST

@@ -4,6 +4,10 @@
  * Copyright (C) 2015 Datto Inc.
  */
 
+/*
+ * 声明 libdattobd 对外提供的快照管理与查询 API。
+ */
+
 #ifndef LIBDATTOBD_H_
 #define LIBDATTOBD_H_
 
@@ -31,6 +35,9 @@ int dattobd_transition_snapshot(unsigned int minor, char *cow, unsigned long fal
 int dattobd_reconfigure(unsigned int minor, unsigned long cache_size);
 
 int dattobd_info(unsigned int minor, struct dattobd_info *info);
+
+int dattobd_block_change_stream_status(unsigned int minor,
+                                       struct block_change_stream_status *status);
 
 int dattobd_expand_cow_file(unsigned int minor, uint64_t size);
 

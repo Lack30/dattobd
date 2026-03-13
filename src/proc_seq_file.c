@@ -1,3 +1,7 @@
+/*
+ * 实现 /proc/datto-info 顺序文件输出，将当前快照设备状态组织为可读的 JSON 风格信息。
+ */
+
 #include "cow_manager.h"
 #include "dattobd.h"
 #include "includes.h"

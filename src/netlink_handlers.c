@@ -1,6 +1,11 @@
+/*
+ * 实现用户态 Netlink 命令的校验、分发与响应，负责快照设备的创建、销毁、切换和查询控制面。
+ */
+
 #include "netlink_handlers.h"
 
 #include "blkdev.h"
+#include "block_change_stream.h"
 #include "dattobd.h"
 #include "hints.h"
 #include "includes.h"
@@ -229,6 +234,14 @@ static int netlink_destroy(unsigned int minor)
     }
 
     dev = snap_devices[minor];
+
+    if (block_change_stream_has_readers(dev)) {
+        ret = -EBUSY;
+        LOG_ERROR(ret, "block change stream reader is still attached");
+        put_snap_device_array_mut(snap_devices);
+        return ret;
+    }
+
     tracer_destroy(dev, snap_devices);
     kfree(dev);
 
@@ -538,6 +551,38 @@ error:
 }
 
 /**
+ * netlink_bcs_status() - 将当前设备的 block change stream 统计写入 @status。
+ * @status: block change stream 状态输出结构。
+ *
+ * Return:
+ * * 0 - 成功。
+ * * !0 - 表示错误的 errno。
+ */
+static int netlink_bcs_status(struct block_change_stream_status *status)
+{
+    int ret;
+    struct snap_device *dev;
+    snap_device_array snap_devices = get_snap_device_array();
+
+    LOG_DEBUG("received block change stream status netlink - %u", status->minor);
+
+    ret = verify_minor_in_use(status->minor, snap_devices);
+    if (ret)
+        goto error;
+
+    dev = snap_devices[status->minor];
+    block_change_stream_status(dev, status);
+
+    put_snap_device_array(snap_devices);
+    return 0;
+
+error:
+    LOG_ERROR(ret, "error during block change stream status netlink handler");
+    put_snap_device_array(snap_devices);
+    return ret;
+}
+
+/**
  * get_free_minor() - 获取下一个可用的次设备号。
  *
  * Return: 下一个可用的 minor，或表示错误的负 errno。
@@ -569,6 +614,7 @@ static void handle_request(struct netlink_request *req, struct netlink_response 
     char *bdev_path = NULL;
     char *cow_path = NULL;
     struct dattobd_info *info = NULL;
+    struct block_change_stream_status *bcs_status = NULL;
     unsigned int minor = 0;
     unsigned long fallocated_space = 0, cache_size = 0;
     uint64_t cow_size = 0;
@@ -693,6 +739,37 @@ static void handle_request(struct netlink_request *req, struct netlink_response 
 
         break;
 
+    case MSG_BCS_STATUS:
+        bcs_status = kmalloc(sizeof(*bcs_status), GFP_KERNEL);
+        if (!bcs_status) {
+            ret = -ENOMEM;
+            LOG_ERROR(ret, "error allocating block change stream status");
+            break;
+        }
+
+        ret = copy_from_user(bcs_status,
+                             (struct block_change_stream_status __user *)req->bcs_status_params,
+                             sizeof(*bcs_status));
+        if (ret) {
+            ret = -EFAULT;
+            LOG_ERROR(ret, "error copying block change stream status from user space");
+            break;
+        }
+
+        ret = netlink_bcs_status(bcs_status);
+        if (ret)
+            break;
+
+        ret = copy_to_user((struct block_change_stream_status __user *)req->bcs_status_params,
+                           bcs_status, sizeof(*bcs_status));
+        if (ret) {
+            ret = -EFAULT;
+            LOG_ERROR(ret, "error copying block change stream status to user space");
+            break;
+        }
+
+        break;
+
     case MSG_GET_FREE:
         idx = get_free_minor();
         if (idx < 0) {
@@ -741,6 +818,8 @@ static void handle_request(struct netlink_request *req, struct netlink_response 
         kfree(cow_path);
     if (info)
         kfree(info);
+    if (bcs_status)
+        kfree(bcs_status);
 
     resp->ret = ret;
     resp->type = req->type;

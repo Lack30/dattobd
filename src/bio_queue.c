@@ -6,6 +6,10 @@
  * Copyright (C) 2022 Datto Inc.
  */
 
+/*
+ * 实现带自旋锁与等待队列的 bio FIFO 队列，并提供读请求延后以避让重叠写请求的出队逻辑。
+ */
+
 #include "bio_queue.h"
 #include "bio_helper.h"
 

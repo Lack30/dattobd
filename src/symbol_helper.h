@@ -4,6 +4,10 @@
  * Copyright (C) 2024 Datto Inc.
  */
 
+/*
+ * 声明运行时内核符号地址表及符号查找与初始化接口。
+ */
+
 #ifndef SYMBOL_LOOKUP_H_
 #define SYMBOL_LOOKUP_H_
 

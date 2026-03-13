@@ -4,6 +4,10 @@
  * Copyright (C) 2024 Datto Inc.
  */
 
+/*
+ * 在模块加载时动态解析所需内核符号地址，并为跨版本兼容提供运行时符号表。
+ */
+
 #include "symbol_helper.h"
 #include "blkdev.h"
 #include "includes.h"

@@ -4,6 +4,10 @@
  * Copyright (C) 2022 Datto Inc.
  */
 
+/*
+ * 为被替换的请求回调维护按磁盘计数的引用跟踪，以安全保存和恢复原始回调指针。
+ */
+
 #include "callback_refs.h"
 
 #ifndef USE_BDOPS_SUBMIT_BIO

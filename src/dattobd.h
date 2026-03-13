@@ -4,6 +4,10 @@
  * Copyright (C) 2015-2022 Datto Inc.
  */
 
+/*
+ * 定义内核与用户态共享的公共协议常量、COW 元数据结构以及 Netlink 请求响应格式。
+ */
+
 #ifndef DATTOBD_H_
 #define DATTOBD_H_
 
@@ -31,6 +35,9 @@
 
 #define OP_WRITE_SIZE 512
 #define MAX_PAYLOAD 4096
+
+#define BCSLOG_MAGIC 0x42435331U
+#define BCSLOG_VERSION 1
 
 /**
  * struct cow_header - COW 文件开头的元数据。
@@ -124,6 +131,58 @@ struct vfs_watcher_params {
     unsigned int minor;
 };
 
+struct block_change_stream_status {
+    unsigned int minor;
+    unsigned long long last_changed_block;
+    unsigned long long last_changed_count;
+    unsigned long long last_recorded_jiffies;
+    unsigned long long captured_writes;
+    unsigned long long captured_bytes;
+    unsigned long long changed_ranges;
+    unsigned long long changed_blocks;
+    unsigned long long cached_blocks;
+    unsigned long long complete_blocks;
+    unsigned long long partial_blocks;
+    unsigned long long ring_capacity;
+    unsigned long long ring_used;
+    unsigned long long ring_dropped_records;
+    unsigned long long ring_dropped_bytes;
+};
+
+enum bcs_record_type {
+    BCS_RECORD_RANGE = 1,
+    BCS_RECORD_BLOCK = 2,
+};
+
+struct bcslog_file_header {
+    uint32_t magic;
+    uint16_t version;
+    uint16_t reserved;
+    uint32_t minor;
+};
+
+struct bcs_record_header {
+    uint16_t type;
+    uint16_t reserved;
+    uint32_t length;
+};
+
+struct bcs_record_range {
+    struct bcs_record_header hdr;
+    uint64_t first_block;
+    uint64_t block_count;
+    uint64_t captured_writes;
+    uint64_t changed_blocks;
+};
+
+struct bcs_record_block {
+    struct bcs_record_header hdr;
+    uint64_t block_no;
+    uint32_t valid_mask;
+    uint32_t data_len;
+    uint8_t data[COW_BLOCK_SIZE];
+};
+
 enum msg_type {
     MSG_PING = 1,
     MSG_SETUP_SNAP = 2,
@@ -138,6 +197,7 @@ enum msg_type {
     MSG_EXPAND_COW_FILE = 11,
     MSG_RECONFIGURE_AUTO_EXPAND = 12,
     MSG_OP_WATCH = 13,
+    MSG_BCS_STATUS = 14,
 };
 
 struct netlink_request {
@@ -149,6 +209,7 @@ struct netlink_request {
     struct transition_snap_params *transition_snap_params;
     struct reconfigure_params *reconfigure_params;
     struct dattobd_info *info_params;
+    struct block_change_stream_status *bcs_status_params;
     struct expand_cow_file_params *expand_cow_file_params;
     struct reconfigure_auto_expand_params *reconfigure_auto_expand_params;
     struct vfs_watcher_params *vfs_watcher_params;

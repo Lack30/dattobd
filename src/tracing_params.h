@@ -4,6 +4,10 @@
  * Copyright (C) 2022 Datto Inc.
  */
 
+/*
+ * 定义跟踪参数与 bio 扇区映射相关数据结构，并声明其生命周期管理接口。
+ */
+
 #ifndef TRACING_PARAMS_H_
 #define TRACING_PARAMS_H_
 

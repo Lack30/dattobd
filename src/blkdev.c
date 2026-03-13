@@ -4,6 +4,10 @@
  * Copyright (C) 2022 Datto Inc.
  */
 
+/*
+ * 封装块设备按路径打开、超级块查询、分区起始扇区和 statfs 等跨内核版本操作。
+ */
+
 #include "blkdev.h"
 #include "logging.h"
 #include <linux/version.h>

@@ -4,6 +4,10 @@
  * Copyright (C) 2022 Datto Inc.
  */
 
+/*
+ * 封装内核中的文件打开、读写、截断、分配、路径解析及直通块设备 I/O 兼容逻辑。
+ */
+
 #include "filesystem.h"
 #include "includes.h"
 #include "logging.h"

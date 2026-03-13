@@ -4,6 +4,10 @@
  * Copyright (C) 2022 Datto Inc.
  */
 
+/*
+ * 声明模块控制层使用的全局名称、参数以及主次设备号范围等共享定义。
+ */
+
 #ifndef MODULE_CONTROL_H_
 #define MODULE_CONTROL_H_
 
@@ -12,6 +16,7 @@
 #define DRIVER_NAME "datto"
 #define CONTROL_DEVICE_NAME "datto-ctl"
 #define SNAP_DEVICE_NAME "datto%u"
+#define BCS_DEVICE_NAME "dattobcs%u"
 #define SNAP_COW_THREAD_NAME_FMT "datto_snap_cow%d"
 #define SNAP_MRF_THREAD_NAME_FMT "datto_snap_mrf%d"
 #define INC_THREAD_NAME_FMT "datto_inc%d"

@@ -1,4 +1,8 @@
 // SPDX-License-Identifier: GPL-2.0-only
+/*
+ * 统一不同内核版本下 bio 请求提交回调相关的类型、入口宏和适配符号。
+ */
+
 // Copyright (C) 2022 Datto Inc.
 
 /**

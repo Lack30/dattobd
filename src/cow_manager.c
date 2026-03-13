@@ -4,6 +4,10 @@
  * Copyright (C) 2022 Datto Inc.
  */
 
+/*
+ * 实现 COW 后备文件的映射缓存、索引读写、数据落盘与自动扩展逻辑。
+ */
+
 #include "cow_manager.h"
 #include "filesystem.h"
 #include "logging.h"

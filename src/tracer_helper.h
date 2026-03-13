@@ -4,6 +4,10 @@
  * Copyright (C) 2022 Datto Inc.
  */
 
+/*
+ * 声明遍历跟踪设备、匹配 bio 和处理读写失败状态所需的辅助宏与接口。
+ */
+
 #ifndef TRACER_HELPER_H_
 #define TRACER_HELPER_H_
 

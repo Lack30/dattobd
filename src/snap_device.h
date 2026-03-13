@@ -4,6 +4,10 @@
  * Copyright (C) 2022 Datto Inc.
  */
 
+/*
+ * 定义快照设备的核心数据结构、状态位以及全局设备数组访问接口。
+ */
+
 #ifndef SNAP_DEVICE_H_
 #define SNAP_DEVICE_H_
 
@@ -46,6 +50,8 @@ static inline void tracing_ops_put(struct tracing_ops *trops)
 }
 #endif
 
+struct block_change_stream;
+
 struct snap_device {
     unsigned int sd_minor; // 快照设备次设备号
     unsigned long sd_state; // 快照当前状态
@@ -69,6 +75,7 @@ struct snap_device {
     struct task_struct *sd_mrf_thread; // 处理读写的 MRF 线程
     struct bio_queue sd_orig_bios; // 未完成原始 bio 队列
     struct sset_queue sd_pending_ssets; // 待处理 sector set 队列
+    struct block_change_stream *sd_bcs; // block change stream 运行时状态
     struct fiemap_extent *sd_cow_extents; // COW 文件区段
     unsigned int sd_cow_ext_cnt; // COW 文件区段数量
 #ifndef HAVE_BIOSET_INIT

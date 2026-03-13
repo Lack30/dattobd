@@ -4,6 +4,10 @@
  * Copyright (C) 2022 Datto Inc.
  */
 
+/*
+ * 定义模块统一使用的调试、告警和错误日志宏。
+ */
+
 #ifndef LOGGING_H_
 #define LOGGING_H_
 
