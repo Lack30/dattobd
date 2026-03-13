@@ -16,6 +16,7 @@
 #include "tracer_helper.h"
 #include "kernel_hooking.h"
 #include "netlink_handlers.h"
+#include "symbol_helper.h"
 
 // current lowest supported kernel = 2.6.18
 
@@ -215,6 +216,12 @@ static int __init agent_init(void)
     // mrf ref hashtable init
     mrf_tracking_init();
 #endif
+
+    ret = dattobd_symbol_helper_init();
+    if (ret) {
+        LOG_ERROR(ret, "error initializing runtime symbol lookup");
+        goto error;
+    }
 
     calc_max_snap_devices_and_init_minor_range();
 

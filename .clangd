@@ -28,18 +28,38 @@ CompileFlags:
     # GCC-specific debug/profiling flags
     - -pg
     
+    # Remove -nostdinc to allow clangd to find standard headers
+    - -nostdinc
+    - -nostdinc++
+    
   Add:
-    # Clang-compatible alternatives
+    # Clang resource directory (contains stddef.h, stdarg.h, etc.)
+    - -resource-dir=/usr/lib/clang/14.0.6
+    
+    # GCC built-in includes (for stddef.h and other compiler intrinsics)
+    - -isystem/usr/lib/gcc/x86_64-linux-gnu/10/include
+    
+    # Standard system includes (for user-space code)
+    - -isystem/usr/include
+    - -isystem/usr/include/x86_64-linux-gnu
+    
+    # Linux kernel UAPI headers (for user-space code using linux/types.h)
+    - -isystem/usr/include/linux
+    
+    # Clang-compatible warning suppressions
     - -Wno-unknown-warning-option
     - -Wno-ignored-attributes
     - -Wno-unknown-attributes
     - -Wno-unsupported-opt
+    - -Wno-unknown-argument
 
 Diagnostics:
   # Suppress unknown argument warnings completely
   Suppress:
     - drv_unknown_argument
     - drv_unsupported_opt_for_target
+    - pp_file_not_found
+    - init_element_not_constant
   ClangTidy:
     Remove:
       - bugprone-*
@@ -56,3 +76,6 @@ InlayHints:
 
 Hover:
   ShowAKA: Yes
+
+Index:
+  Background: Build
